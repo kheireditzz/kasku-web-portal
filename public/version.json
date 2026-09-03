@@ -1,0 +1,37 @@
+{
+  "latestVersion": "1.1.0",
+  "minRequiredVersion": "1.0.0",
+  "forceUpdate": false,
+  "releaseNotes": "Fitur baru: AI Voice Input lebih akurat, sinkronisasi tabungan impian, portal web download APK, serta optimasi performa dan perbaikan bug kecil.",
+  "updateUrl": "/download",
+  "releases": [
+    {
+      "version": "1.1.0",
+      "releaseDate": "2026-09-03",
+      "fileSize": "14.8 MB",
+      "downloadUrl": "/apk/kasku-v1.1.0.apk",
+      "isLatest": true,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Koneksi sinkronisasi langsung dengan Web KasKu",
+        "Penambahan asisten suara cerdas (Voice AI Transaction)",
+        "Fitur Multi-Tabungan Impian dan progress bar interaktif",
+        "Peningkatan kecepatan loading dan animasi ultra-smooth"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "releaseDate": "2026-08-15",
+      "fileSize": "13.9 MB",
+      "downloadUrl": "/apk/kasku-v1.0.0.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0+",
+      "highlights": [
+        "Rilis awal KasKu versi bersih dan modern",
+        "Pencatatan kas masuk & kas keluar harian",
+        "Grafik pengeluaran & ringkasan saldo kas realtime",
+        "Export laporan keuangan ke CSV/Excel"
+      ]
+    }
+  ]
+}
