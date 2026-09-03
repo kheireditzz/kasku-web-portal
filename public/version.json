@@ -1,16 +1,369 @@
 {
-  "latestVersion": "1.1.2",
-  "minRequiredVersion": "1.1.2",
+  "latestVersion": "1.1.29",
+  "minRequiredVersion": "1.1.29",
   "forceUpdate": true,
-  "releaseNotes": "Fitur baru: AI Voice Input Native dengan Google Speech Recognition, perbaikan update otomatis, dan kestabilan performa.",
+  "releaseNotes": "Pembaruan Akbar KasKu v2.0.0: Desain baru, Voice AI generasi mutakhir, dan sinkronisasi awan.",
   "updateUrl": "https://kasku.kheireditz.my.id/download",
   "releases": [
+    {
+      "version": "1.1.29",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": true,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.29",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.28",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.28",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.27",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.27",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.26",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.26",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.25",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.25",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.24",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.24",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.23",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.23",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.22",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.22",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.21",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.21",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.20",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.20",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.19",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.19",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.18",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.18",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.17",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.17",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.16",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.16",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.15",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.15",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.14",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.14",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.13",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.13",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.12",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.12",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.11",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.11",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.10",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.10",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.9",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.9",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.8",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.8",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.7",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.7",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.6",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.6",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.5",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.5",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.4",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Perbaikan sistem komparasi semver OTA Update",
+        "Integrasi langsung dengan WhatsApp Developer",
+        "Peningkatan akurasi AI Voice Input transaksi",
+        "Ukuran APK tetap super ringan (~372 KB)"
+      ]
+    },
+    {
+      "version": "1.1.3",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan integrasi kontak developer WhatsApp",
+        "Peningkatan stabilitas voice AI recognition",
+        "Optimasi performa rendering & local storage",
+        "Ukuran aplikasi sangat ringan (~372 KB)"
+      ]
+    },
     {
       "version": "1.1.2",
       "releaseDate": "2026-09-03",
       "fileSize": "368 KB",
       "downloadUrl": "/apk/KasKu.apk",
-      "isLatest": true,
+      "isLatest": false,
       "minAndroid": "Android 7.0 (Nougat)+",
       "highlights": [
         "Fitur AI Voice Input Native dengan Google Speech Recognition",

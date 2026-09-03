@@ -28,7 +28,8 @@ import {
   PiggyBankIcon,
   CutePiggyIcon,
   TrophyIcon,
-  RocketIcon
+  RocketIcon,
+  TableCellsIcon
 } from '@/components/Icons'
 
 export interface Transaction {
@@ -45,8 +46,8 @@ const DEFAULT_CATEGORIES = [
   'Lain-lain'
 ]
 
-// Versi aplikasi yang terinstall saat ini
-const APP_CURRENT_VERSION = '1.1.2'
+// Versi aplikasi yang terinstall saat ini (Simulasi Versi Lawas untuk Tes Kunci Update)
+const APP_CURRENT_VERSION = '1.1.29'
 
 export default function KaskuApp() {
   const [activeTab, setActiveTab] = useState<'overview' | 'savings' | 'analytics' | 'categories'>('overview')
@@ -113,19 +114,19 @@ export default function KaskuApp() {
       const hasOnboarded = localStorage.getItem('kasku_has_onboarded_v1')
       if (!hasOnboarded) {
         setShowOnboarding(true)
-      }
-
-      // Notif Support Developer 5 detik setelah masuk (Hanya muncul sekali seumur hidup)
-      const hasSeenSupportDev = localStorage.getItem('kasku_support_dev_notified_v1')
-      if (!hasSeenSupportDev) {
-        setTimeout(() => {
-          setShowSupportDevModal(true)
-          try {
-            localStorage.setItem('kasku_support_dev_notified_v1', 'true')
-          } catch (err) {
-            console.error(err)
-          }
-        }, 5000)
+      } else {
+        // Jika sudah selesai onboarding dan berada di menu utama, cek notif Support Dev (Hanya sekali seumur hidup, otomatis tutup 3 detik)
+        const hasSeenSupportDev = localStorage.getItem('kasku_support_dev_notified_v1')
+        if (!hasSeenSupportDev) {
+          setTimeout(() => {
+            setShowSupportDevModal(true)
+            try {
+              localStorage.setItem('kasku_support_dev_notified_v1', 'true')
+            } catch (err) {
+              console.error(err)
+            }
+          }, 1500)
+        }
       }
 
       setTxDate(new Date().toISOString().split('T')[0])
@@ -144,6 +145,19 @@ export default function KaskuApp() {
         `/version.json?t=${Date.now()}`
       ]
 
+      // Helper function to compare semver strings (v1 > v2 => >0, v1 < v2 => <0, v1 == v2 => 0)
+      const compareVersions = (v1: string, v2: string) => {
+        const p1 = v1.replace(/^v/, '').split('.').map(Number)
+        const p2 = v2.replace(/^v/, '').split('.').map(Number)
+        for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+          const num1 = p1[i] || 0
+          const num2 = p2[i] || 0
+          if (num1 > num2) return 1
+          if (num1 < num2) return -1
+        }
+        return 0
+      }
+
       for (const endpoint of endpoints) {
         try {
           const controller = new AbortController()
@@ -156,7 +170,8 @@ export default function KaskuApp() {
           if (res.ok) {
             const data = await res.json()
             if (data && data.latestVersion) {
-              const isOutdated = data.latestVersion !== APP_CURRENT_VERSION
+              // Hanya tampilkan force update JIKA versi server lebih baru dari versi terinstall (remote > local)
+              const isOutdated = compareVersions(data.latestVersion, APP_CURRENT_VERSION) > 0
               if (isOutdated) {
                 let targetUrl = data.updateUrl || 'https://kasku.kheireditz.my.id/download'
                 if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
@@ -253,25 +268,26 @@ export default function KaskuApp() {
   }
 
   const formatRupiah = (val: number) => {
+    const safeVal = (typeof val === 'number' && !isNaN(val)) ? val : 0
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0
-    }).format(val)
+    }).format(safeVal)
   }
 
-  // Calculations
+  // Calculations (Dengan proteksi nilai safe)
   const totalIncome = transactions
-    .filter(t => t.type === 'income')
-    .reduce((acc, curr) => acc + curr.amount, 0)
+    .filter(t => t && t.type === 'income')
+    .reduce((acc, curr) => acc + (Number(curr?.amount) || 0), 0)
 
   const totalExpense = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((acc, curr) => acc + curr.amount, 0)
+    .filter(t => t && t.type === 'expense')
+    .reduce((acc, curr) => acc + (Number(curr?.amount) || 0), 0)
 
   const netBalance = totalIncome - totalExpense
 
-  const totalSavings = savings.reduce((acc, curr) => acc + curr.currentAmount, 0)
+  const totalSavings = savings.reduce((acc, curr) => acc + (Number(curr?.currentAmount) || 0), 0)
 
   // Handle Add Transaction
   const handleAddTransaction = (e: React.FormEvent) => {
@@ -409,23 +425,173 @@ export default function KaskuApp() {
     })
   }
 
-  // Export to CSV
-  const handleExportCSV = () => {
-    if (transactions.length === 0) return
-    const headers = ['ID,Tanggal,Tipe,Kategori,Keterangan,Nominal,Catatan']
-    const rows = transactions.map(t => {
-      return `"${t.id}","${t.date}","${t.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}","${t.category}","${t.title.replace(/"/g, '""')}","${t.amount}","${(t.note || '').replace(/"/g, '""')}"`
+  // Export Laporan Excel (.xls) yang Cantik, Rapi, Bold, dan Penuh Warna (Hijau untuk Masuk, Merah untuk Keluar)
+  const handleExportExcel = () => {
+    if (transactions.length === 0) {
+      showToast('Belum ada transaksi untuk diekspor')
+      return
+    }
+
+    const totalIncome = transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0)
+    const totalExpense = transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0)
+    const saldoAkhir = totalIncome - totalExpense
+
+    const formatRp = (num: number) => {
+      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
+    }
+
+    let rowsHtml = ''
+    transactions.forEach((tx, idx) => {
+      const isIncome = tx.type === 'income'
+      const typeLabel = isIncome ? 'MASUK' : 'KELUAR'
+      const rowBg = idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC'
+      const badgeBg = isIncome ? '#DCFCE7' : '#FFE4E6'
+      const badgeColor = isIncome ? '#15803D' : '#BE123C'
+      const amountColor = isIncome ? '#16A34A' : '#DC2626'
+      const amountPrefix = isIncome ? '+ ' : '- '
+
+      rowsHtml += `
+        <tr style="background-color: ${rowBg}; border-bottom: 1px solid #E2E8F0;">
+          <td style="padding: 10px 12px; text-align: center; color: #64748B; font-weight: bold; font-size: 11px;">${idx + 1}</td>
+          <td style="padding: 10px 12px; text-align: center; color: #1E293B; font-weight: bold; font-size: 11px;">${tx.date}</td>
+          <td style="padding: 10px 12px; text-align: center;">
+            <span style="background-color: ${badgeBg}; color: ${badgeColor}; font-weight: 800; font-size: 10px; padding: 4px 10px; border-radius: 6px; border: 1px solid ${isIncome ? '#BBF7D0' : '#FECDD3'};">
+              ${typeLabel}
+            </span>
+          </td>
+          <td style="padding: 10px 12px; color: #0F172A; font-weight: 700; font-size: 12px;">${tx.category}</td>
+          <td style="padding: 10px 12px; color: #0F172A; font-weight: 600; font-size: 12px;">${tx.title}</td>
+          <td style="padding: 10px 12px; text-align: right; color: ${amountColor}; font-weight: 900; font-size: 13px; font-family: monospace;">
+            ${amountPrefix}${formatRp(tx.amount)}
+          </td>
+          <td style="padding: 10px 12px; color: #64748B; font-size: 11px; font-style: italic;">${tx.note || '-'}</td>
+        </tr>
+      `
     })
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers, ...rows].join('\n')
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement('a')
-    link.setAttribute('href', encodedUri)
-    link.setAttribute('download', `kasku-laporan-${new Date().toISOString().split('T')[0]}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    showToast('Laporan CSV berhasil di-download!')
+    const excelHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8">
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>Laporan Mutasi KasKu</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayGridlines/>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        </style>
+      </head>
+      <body>
+        <table style="border-collapse: collapse; width: 100%; font-family: sans-serif;">
+          <!-- HEADER UTAMA LAPORAN -->
+          <tr>
+            <td colspan="7" style="background: #059669; color: #FFFFFF; font-size: 18px; font-weight: 900; text-align: center; padding: 18px; letter-spacing: 0.5px;">
+              LAPORAN KEUANGAN &amp; MUTASI KASKU
+            </td>
+          </tr>
+          <tr>
+            <td colspan="7" style="background: #047857; color: #E6FFFA; font-size: 11px; font-weight: 600; text-align: center; padding: 6px;">
+              Tanggal Ekspor: ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} | Total Transaksi: ${transactions.length}
+            </td>
+          </tr>
+          <tr><td colspan="7" style="height: 12px;"></td></tr>
+
+          <!-- KARTU RINGKASAN SALDO -->
+          <tr>
+            <td colspan="2" style="background-color: #ECFDF5; border: 2px solid #10B981; padding: 12px; text-align: center;">
+              <div style="color: #047857; font-size: 10px; font-weight: 800; text-transform: uppercase;">Total Pemasukan (Masuk)</div>
+              <div style="color: #059669; font-size: 15px; font-weight: 900; margin-top: 4px;">${formatRp(totalIncome)}</div>
+            </td>
+            <td style="width: 15px;"></td>
+            <td colspan="2" style="background-color: #FFF1F2; border: 2px solid #F43F5E; padding: 12px; text-align: center;">
+              <div style="color: #9F1239; font-size: 10px; font-weight: 800; text-transform: uppercase;">Total Pengeluaran (Keluar)</div>
+              <div style="color: #E11D48; font-size: 15px; font-weight: 900; margin-top: 4px;">${formatRp(totalExpense)}</div>
+            </td>
+            <td style="width: 15px;"></td>
+            <td style="background-color: #F8FAFC; border: 2px solid #0EA5E9; padding: 12px; text-align: center;">
+              <div style="color: #0369A1; font-size: 10px; font-weight: 800; text-transform: uppercase;">Sisa Saldo Kas</div>
+              <div style="color: ${saldoAkhir >= 0 ? '#0284C7' : '#DC2626'}; font-size: 15px; font-weight: 900; margin-top: 4px;">${formatRp(saldoAkhir)}</div>
+            </td>
+          </tr>
+          <tr><td colspan="7" style="height: 16px;"></td></tr>
+
+          <!-- TABEL HEADER -->
+          <tr style="background-color: #0F172A; color: #FFFFFF;">
+            <th style="padding: 12px 10px; text-align: center; font-size: 11px; font-weight: 800; width: 40px; border: 1px solid #0F172A;">NO</th>
+            <th style="padding: 12px 10px; text-align: center; font-size: 11px; font-weight: 800; width: 110px; border: 1px solid #0F172A;">TANGGAL</th>
+            <th style="padding: 12px 10px; text-align: center; font-size: 11px; font-weight: 800; width: 100px; border: 1px solid #0F172A;">JENIS</th>
+            <th style="padding: 12px 10px; text-align: left; font-size: 11px; font-weight: 800; width: 150px; border: 1px solid #0F172A;">KATEGORI</th>
+            <th style="padding: 12px 10px; text-align: left; font-size: 11px; font-weight: 800; width: 220px; border: 1px solid #0F172A;">KETERANGAN</th>
+            <th style="padding: 12px 10px; text-align: right; font-size: 11px; font-weight: 800; width: 160px; border: 1px solid #0F172A;">NOMINAL</th>
+            <th style="padding: 12px 10px; text-align: left; font-size: 11px; font-weight: 800; width: 180px; border: 1px solid #0F172A;">CATATAN</th>
+          </tr>
+
+          <!-- ISI TRANSAKSI -->
+          ${rowsHtml}
+
+          <!-- FOOTER SUMMARY TOTAL -->
+          <tr style="background-color: #E2E8F0; font-weight: 900; border-top: 2px solid #94A3B8;">
+            <td colspan="5" style="padding: 12px; text-align: right; font-size: 12px; color: #0F172A; text-transform: uppercase;">
+              TOTAL SURPLUS / DEFISIT BERSIH:
+            </td>
+            <td style="padding: 12px; text-align: right; font-size: 13px; font-weight: 900; color: ${saldoAkhir >= 0 ? '#15803D' : '#BE123C'}; font-family: monospace;">
+              ${formatRp(saldoAkhir)}
+            </td>
+            <td style="padding: 12px; font-size: 10px; color: #64748B;">KasKu Financial App</td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `
+
+    const filename = `KasKu_Laporan_Keuangan_${new Date().toISOString().split('T')[0]}.xls`
+
+    // Cek jika berjalan di dalam Android Native APK
+    if (typeof (window as any) !== 'undefined' && (window as any).AndroidFile) {
+      try {
+        const base64Data = btoa(unescape(encodeURIComponent(excelHtml)))
+        ;(window as any).AndroidFile.saveAndOpenFile(base64Data, filename, 'application/vnd.ms-excel')
+        showToast('Laporan Excel berhasil disimpan di Download!')
+        return
+      } catch (err) {
+        console.error('Native Excel download error', err)
+      }
+    }
+
+    // Fallback Browser Standar Blob
+    try {
+      const blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      showToast('Laporan Excel berwarna berhasil diunduh!')
+    } catch (e) {
+      showToast('Gagal mengunduh file Excel')
+    }
+  }
+
+  // Export to CSV
+  const handleExportCSV = () => {
+    handleExportExcel()
   }
 
   // Import Semua Data dari JSON
@@ -491,34 +657,65 @@ export default function KaskuApp() {
     date: string
     note?: string
   }) => {
-    // Cek apakah kategori sudah ada (case-insensitive & trim) agar disatukan dan tidak dobel
-    const cleanCat = (tx.category || 'Lain-lain').trim()
-    const existingCat = categories.find(c => c.toLowerCase() === cleanCat.toLowerCase())
+    try {
+      const cleanTitle = (tx?.title || 'Transaksi KasKu').trim()
+      const cleanAmount = Number(tx?.amount) || 0
+      const cleanType: 'income' | 'expense' = tx?.type === 'income' ? 'income' : 'expense'
+      const cleanCat = (tx?.category || 'Lain-lain').trim() || 'Lain-lain'
+      const cleanDate = (tx?.date && tx.date.length === 10) ? tx.date : new Date().toISOString().slice(0, 10)
 
-    const finalCategory = existingCat || cleanCat
-
-    const newTx: Transaction = {
-      id: `TX-AI-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      title: tx.title,
-      amount: tx.amount,
-      type: tx.type,
-      category: finalCategory,
-      date: tx.date,
-      note: tx.note
-    }
-
-    // Jika belum ada sama sekali, tambahkan ke daftar kategori
-    if (!existingCat) {
-      const updatedCats = [...categories, finalCategory]
-      setCategories(updatedCats)
-      try {
-        localStorage.setItem('kasku_categories_v2', JSON.stringify(updatedCats))
-      } catch (e) {
-        console.error(e)
+      if (cleanAmount <= 0) {
+        showToast('Nominal transaksi tidak valid!')
+        return
       }
-    }
 
-    setTransactions(prev => [newTx, ...prev])
+      // Cek apakah kategori sudah ada (case-insensitive & trim) agar disatukan dan tidak dobel
+      const existingCat = categories.find(c => c && c.toLowerCase() === cleanCat.toLowerCase())
+      const finalCategory = existingCat || cleanCat
+
+      const newTx: Transaction = {
+        id: `TX-AI-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        title: cleanTitle,
+        amount: cleanAmount,
+        type: cleanType,
+        category: finalCategory,
+        date: cleanDate,
+        note: tx?.note
+      }
+
+      // Update Categories jika belum ada
+      if (!existingCat) {
+        const updatedCats = [...categories, finalCategory]
+        setCategories(updatedCats)
+        try {
+          localStorage.setItem('kasku_categories_v2', JSON.stringify(updatedCats))
+        } catch (e) {
+          console.error(e)
+        }
+      }
+
+      // Update Transactions langsung ke State dan simpan ke LocalStorage seketika
+      setTransactions(prev => {
+        const updatedTxList = [newTx, ...prev]
+        try {
+          localStorage.setItem('kasku_transactions_v2', JSON.stringify(updatedTxList))
+        } catch (e) {
+          console.error('Direct LocalStorage save error:', e)
+        }
+        return updatedTxList
+      })
+
+      // Reset filter dan alihkan ke Overview agar data baru langsung terlihat di layar
+      setFilterType('all')
+      setFilterCat('all')
+      setSearchQuery('')
+      setActiveTab('overview')
+
+      showToast(`Berhasil menyimpan ${cleanType === 'income' ? 'pemasukan' : 'pengeluaran'} "${cleanTitle}"`)
+    } catch (err) {
+      console.error('Error in handleSaveVoiceTransaction:', err)
+      showToast('Gagal menyimpan transaksi!')
+    }
   }
 
   // Filtered List
@@ -532,16 +729,18 @@ export default function KaskuApp() {
 
   // Category Analytics Breakdown
   const expenseByCategory = transactions
-    .filter(t => t.type === 'expense')
+    .filter(t => t && t.type === 'expense')
     .reduce((acc: { [key: string]: number }, curr) => {
-      acc[curr.category] = (acc[curr.category] || 0) + curr.amount
+      const cat = curr?.category || 'Lain-lain'
+      acc[cat] = (acc[cat] || 0) + (Number(curr?.amount) || 0)
       return acc
     }, {})
 
   const incomeByCategory = transactions
-    .filter(t => t.type === 'income')
+    .filter(t => t && t.type === 'income')
     .reduce((acc: { [key: string]: number }, curr) => {
-      acc[curr.category] = (acc[curr.category] || 0) + curr.amount
+      const cat = curr?.category || 'Lain-lain'
+      acc[cat] = (acc[cat] || 0) + (Number(curr?.amount) || 0)
       return acc
     }, {})
 
@@ -585,7 +784,7 @@ export default function KaskuApp() {
         
         {/* TAB 1: OVERVIEW (HALAMAN UTAMA) */}
         {activeTab === 'overview' && (
-          <div className="space-y-6 animate-slide-up">
+          <div className="space-y-6">
             {/* TOP SUMMARY STATS - HANYA DI HALAMAN UTAMA */}
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               
@@ -815,31 +1014,45 @@ export default function KaskuApp() {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 text-[11px] font-semibold self-start sm:self-auto">
-                      <button
-                        onClick={() => setFilterType('all')}
-                        className={`px-3 py-1 rounded-lg transition ${
-                          filterType === 'all' ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        Semua
-                      </button>
-                      <button
-                        onClick={() => setFilterType('income')}
-                        className={`px-3 py-1 rounded-lg transition ${
-                          filterType === 'income' ? 'bg-white text-emerald-700 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        Masuk
-                      </button>
-                      <button
-                        onClick={() => setFilterType('expense')}
-                        className={`px-3 py-1 rounded-lg transition ${
-                          filterType === 'expense' ? 'bg-white text-rose-700 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        Keluar
-                      </button>
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 text-[11px] font-semibold">
+                        <button
+                          onClick={() => setFilterType('all')}
+                          className={`px-3 py-1 rounded-lg transition ${
+                            filterType === 'all' ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Semua
+                        </button>
+                        <button
+                          onClick={() => setFilterType('income')}
+                          className={`px-3 py-1 rounded-lg transition ${
+                            filterType === 'income' ? 'bg-white text-emerald-700 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Masuk
+                        </button>
+                        <button
+                          onClick={() => setFilterType('expense')}
+                          className={`px-3 py-1 rounded-lg transition ${
+                            filterType === 'expense' ? 'bg-white text-rose-700 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Keluar
+                        </button>
+                      </div>
+
+                      {/* Tombol Ekspor Excel Cepat */}
+                      {transactions.length > 0 && (
+                        <button
+                          onClick={handleExportExcel}
+                          title="Ekspor Laporan Excel Berwarna (.xls)"
+                          className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
+                        >
+                          <TableCellsIcon className="w-4 h-4 text-emerald-600" />
+                          <span className="hidden sm:inline">Ekspor Excel</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1144,13 +1357,14 @@ export default function KaskuApp() {
         onClose={() => setConfirmDialog(null)}
       />
 
-      {/* Settings Modal (Backup JSON, Restore JSON, Reset LocalStorage) */}
+      {/* Settings Modal (Backup JSON, Restore JSON, Reset LocalStorage, Export Excel) */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         transactions={transactions}
         savings={savings}
         categories={categories}
+        onExportExcel={handleExportExcel}
         onImportAllData={handleImportAllData}
         onClearAllData={handleClearAllData}
         onOpenOnboarding={() => setShowOnboarding(true)}
@@ -1174,6 +1388,7 @@ export default function KaskuApp() {
       {/* Onboarding Panduan Aplikasi Bertahap (Sebelum Masuk ke Aplikasi) */}
       <OnboardingModal
         isOpen={showOnboarding}
+        appVersion={APP_CURRENT_VERSION}
         onFinish={() => {
           setShowOnboarding(false)
           try {
@@ -1181,13 +1396,27 @@ export default function KaskuApp() {
           } catch (e) {
             console.error(e)
           }
+
+          // Setelah selesai pengenalan dan masuk ke menu utama: Munculkan notif Support Dev 3 detik (Hanya sekali)
+          const hasSeenSupportDev = localStorage.getItem('kasku_support_dev_notified_v1')
+          if (!hasSeenSupportDev) {
+            setTimeout(() => {
+              setShowSupportDevModal(true)
+              try {
+                localStorage.setItem('kasku_support_dev_notified_v1', 'true')
+              } catch (err) {
+                console.error(err)
+              }
+            }, 800)
+          }
         }}
       />
 
-      {/* Support Developer Modal (Otomatis 5 Detik Pertama Kali / Dari Pengaturan) */}
+      {/* Support Developer Modal (Otomatis Hilang 3 Detik / Dari Pengaturan) */}
       <SupportDevModal
         isOpen={showSupportDevModal}
         onClose={() => setShowSupportDevModal(false)}
+        autoCloseSeconds={3}
       />
 
       {/* Desktop Footer */}

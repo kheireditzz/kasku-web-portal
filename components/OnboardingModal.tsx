@@ -5,26 +5,32 @@ import {
   WalletIcon,
   PiggyBankIcon,
   MicrophoneIcon,
-  ChartPieIcon
+  ChartPieIcon,
+  KasKuBrandLogo
 } from './Icons'
+import { APP_LOGO_BASE64 } from './appLogoBase64'
 
 interface OnboardingModalProps {
   isOpen: boolean
   onFinish: () => void
+  appVersion?: string
 }
 
-const ONBOARDING_STEPS = [
-  {
-    title: 'Selamat Datang di KasKu',
-    subtitle: 'Aplikasi Keuangan Pribadi Anda',
-    badge: 'KasKu v1.0',
-    icon: (
-      <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-lg mx-auto flex items-center justify-center border border-slate-100">
-        <img src="/app-logo.jpg" alt="KasKu Logo" className="w-full h-full object-cover" />
-      </div>
-    ),
-    description: 'Catat kas, kelola pemasukan, dan pantau pengeluaran harian dengan aman 100% tersimpan di HP Anda.'
-  },
+export default function OnboardingModal({ isOpen, onFinish, appVersion = '1.1.6' }: OnboardingModalProps) {
+  const [currentStep, setCurrentStep] = useState(0)
+
+  const ONBOARDING_STEPS = [
+    {
+      title: 'Selamat Datang di KasKu',
+      subtitle: 'Aplikasi Keuangan Pribadi Anda',
+      badge: `KasKu v${appVersion}`,
+      icon: (
+        <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-lg mx-auto flex items-center justify-center border border-slate-100 bg-white">
+          <img src={APP_LOGO_BASE64} alt="KasKu Logo" className="w-full h-full object-cover" />
+        </div>
+      ),
+      description: 'Catat kas, kelola pemasukan, dan pantau pengeluaran harian dengan aman 100% tersimpan di HP Anda.'
+    },
   {
     title: 'Buku Kas & Mutasi Harian',
     subtitle: 'Pencatatan Rapi & Otomatis',
@@ -48,15 +54,15 @@ const ONBOARDING_STEPS = [
     description: 'Alokasikan tabungan ke pos celengan khusus, atur target dana, dan pantau persentase yang sudah terkumpul.'
   },
   {
-    title: 'Catat Kas Lewat Suara AI',
-    subtitle: 'Bicara Santai, AI Otomatis Catat',
-    badge: 'AI Smart Voice',
+    title: 'Catat Kas Lewat Voice',
+    subtitle: 'Bicara Santai, Otomatis Tercatat',
+    badge: 'Voice Mode',
     icon: (
-      <div className="w-24 h-24 rounded-3xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto shadow-sm">
+      <div className="w-24 h-24 rounded-3xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
         <MicrophoneIcon className="w-12 h-12" />
       </div>
     ),
-    description: 'Cukup ucapkan "Makan siang 25 ribu", kecerdasan AI langsung mengenali jenis uang, nominal, dan kategorinya.'
+    description: 'Cukup ucapkan "Makan siang 25 ribu", sistem langsung mengenali jenis uang, nominal, dan kategorinya secara otomatis.'
   },
   {
     title: 'Analisis & Cadangan Data',
@@ -70,9 +76,6 @@ const ONBOARDING_STEPS = [
     description: 'Laporan visual kategori pengeluaran serta fitur backup & restore file JSON agar data Anda selalu terlindungi.'
   }
 ]
-
-export default function OnboardingModal({ isOpen, onFinish }: OnboardingModalProps) {
-  const [currentStep, setCurrentStep] = useState(0)
 
   useEffect(() => {
     if (isOpen) {
@@ -104,8 +107,12 @@ export default function OnboardingModal({ isOpen, onFinish }: OnboardingModalPro
       {/* Top Header: Brand & Tombol Lewati Semua */}
       <div className="w-full flex items-center justify-between pt-2">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg overflow-hidden shadow-xs">
-            <img src="/app-logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+          <div className="w-7 h-7 rounded-lg overflow-hidden shadow-xs bg-emerald-600 text-white flex items-center justify-center">
+            {APP_LOGO_BASE64 ? (
+              <img src={APP_LOGO_BASE64} alt="Logo" className="w-full h-full object-cover" />
+            ) : (
+              <KasKuBrandLogo className="w-4 h-4" />
+            )}
           </div>
           <span className="font-extrabold text-sm text-emerald-600 tracking-tight">KasKu</span>
         </div>

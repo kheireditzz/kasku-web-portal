@@ -7,7 +7,8 @@ import {
   ArrowUpTrayIcon,
   CheckCircleIcon,
   TrashIcon,
-  HeartIcon
+  HeartIcon,
+  TableCellsIcon
 } from './Icons'
 import SupportDevModal from './SupportDevModal'
 
@@ -17,6 +18,7 @@ interface SettingsModalProps {
   transactions: any[]
   savings: any[]
   categories: string[]
+  onExportExcel?: () => void
   onImportAllData: (data: { transactions?: any[]; savings?: any[]; categories?: string[] }) => void
   onClearAllData: () => void
   onOpenOnboarding?: () => void
@@ -29,6 +31,7 @@ export default function SettingsModal({
   transactions,
   savings,
   categories,
+  onExportExcel,
   onImportAllData,
   onClearAllData,
   onOpenOnboarding,
@@ -72,16 +75,25 @@ export default function SettingsModal({
         }
       }
 
-      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-        JSON.stringify(backupData, null, 2)
-      )}`
+      const rawJson = JSON.stringify(backupData, null, 2)
+      const filename = `kasku_cadangan_${new Date().toISOString().split('T')[0]}.json`
 
+      // Jika berjalan di Android Native APK
+      if (typeof (window as any) !== 'undefined' && (window as any).AndroidFile) {
+        try {
+          const base64Data = btoa(unescape(encodeURIComponent(rawJson)))
+          ;(window as any).AndroidFile.saveAndOpenFile(base64Data, filename, 'application/json')
+          showToast('Cadangan data JSON berhasil disimpan di Download!')
+          return
+        } catch (err) {
+          console.error(err)
+        }
+      }
+
+      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(rawJson)}`
       const downloadAnchor = document.createElement('a')
       downloadAnchor.setAttribute('href', jsonString)
-      downloadAnchor.setAttribute(
-        'download',
-        `kasku_cadangan_${new Date().toISOString().split('T')[0]}.json`
-      )
+      downloadAnchor.setAttribute('download', filename)
       document.body.appendChild(downloadAnchor)
       downloadAnchor.click()
       downloadAnchor.remove()
@@ -197,19 +209,38 @@ export default function SettingsModal({
             </p>
           </div>
 
-          {/* Backup & Restore Data */}
+          {/* Ekspor Laporan Excel & Backup Data */}
           <div className="space-y-2">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Cadangan Data (JSON)
+              Ekspor Laporan &amp; Cadangan Data
             </span>
 
-            {/* Tombol Backup */}
+            {/* Tombol Ekspor Excel Berwarna */}
+            {onExportExcel && (
+              <button
+                onClick={() => {
+                  onClose()
+                  onExportExcel()
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-bold flex items-center justify-between transition active:scale-95 border border-emerald-200"
+              >
+                <div className="flex items-center gap-2">
+                  <TableCellsIcon className="w-4 h-4 text-emerald-600" />
+                  <span>Ekspor Excel (.xls) Berwarna</span>
+                </div>
+                <span className="text-[9px] font-bold bg-emerald-200/80 text-emerald-800 px-2 py-0.5 rounded-md font-mono">
+                  EXCEL
+                </span>
+              </button>
+            )}
+
+            {/* Tombol Backup JSON */}
             <button
               onClick={handleExportJSON}
               className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-between transition active:scale-95 border border-slate-200"
             >
               <div className="flex items-center gap-2">
-                <ArrowDownTrayIcon className="w-4 h-4 text-emerald-600" />
+                <ArrowDownTrayIcon className="w-4 h-4 text-slate-600" />
                 <span>Unduh Cadangan (Backup JSON)</span>
               </div>
               <span className="text-[10px] text-slate-400 font-mono">.json</span>

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
   MicrophoneIcon,
-  SparklesIcon,
   CheckCircleIcon
 } from './Icons'
 
@@ -22,6 +21,8 @@ interface VoiceAITransactionModalProps {
   showToast: (msg: string) => void
 }
 
+const GEMINI_API_KEY = "AIzaSyBH8W_HnTW9Q18wQGym2fb0EQwiLwmr9x8"
+
 export default function VoiceAITransactionModal({
   isOpen,
   onClose,
@@ -30,10 +31,11 @@ export default function VoiceAITransactionModal({
   showToast
 }: VoiceAITransactionModalProps) {
   const [isListening, setIsListening] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [rawInput, setRawInput] = useState('')
   const [transcript, setTranscript] = useState('')
-  const [isSupported, setIsSupported] = useState(true)
 
-  // Hasil Ekstraksi AI
+  // Hasil Ekstraksi Voice
   const [detectedTitle, setDetectedTitle] = useState('')
   const [detectedAmount, setDetectedAmount] = useState<number | ''>('')
   const [detectedType, setDetectedType] = useState<'income' | 'expense'>('expense')
@@ -42,126 +44,151 @@ export default function VoiceAITransactionModal({
 
   const recognitionRef = useRef<any>(null)
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-      const hasAndroidVoice = typeof (window as any).AndroidVoice !== 'undefined'
-      if (!SpeechRecognition && !hasAndroidVoice) {
-        setIsSupported(false)
-      } else {
-        setIsSupported(true)
-      }
+  // Ekstraksi Pintar
+  const processVoiceText = async (text: string) => {
+    if (!text || !text.trim()) return
 
-      // Pasang global listener untuk event Android Native Voice
-      (window as any).onSpeechReady = () => {
-        setIsListening(true)
-        setTranscript('')
-        setHasParsed(false)
-      }
+    setIsProcessing(true)
+    setTranscript(text)
 
-      (window as any).onSpeechBegin = () => {
-        setIsListening(true)
-      }
+    // Fallback lokal instan
+    parseNaturalLanguageOffline(text)
 
-      (window as any).onSpeechPartial = (text: string) => {
-        if (text) {
-          setTranscript(text)
-          parseNaturalLanguage(text)
+    try {
+      const prompt = `Anda adalah asisten KasKu untuk pembukuan keuangan.
+Tugas Anda mengekstrak informasi transaksi dari kalimat bahasa Indonesia: "${text}".
+Daftar kategori yang tersedia: ${JSON.stringify(categories)}.
+
+Keluarkan HANYA format JSON murni tanpa markdown:
+{
+  "title": "judul ringkas transaksi (cth: Makan Siang)",
+  "amount": 25000,
+  "type": "expense" atau "income",
+  "category": "pilih kategori yang paling cocok dari daftar atau buat baru yang relevan"
+}`
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 6000)
+
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 300
+          }
+        }),
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+
+      if (res.ok) {
+        const json = await res.json()
+        const rawReply = json?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+        const cleanJsonStr = rawReply.replace(/```json/g, '').replace(/```/g, '').trim()
+        const parsed = JSON.parse(cleanJsonStr)
+
+        if (parsed && typeof parsed.amount === 'number' && parsed.amount > 0) {
+          setDetectedTitle(parsed.title || 'Transaksi KasKu')
+          setDetectedAmount(parsed.amount)
+          setDetectedType(parsed.type === 'income' ? 'income' : 'expense')
+          setDetectedCategory(parsed.category || categories[0] || 'Lain-lain')
+          setHasParsed(true)
         }
       }
-
-      (window as any).onSpeechResult = (text: string) => {
-        setIsListening(false)
-        if (text) {
-          setTranscript(text)
-          parseNaturalLanguage(text)
-        }
-      }
-
-      (window as any).onSpeechEnd = () => {
-        setIsListening(false)
-      }
-
-      (window as any).onSpeechError = (errMsg: string) => {
-        setIsListening(false)
-        if (errMsg) {
-          showToast(errMsg)
-        }
-      }
+    } catch (err) {
+      console.log('Fallback to local parser', err)
+    } finally {
+      setIsProcessing(false)
     }
-  }, [])
-
-  // Reset state form agar selalu bersih dari data lama
-  const resetForm = () => {
-    setTranscript('')
-    setDetectedTitle('')
-    setDetectedAmount('')
-    setDetectedType('expense')
-    setDetectedCategory(categories[0] || 'Lain-lain')
-    setHasParsed(false)
-    setIsListening(false)
   }
 
-  // Lock body scroll dan reset data setiap modal dibuka / ditutup
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-      resetForm()
-    } else {
-      document.body.style.overflow = 'unset'
-      resetForm()
-      if (typeof (window as any) !== 'undefined' && (window as any).AndroidVoice) {
-        try {
-          (window as any).AndroidVoice.stopListening()
-        } catch (e) {}
+  // Helper Konversi Kata Angka Bahasa Indonesia ke Angka Numerik
+  const parseIndonesianWordsToNumber = (str: string): number => {
+    const s = str.toLowerCase().replace(/rp\.?/g, ' ').replace(/rupiah/g, ' ').trim()
+    
+    // Check direct regex numbers first
+    const millionMatch = s.match(/(\d+[\.,]?\d*)\s*(?:juta|jt)/)
+    if (millionMatch) {
+      return Math.round(parseFloat(millionMatch[1].replace(',', '.')) * 1000000)
+    }
+    const thousandMatch = s.match(/(\d+[\.,]?\d*)\s*(?:ribu|rb|k)/)
+    if (thousandMatch) {
+      return Math.round(parseFloat(thousandMatch[1].replace(',', '.')) * 1000)
+    }
+    const plainNumberMatch = s.match(/(?:sebesar|sejumlah)?\s*(\d{1,3}(?:[.,]\d{3})+|\d+)/)
+    if (plainNumberMatch && parseInt(plainNumberMatch[1].replace(/[.,]/g, ''), 10) > 0) {
+      return parseInt(plainNumberMatch[1].replace(/[.,]/g, ''), 10)
+    }
+
+    // Mapping kata angka Indonesia
+    const wordMap: { [key: string]: number } = {
+      'nol': 0, 'kosong': 0, 'satu': 1, 'se': 1, 'dua': 2, 'tiga': 3, 'empat': 4,
+      'lima': 5, 'enam': 6, 'tujuh': 7, 'delapan': 8, 'sembilan': 9, 'sepuluh': 10,
+      'sebelas': 11, 'seratus': 100, 'seribu': 1000, 'sejuta': 1000000
+    }
+
+    // Normalisasi kata
+    const cleanWords = s
+      .replace(/\bsetengah\s+juta\b/g, '500000')
+      .replace(/\bsetengah\s+ribu\b/g, '500')
+      .replace(/\bsetengah\b/g, '0.5')
+      .replace(/\bsejuta\b/g, 'satu juta')
+      .replace(/\bseribu\b/g, 'satu ribu')
+      .replace(/\bseratus\b/g, 'satu ratus')
+      .replace(/\bsepuluh\b/g, 'satu puluh')
+      .replace(/\bsebelas\b/g, '11')
+
+    if (cleanWords.includes('500000')) return 500000
+
+    // Parse kata per kata
+    const tokens = cleanWords.split(/[\s-]+/)
+    let total = 0
+    let current = 0
+
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i]
+      if (wordMap[token] !== undefined) {
+        current += wordMap[token]
+      } else if (token === 'belas') {
+        current = (current === 0 ? 1 : current) + 10
+      } else if (token === 'puluh') {
+        current = (current === 0 ? 1 : current) * 10
+      } else if (token === 'ratus') {
+        current = (current === 0 ? 1 : current) * 100
+      } else if (token === 'ribu' || token === 'rb' || token === 'k') {
+        current = (current === 0 ? 1 : current) * 1000
+        total += current
+        current = 0
+      } else if (token === 'juta' || token === 'jt') {
+        current = (current === 0 ? 1 : current) * 1000000
+        total += current
+        current = 0
+      } else if (!isNaN(Number(token))) {
+        current += Number(token)
       }
     }
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen])
+    total += current
+    return total
+  }
 
-  if (!isOpen) return null
-
-  // Natural Language Parser
-  const parseNaturalLanguage = (text: string) => {
+  // Parser Offline Lokal
+  const parseNaturalLanguageOffline = (text: string) => {
     const lower = text.toLowerCase()
 
-    // 1. Deteksi Tipe (Masuk / Keluar)
     let txType: 'income' | 'expense' = 'expense'
-    const incomeKeywords = ['gaji', 'honor', 'dapat', 'terima', 'masuk', 'tf masuk', 'transfer masuk', 'jual', 'penjualan', 'untung', 'bonus', 'angpau', 'hadiah', 'kembalian', 'omset']
+    const incomeKeywords = ['gaji', 'honor', 'dapat', 'terima', 'masuk', 'tf masuk', 'transfer masuk', 'jual', 'penjualan', 'untung', 'bonus', 'angpau', 'hadiah', 'kembalian', 'omset', 'penghasilan']
     if (incomeKeywords.some(kw => lower.includes(kw))) {
       txType = 'income'
     }
 
-    // 2. Deteksi Nominal Uang
-    let amount = 0
-    const millionMatch = lower.match(/(\d+[\.,]?\d*)\s*(juta|jt)/)
-    const thousandMatch = lower.match(/(\d+[\.,]?\d*)\s*(ribu|rb|k)/)
-    const plainNumberMatch = lower.match(/(?:rp\.?|sebesar|sejumlah)?\s*(\d{1,3}(?:[.,]\d{3})+|\d+)/)
+    const amount = parseIndonesianWordsToNumber(lower)
 
-    if (millionMatch) {
-      amount = parseFloat(millionMatch[1].replace(',', '.')) * 1000000
-    } else if (thousandMatch) {
-      amount = parseFloat(thousandMatch[1].replace(',', '.')) * 1000
-    } else if (plainNumberMatch) {
-      amount = parseInt(plainNumberMatch[1].replace(/[.,]/g, ''), 10)
-    }
-
-    if (amount === 0) {
-      if (lower.includes('seratus ribu')) amount = 100000
-      else if (lower.includes('dua ratus ribu')) amount = 200000
-      else if (lower.includes('lima puluh ribu')) amount = 50000
-      else if (lower.includes('dua puluh ribu')) amount = 20000
-      else if (lower.includes('sepuluh ribu')) amount = 10000
-      else if (lower.includes('lima ribu')) amount = 5000
-      else if (lower.includes('sejuta') || lower.includes('satu juta')) amount = 1000000
-    }
-
-    // 3. Deteksi & Sesuaikan Kategori AI Secara Cerdas (Satukan & Cegah Dobel)
     let matchedCat = categories[0] || 'Lain-lain'
-
-    // Helper: cari kategori yang ada yang mengandung kata kunci
     const findExisting = (keywords: string[]) => {
       return categories.find(c => {
         const cLower = c.toLowerCase()
@@ -183,15 +210,8 @@ export default function VoiceAITransactionModal({
       matchedCat = findExisting(['hiburan', 'liburan']) || 'Hiburan'
     } else if (lower.includes('obat') || lower.includes('dokter') || lower.includes('klinik') || lower.includes('rumah sakit') || lower.includes('vitamin') || lower.includes('apotek') || lower.includes('sehat')) {
       matchedCat = findExisting(['kesehatan', 'obat', 'medis']) || 'Kesehatan'
-    } else {
-      // Jika user menyebutkan kata yang cocok dengan kategori yang sudah pernah dibuat
-      const exactOrPartial = categories.find(c => lower.includes(c.toLowerCase()) || c.toLowerCase().includes(lower))
-      if (exactOrPartial) {
-        matchedCat = exactOrPartial
-      }
     }
 
-    // 4. Keterangan Judul Singkat
     let cleaned = text
       .replace(/(catat|tolong catat|masukkan|tambahkan|pengeluaran|pemasukan|hari ini|tadi)/gi, '')
       .trim()
@@ -209,30 +229,101 @@ export default function VoiceAITransactionModal({
     setHasParsed(true)
   }
 
-  // Rekam Suara (Hybrid: Native Android & Web Speech Recognition)
-  const toggleListening = () => {
-    // 1. Cek apakah ada Android Native Bridge
-    if (typeof (window as any) !== 'undefined' && (window as any).AndroidVoice) {
-      if (isListening) {
+  // Listener untuk Native Android Voice Bridge (terpasang saat modal dibuka)
+  useEffect(() => {
+    if (!isOpen) return
+    if (typeof window !== 'undefined') {
+      (window as any).onSpeechReady = () => {
+        setIsListening(true)
+        setTranscript('')
+        setHasParsed(false)
+      }
+
+      (window as any).onSpeechBegin = () => {
+        setIsListening(true)
+      }
+
+      (window as any).onSpeechPartial = (text: string) => {
+        if (text) {
+          setRawInput(text)
+        }
+      }
+
+      (window as any).onSpeechResult = (text: string) => {
+        setIsListening(false)
+        if (text) {
+          setRawInput(text)
+          processVoiceText(text)
+        }
+      }
+
+      (window as any).onSpeechEnd = () => {
+        setIsListening(false)
+      }
+
+      (window as any).onSpeechError = (errMsg: string) => {
+        setIsListening(false)
+        if (errMsg) {
+          showToast(errMsg)
+        }
+      }
+    }
+  }, [isOpen, categories])
+
+  const resetForm = () => {
+    setRawInput('')
+    setTranscript('')
+    setDetectedTitle('')
+    setDetectedAmount('')
+    setDetectedType('expense')
+    setDetectedCategory(categories[0] || 'Lain-lain')
+    setHasParsed(false)
+    setIsListening(false)
+    setIsProcessing(false)
+  }
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+      setRawInput('')
+      setTranscript('')
+      setDetectedTitle('')
+      setDetectedAmount('')
+      setDetectedType('expense')
+      setDetectedCategory(categories[0] || 'Lain-lain')
+      setHasParsed(false)
+      setIsListening(false)
+      setIsProcessing(false)
+    } else {
+      document.body.style.overflow = 'unset'
+      if (typeof (window as any) !== 'undefined' && (window as any).AndroidVoice) {
         try {
           (window as any).AndroidVoice.stopListening()
         } catch (e) {}
+      }
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
+
+  if (!isOpen) return null
+
+  // Trigger Rekam Suara
+  const toggleListening = () => {
+    if (typeof (window as any) !== 'undefined' && (window as any).AndroidVoice) {
+      try {
+        setIsListening(true)
+        setRawInput('')
+        setHasParsed(false)
+        ;(window as any).AndroidVoice.startListening()
+      } catch (e) {
         setIsListening(false)
-      } else {
-        try {
-          setIsListening(true)
-          setTranscript('')
-          setHasParsed(false)
-          (window as any).AndroidVoice.startListening()
-        } catch (e) {
-          setIsListening(false)
-          showToast('Gagal memulai suara native')
-        }
+        showToast('Ketik kalimat transaksi di bawah')
       }
       return
     }
 
-    // 2. Fallback Web Speech API standar
     if (isListening) {
       recognitionRef.current?.stop()
       setIsListening(false)
@@ -241,7 +332,7 @@ export default function VoiceAITransactionModal({
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SpeechRecognition) {
-      showToast('Perangkat belum mendukung input suara')
+      showToast('Ketik kalimat transaksi di kotak teks')
       return
     }
 
@@ -253,7 +344,7 @@ export default function VoiceAITransactionModal({
 
       recognition.onstart = () => {
         setIsListening(true)
-        setTranscript('')
+        setRawInput('')
         setHasParsed(false)
       }
 
@@ -261,8 +352,8 @@ export default function VoiceAITransactionModal({
         const currentText = Array.from(event.results)
           .map((r: any) => r[0].transcript)
           .join(' ')
-        setTranscript(currentText)
-        parseNaturalLanguage(currentText)
+        setRawInput(currentText)
+        processVoiceText(currentText)
       }
 
       recognition.onerror = () => {
@@ -277,169 +368,255 @@ export default function VoiceAITransactionModal({
       recognition.start()
     } catch {
       setIsListening(false)
-      showToast('Gagal mengaktifkan mikrofon')
+      showToast('Ketik kalimat transaksi di kotak teks')
     }
   }
 
-  // Simpan Transaksi
+  // Handle Submit Form
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!detectedTitle.trim() || !detectedAmount || Number(detectedAmount) <= 0) {
-      showToast('Lengkapi nominal transaksi')
+    if (e && e.preventDefault) e.preventDefault()
+    
+    // Matikan rekaman suara jika masih aktif
+    if (typeof (window as any) !== 'undefined' && (window as any).AndroidVoice) {
+      try {
+        (window as any).AndroidVoice.stopListening()
+      } catch (err) {}
+    }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+      } catch (err) {}
+    }
+
+    const cleanTitle = (detectedTitle || '').trim()
+    const cleanAmount = Number(detectedAmount)
+
+    if (!cleanTitle || isNaN(cleanAmount) || cleanAmount <= 0) {
+      showToast('Lengkapi keterangan dan nominal transaksi')
       return
     }
 
-    onSaveTransaction({
-      title: detectedTitle.trim(),
-      amount: Number(detectedAmount),
-      type: detectedType,
-      category: detectedCategory,
-      date: new Date().toISOString().slice(0, 10),
-      note: transcript ? `Suara: "${transcript}"` : undefined
-    })
+    try {
+      onSaveTransaction({
+        title: cleanTitle,
+        amount: cleanAmount,
+        type: detectedType,
+        category: (detectedCategory || categories[0] || 'Lain-lain').trim(),
+        date: new Date().toISOString().slice(0, 10),
+        note: transcript ? `Voice: "${transcript}"` : undefined
+      })
+    } catch (saveErr) {
+      console.error('Save voice transaction error:', saveErr)
+    }
 
     resetForm()
     onClose()
   }
 
+  const handleManualTextSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (rawInput.trim()) {
+      processVoiceText(rawInput.trim())
+    }
+  }
+
+  // Formatter Rupiah Cantik
+  const formatRupiah = (val: number | '') => {
+    if (typeof val !== 'number' || isNaN(val) || val <= 0) return ''
+    return new Intl.NumberFormat('id-ID').format(val)
+  }
+
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in touch-none select-none"
+      className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xl animate-slide-up"
+        className="w-full max-w-sm bg-white rounded-3xl p-6 space-y-5 shadow-2xl border border-slate-100 max-h-[92vh] overflow-y-auto overscroll-contain"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Bersih */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <SparklesIcon className="w-4 h-4" />
+        {/* Header Bersih & Formal */}
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+              <MicrophoneIcon className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Suara AI</h3>
-              <p className="text-[11px] text-slate-400">Ucapkan transaksi Anda</p>
+              <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">Voice Input</h3>
+              <p className="text-[11px] text-slate-400 font-medium">Bicara atau ketik data kas</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center font-bold text-xs transition"
+            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center font-bold text-xs transition active:scale-95"
           >
             ✕
           </button>
         </div>
 
-        {/* Tombol Mikrofon Minimalis */}
-        <div className="text-center py-2 space-y-2">
+        {/* Desain Mikrofon Hijau Bersih & Formal */}
+        <div className="py-2 text-center space-y-3">
           <button
             type="button"
             onClick={toggleListening}
-            className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center transition-all ${
+            className={`w-16 h-16 rounded-2xl mx-auto flex items-center justify-center transition-all duration-200 active:scale-95 ${
               isListening
-                ? 'bg-rose-600 text-white ring-4 ring-rose-200 animate-pulse scale-105'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm active:scale-95'
+                ? 'bg-rose-600 text-white ring-4 ring-rose-100 shadow-lg shadow-rose-600/20 animate-pulse'
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20'
             }`}
           >
             <MicrophoneIcon className="w-7 h-7" />
           </button>
 
-          <div>
-            <span className={`text-xs font-bold block ${isListening ? 'text-rose-600' : 'text-slate-700'}`}>
+          <div className="space-y-0.5">
+            <span className={`text-xs font-bold block ${isListening ? 'text-rose-600' : 'text-slate-800'}`}>
               {isListening ? 'Mendengarkan...' : 'Ketuk untuk Bicara'}
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">
-              Cth: "Makan siang 25 ribu" atau "Gaji 2 juta"
-            </span>
+            <p className="text-[11px] text-slate-400">
+              Contoh: "Makan siang 25 ribu" atau "Gaji 2 juta"
+            </p>
           </div>
         </div>
 
-        {/* Bubble Suara */}
-        {transcript && (
-          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-            <p className="italic text-slate-700 font-medium text-center">"{transcript}"</p>
+        {/* Input Teks Bersih */}
+        <div className="space-y-1">
+          <form onSubmit={handleManualTextSubmit}>
+            <input
+              type="text"
+              placeholder="Atau ketik di sini lalu tekan Enter..."
+              value={rawInput}
+              onChange={(e) => setRawInput(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition"
+            />
+          </form>
+        </div>
+
+        {/* Status Loading */}
+        {isProcessing && (
+          <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center gap-2 text-xs text-slate-700 font-semibold animate-pulse">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-600 animate-ping"></span>
+            <span>Memproses transaksi...</span>
+          </div>
+        )}
+
+        {/* Bubble Hasil Deteksi Teks */}
+        {transcript && !isProcessing && (
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-0.5">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+              Teks Terdeteksi:
+            </span>
+            <p className="italic text-slate-800 font-medium leading-relaxed">
+              "{transcript}"
+            </p>
           </div>
         )}
 
         {/* Form Ringkas Hasil Ekstraksi */}
         {hasParsed && (
-          <form onSubmit={handleSubmit} className="space-y-3 pt-2 border-t border-slate-100 text-xs animate-fade-in">
+          <form onSubmit={handleSubmit} className="space-y-3 pt-3 border-t border-slate-100 text-xs animate-fade-in">
+            {/* Header Form & Tab Tipe */}
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Hasil AI
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <CheckCircleIcon className="w-3.5 h-3.5 text-slate-700" />
+                <span>Hasil Ekstraksi</span>
               </span>
-              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-100">
+
+              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-100 border border-slate-200">
                 <button
                   type="button"
                   onClick={() => setDetectedType('expense')}
-                  className={`px-2 py-0.5 rounded-md font-bold text-[10px] transition ${
-                    detectedType === 'expense' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500'
+                  className={`px-2.5 py-1 rounded-md font-bold text-[10px] transition-all ${
+                    detectedType === 'expense'
+                      ? 'bg-white text-rose-600 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  Keluar
+                  Pengeluaran
                 </button>
                 <button
                   type="button"
                   onClick={() => setDetectedType('income')}
-                  className={`px-2 py-0.5 rounded-md font-bold text-[10px] transition ${
-                    detectedType === 'income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'
+                  className={`px-2.5 py-1 rounded-md font-bold text-[10px] transition-all ${
+                    detectedType === 'income'
+                      ? 'bg-white text-emerald-600 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  Masuk
+                  Pemasukan
                 </button>
               </div>
             </div>
 
+            {/* Input Keterangan / Judul */}
             <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-0.5 block">
+                Keterangan
+              </label>
               <input
                 type="text"
                 required
                 placeholder="Keterangan transaksi"
                 value={detectedTitle}
                 onChange={(e) => setDetectedTitle(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl kas-input text-xs"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400"
               />
             </div>
 
+            {/* Grid Nominal & Kategori */}
             <div className="grid grid-cols-2 gap-2">
-              <input
-                type="number"
-                min="1"
-                required
-                placeholder="Nominal (Rp)"
-                value={detectedAmount}
-                onChange={(e) => setDetectedAmount(e.target.value ? Number(e.target.value) : '')}
-                className="w-full px-3 py-2 rounded-xl kas-input text-xs font-mono font-bold"
-              />
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-0.5 block">
+                  Nominal (Rp)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  placeholder="0"
+                  value={detectedAmount}
+                  onChange={(e) => setDetectedAmount(e.target.value ? Number(e.target.value) : '')}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400"
+                />
+              </div>
 
-              <select
-                value={detectedCategory}
-                onChange={(e) => setDetectedCategory(e.target.value)}
-                className="w-full px-2.5 py-2 rounded-xl kas-input text-xs"
-              >
-                {!categories.includes(detectedCategory) && (
-                  <option value={detectedCategory}>✨ {detectedCategory} (Otomatis)</option>
-                )}
-                {categories.map((c, i) => (
-                  <option key={i} value={c}>{c}</option>
-                ))}
-              </select>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-0.5 block">
+                  Kategori
+                </label>
+                <select
+                  value={detectedCategory}
+                  onChange={(e) => setDetectedCategory(e.target.value)}
+                  className="w-full px-2.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400"
+                >
+                  {!categories.includes(detectedCategory) && (
+                    <option value={detectedCategory}>{detectedCategory}</option>
+                  )}
+                  {categories.map((c, i) => (
+                    <option key={i} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
+            {/* Preview Nominal Format Rupiah */}
+            {detectedAmount && Number(detectedAmount) > 0 && (
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+                <span className="text-[10px] font-medium text-slate-500">Total:</span>
+                <span className={`font-mono font-extrabold text-xs ${detectedType === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {detectedType === 'income' ? '+ ' : '- '}Rp {formatRupiah(detectedAmount)}
+                </span>
+              </div>
+            )}
+
+            {/* Tombol Simpan */}
             <button
               type="submit"
-              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition active:scale-95 flex items-center justify-center gap-1 mt-1"
+              className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold text-xs shadow-md shadow-slate-900/15 transition flex items-center justify-center gap-1.5 mt-1"
             >
-              <CheckCircleIcon className="w-3.5 h-3.5" />
-              <span>Simpan Kas</span>
+              <CheckCircleIcon className="w-4 h-4" />
+              <span>Simpan Transaksi</span>
             </button>
           </form>
-        )}
-
-        {!isSupported && (
-          <p className="text-[10px] text-amber-700 text-center bg-amber-50 p-2 rounded-lg border border-amber-200">
-            Gunakan Chrome / Browser HP dengan izin mikrofon.
-          </p>
         )}
 
       </div>

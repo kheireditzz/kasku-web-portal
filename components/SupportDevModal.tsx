@@ -15,25 +15,43 @@ export function ChatBubbleLeftRightIcon({ className = "w-5 h-5" }: { className?:
 interface SupportDevModalProps {
   isOpen: boolean
   onClose: () => void
+  autoCloseSeconds?: number
 }
 
-export default function SupportDevModal({ isOpen, onClose }: SupportDevModalProps) {
+export default function SupportDevModal({ isOpen, onClose, autoCloseSeconds = 3 }: SupportDevModalProps) {
+  const [timeLeft, setTimeLeft] = React.useState(autoCloseSeconds)
+
   useEffect(() => {
     if (isOpen) {
-      const originalBodyOverflow = document.body.style.overflow
-      const originalHtmlOverflow = document.documentElement.style.overflow
-      
+      setTimeLeft(autoCloseSeconds)
       document.body.style.overflow = 'hidden'
-      document.documentElement.style.overflow = 'hidden'
-      document.body.style.touchAction = 'none'
+
+      let timer: any = null
+      let interval: any = null
+
+      if (autoCloseSeconds > 0) {
+        interval = setInterval(() => {
+          setTimeLeft(prev => {
+            if (prev <= 1) {
+              clearInterval(interval)
+              return 0
+            }
+            return prev - 1
+          })
+        }, 1000)
+
+        timer = setTimeout(() => {
+          onClose()
+        }, autoCloseSeconds * 1000)
+      }
 
       return () => {
-        document.body.style.overflow = originalBodyOverflow || 'unset'
-        document.documentElement.style.overflow = originalHtmlOverflow || 'unset'
-        document.body.style.touchAction = 'auto'
+        if (timer) clearTimeout(timer)
+        if (interval) clearInterval(interval)
+        document.body.style.overflow = 'unset'
       }
     }
-  }, [isOpen])
+  }, [isOpen, autoCloseSeconds])
 
   if (!isOpen) return null
 
@@ -127,9 +145,12 @@ export default function SupportDevModal({ isOpen, onClose }: SupportDevModalProp
         {/* Tombol Tutup */}
         <button
           onClick={onClose}
-          className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition active:scale-95"
+          className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition active:scale-95 flex items-center justify-center gap-1.5"
         >
-          Tutup
+          <span>Tutup</span>
+          {autoCloseSeconds > 0 && timeLeft > 0 && (
+            <span className="text-[11px] text-slate-400 font-mono">({timeLeft}s)</span>
+          )}
         </button>
 
       </div>

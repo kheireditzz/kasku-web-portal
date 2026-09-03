@@ -10,7 +10,72 @@ KEYSTORE="$PROJECT_DIR/kasku_android.keystore"
 KEYSTORE_PASS="kasku123"
 KEY_ALIAS="kasku"
 
-echo "=== [1/6] Meng-bundle React Component dengan esbuild ==="
+echo "=== [0/6] Auto-Increment Version Checker ==="
+# Baca versionCode lama dari AndroidManifest.xml
+CURRENT_CODE=$(grep -o 'android:versionCode="[0-9]*"' "$BUILD_DIR/AndroidManifest.xml" | grep -o '[0-9]*' || echo "104")
+NEXT_CODE=$((CURRENT_CODE + 1))
+
+# Baca versionName lama dari AndroidManifest.xml
+CURRENT_NAME=$(grep -o 'android:versionName="[^"]*"' "$BUILD_DIR/AndroidManifest.xml" | cut -d'"' -f2 || echo "1.1.4")
+
+# Hitung patch version berikutnya (contoh: 1.1.4 -> 1.1.5)
+NEXT_NAME=$(python3 -c "
+v = '$CURRENT_NAME'.split('.')
+if len(v) == 3 and v[2].isdigit():
+    v[2] = str(int(v[2]) + 1)
+    print('.'.join(v))
+else:
+    print('$CURRENT_NAME')
+")
+
+echo "🚀 Meningkatkan Versi: v$CURRENT_NAME (Code: $CURRENT_CODE) ➔ v$NEXT_NAME (Code: $NEXT_CODE)"
+
+# 1. Update AndroidManifest.xml
+sed -i "s/android:versionCode=\"[0-9]*\"/android:versionCode=\"$NEXT_CODE\"/g" "$BUILD_DIR/AndroidManifest.xml"
+sed -i "s/android:versionName=\"[^\"]*\"/android:versionName=\"$NEXT_NAME\"/g" "$BUILD_DIR/AndroidManifest.xml"
+
+# 2. Update konstanta APP_CURRENT_VERSION di page.tsx
+sed -i "s/const APP_CURRENT_VERSION = '[^']*'/const APP_CURRENT_VERSION = '$NEXT_NAME'/g" "$PROJECT_DIR/app/app/page.tsx"
+
+# 3. Update public/version.json
+python3 -c "
+import json, os
+
+path = '$PROJECT_DIR/public/version.json'
+if os.path.exists(path):
+    with open(path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    data['latestVersion'] = '$NEXT_NAME'
+    data['minRequiredVersion'] = '$NEXT_NAME'
+    
+    # Tambah rilis baru di paling atas
+    new_release = {
+        'version': '$NEXT_NAME',
+        'releaseDate': '$(date +%Y-%m-%d)',
+        'fileSize': '372 KB',
+        'downloadUrl': '/apk/KasKu.apk',
+        'isLatest': True,
+        'minAndroid': 'Android 7.0 (Nougat)+',
+        'highlights': [
+            'Pembaruan otomatis build KasKu v$NEXT_NAME',
+            'Peningkatan kestabilan AI Voice & UI',
+            'Optimasi performa & penyimpanan kas'
+        ]
+    }
+    for r in data.get('releases', []):
+        r['isLatest'] = False
+    data['releases'] = [new_release] + data.get('releases', [])
+    
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2)
+"
+
+echo "=== [1/6] Meng-bundle React Component dengan esbuild & Tailwind CSS ==="
+node /data/data/com.termux/files/home/Nilaidbam/node_modules/tailwindcss/lib/cli.js \
+  -i "$PROJECT_DIR/app/globals.css" \
+  -o "$BUILD_DIR/assets/styles.css" \
+  --minify || true
+
 node /data/data/com.termux/files/home/Nilaidbam/node_modules/esbuild/bin/esbuild \
   "$PROJECT_DIR/entry.tsx" \
   --bundle \
@@ -33,8 +98,8 @@ aapt2 link "$BUILD_DIR/build/resources.zip" \
   --manifest "$BUILD_DIR/AndroidManifest.xml" \
   --min-sdk-version 24 \
   --target-sdk-version 34 \
-  --version-code 102 \
-  --version-name "1.1.2" \
+  --version-code "$NEXT_CODE" \
+  --version-name "$NEXT_NAME" \
   --java "$BUILD_DIR/build/gen" \
   -o "$BUILD_DIR/build/kasku_unaligned.apk" \
   --auto-add-overlay
@@ -82,7 +147,7 @@ cp "$BUILD_DIR/build/KasKu.apk" /storage/emulated/0/Download/KasKu.apk 2>/dev/nu
 cp "$BUILD_DIR/build/KasKu.apk" /data/data/com.termux/files/home/storage/downloads/KasKu.apk 2>/dev/null || true
 
 echo "=========================================================="
-echo "🎉 Build APK KasKu Sukses!"
+echo "🎉 Build APK KasKu Sukses! (Versi Baru: v$NEXT_NAME | Code: $NEXT_CODE)"
 echo "Lokasi APK: $PROJECT_DIR/KasKu.apk"
 echo "Download HP: /sdcard/Download/KasKu.apk"
 echo "Ukuran: $(du -h "$BUILD_DIR/build/KasKu.apk" | cut -f1)"

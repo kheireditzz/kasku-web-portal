@@ -50,7 +50,7 @@ export default function BottomNav({
           </button>
 
           {/* Center Spacer for Floating Button */}
-          <div className="w-12"></div>
+          <div className="w-14"></div>
 
           {/* Tab 3: Grafik Analisis */}
           <button
@@ -84,14 +84,14 @@ export default function BottomNav({
 
         </div>
 
-        {/* Floating Center Action Button - Clean Emerald */}
-        <div className="absolute left-1/2 -top-5 -translate-x-1/2 flex items-center justify-center">
+        {/* Floating Center Plus Button */}
+        <div className="absolute left-1/2 -top-7 -translate-x-1/2">
           <button
             onClick={onOpenAddModal}
-            className="w-13 h-13 p-3.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-md active:scale-90 transition-transform"
+            className="w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg flex items-center justify-center active:scale-90 transition-transform"
             title="Catat Transaksi Kas"
           >
-            <PlusIcon className="w-6 h-6" />
+            <PlusIcon className="w-7 h-7" />
           </button>
         </div>
 

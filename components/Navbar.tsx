@@ -122,15 +122,15 @@ export default function Navbar({
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
-          {/* Tombol Catat Suara AI */}
+          {/* Tombol Catat Suara */}
           {onOpenVoiceModal && (
             <button
               onClick={onOpenVoiceModal}
-              title="Catat Kas Lewat Suara AI"
+              title="Catat Kas Lewat Voice"
               className="w-9 h-9 sm:w-auto sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-xs"
             >
               <MicrophoneIcon className="w-4 h-4 text-emerald-600" />
-              <span className="hidden sm:inline">Suara AI</span>
+              <span className="hidden sm:inline">Voice</span>
             </button>
           )}
 
