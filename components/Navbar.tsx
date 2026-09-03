@@ -145,18 +145,12 @@ export default function Navbar({
           {transactionCount > 0 && (
             <button
               onClick={onExport}
-              title="Download Laporan CSV"
-              className="hidden lg:flex px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold items-center gap-1 transition active:scale-95 shadow-xs"
+              title="Download CSV"
+              className="hidden lg:flex w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 items-center justify-center transition active:scale-95 shadow-xs"
             >
-              <ArrowDownTrayIcon className="w-4 h-4 text-emerald-600" />
-              <span>CSV</span>
+              <ArrowDownTrayIcon className="w-5 h-5 text-emerald-600" />
             </button>
           )}
-
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[10px] font-mono text-emerald-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            <span className="font-medium">Offline HP</span>
-          </div>
         </div>
 
       </div>
