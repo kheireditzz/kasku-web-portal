@@ -1,16 +1,29 @@
 {
-  "latestVersion": "1.1.29",
-  "minRequiredVersion": "1.1.29",
+  "latestVersion": "1.1.30",
+  "minRequiredVersion": "1.1.30",
   "forceUpdate": true,
   "releaseNotes": "Pembaruan Akbar KasKu v2.0.0: Desain baru, Voice AI generasi mutakhir, dan sinkronisasi awan.",
   "updateUrl": "https://kasku.kheireditz.my.id/download",
   "releases": [
     {
-      "version": "1.1.29",
+      "version": "1.1.30",
       "releaseDate": "2026-09-03",
       "fileSize": "372 KB",
       "downloadUrl": "/apk/KasKu.apk",
       "isLatest": true,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan otomatis build KasKu v1.1.30",
+        "Peningkatan kestabilan AI Voice & UI",
+        "Optimasi performa & penyimpanan kas"
+      ]
+    },
+    {
+      "version": "1.1.29",
+      "releaseDate": "2026-09-03",
+      "fileSize": "372 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": false,
       "minAndroid": "Android 7.0 (Nougat)+",
       "highlights": [
         "Pembaruan otomatis build KasKu v1.1.29",
