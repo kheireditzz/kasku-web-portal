@@ -46,7 +46,7 @@ const DEFAULT_CATEGORIES = [
 ]
 
 // Versi aplikasi yang terinstall saat ini
-const APP_CURRENT_VERSION = '1.0.0'
+const APP_CURRENT_VERSION = '1.1.2'
 
 export default function KaskuApp() {
   const [activeTab, setActiveTab] = useState<'overview' | 'savings' | 'analytics' | 'categories'>('overview')
@@ -135,29 +135,49 @@ export default function KaskuApp() {
       setIsLoaded(true)
     }
 
-    // Cek Pembaruan Aplikasi secara otomatis (OTA Update Checker)
+    // Cek Pembaruan Aplikasi secara otomatis (OTA Update Checker & Strict Force Update)
     const checkAppUpdate = async () => {
-      try {
-        const res = await fetch(`/version.json?t=${Date.now()}`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data && data.latestVersion) {
-            const isOutdated = data.latestVersion !== APP_CURRENT_VERSION && (data.forceUpdate || data.minRequiredVersion > APP_CURRENT_VERSION)
-            if (isOutdated) {
-              setUpdateInfo({
-                isOutdated: true,
-                currentVersion: APP_CURRENT_VERSION,
-                latestVersion: data.latestVersion,
-                forceUpdate: true,
-                releaseNotes: data.releaseNotes || 'Pembaruan sistem penting tersedia.',
-                updateUrl: data.updateUrl || window.location.href
-              })
+      const endpoints = [
+        'https://kasku.kheireditz.my.id/api/version',
+        'https://kasku.kheireditz.my.id/version.json',
+        `/api/version?t=${Date.now()}`,
+        `/version.json?t=${Date.now()}`
+      ]
+
+      for (const endpoint of endpoints) {
+        try {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 4000)
+          const res = await fetch(`${endpoint}${endpoint.includes('?') ? '&' : '?'}t=${Date.now()}`, {
+            signal: controller.signal
+          })
+          clearTimeout(timeoutId)
+
+          if (res.ok) {
+            const data = await res.json()
+            if (data && data.latestVersion) {
+              const isOutdated = data.latestVersion !== APP_CURRENT_VERSION
+              if (isOutdated) {
+                let targetUrl = data.updateUrl || 'https://kasku.kheireditz.my.id/download'
+                if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+                  targetUrl = `https://kasku.kheireditz.my.id${targetUrl.startsWith('/') ? '' : '/'}${targetUrl}`
+                }
+
+                setUpdateInfo({
+                  isOutdated: true,
+                  currentVersion: APP_CURRENT_VERSION,
+                  latestVersion: data.latestVersion,
+                  forceUpdate: true,
+                  releaseNotes: data.releaseNotes || 'Pembaruan sistem terbaru wajib diunduh untuk melanjutkan penggunaan KasKu.',
+                  updateUrl: targetUrl
+                })
+                break // Update info ditemukan, hentikan loop
+              }
             }
           }
+        } catch (err) {
+          // Lanjut ke endpoint berikutnya
         }
-      } catch (err) {
-        // Mode offline tidak memblokir aplikasi
-        console.log('Update check offline or skipped')
       }
     }
 

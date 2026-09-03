@@ -212,3 +212,49 @@ export function HeartIcon({ className = "w-5 h-5" }: { className?: string }) {
     </svg>
   )
 }
+
+export function KasKuBrandLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 500 500" fill="currentColor">
+      {/* Kartu di belakang dompet */}
+      <path
+        d="M 152 150 L 320 86 C 330 82 342 88 346 98 L 354 120 L 152 150 Z"
+        fill="currentColor"
+        opacity="0.85"
+      />
+      {/* Strip kartu */}
+      <path
+        d="M 160 148 L 340 92"
+        stroke="white"
+        strokeWidth="10"
+        strokeLinecap="round"
+      />
+      {/* Dompet Utama */}
+      <rect
+        x="105"
+        y="135"
+        width="290"
+        height="220"
+        rx="28"
+        fill="currentColor"
+      />
+      {/* Gesper / Flap Dompet */}
+      <rect
+        x="290"
+        y="215"
+        width="115"
+        height="60"
+        rx="30"
+        fill="white"
+      />
+      {/* Kancing Gesper */}
+      <circle
+        cx="325"
+        cy="245"
+        r="11"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
+

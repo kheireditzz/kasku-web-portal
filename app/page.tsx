@@ -17,8 +17,10 @@ import {
   ChartPieIcon,
   TagIcon,
   MicrophoneIcon,
-  HeartIcon
+  HeartIcon,
+  KasKuBrandLogo
 } from '@/components/Icons'
+import { APP_LOGO_BASE64 } from '@/components/appLogoBase64'
 import SupportDevModal from '@/components/SupportDevModal'
 
 interface ReleaseItem {
@@ -94,8 +96,12 @@ export default function KaskuLandingDownloadPage() {
           
           {/* Clean Brand Logo */}
           <div className="flex items-center gap-2.5 select-none">
-            <div className="w-8 h-8 rounded-xl overflow-hidden shadow-xs border border-slate-200/60 flex items-center justify-center">
-              <img src="/app-logo.jpg" alt="KasKu Logo" className="w-full h-full object-cover" />
+            <div className="w-8 h-8 rounded-xl overflow-hidden shadow-xs bg-emerald-600 text-white flex items-center justify-center">
+              <img
+                src={APP_LOGO_BASE64}
+                alt="KasKu Logo"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-lg tracking-tight text-slate-900">

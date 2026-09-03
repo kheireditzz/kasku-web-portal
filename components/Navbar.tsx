@@ -9,8 +9,11 @@ import {
   ArrowDownTrayIcon,
   PlusIcon,
   Cog6ToothIcon,
-  MicrophoneIcon
+  MicrophoneIcon,
+  KasKuBrandLogo
 } from './Icons'
+
+import { APP_LOGO_BASE64 } from './appLogoBase64'
 
 export default function Navbar({
   activeTab,
@@ -31,6 +34,8 @@ export default function Navbar({
   transactionCount: number
   savingsCount?: number
 }) {
+  const [imgError, setImgError] = React.useState(false)
+
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
@@ -40,12 +45,19 @@ export default function Navbar({
           className="flex items-center gap-2.5 cursor-pointer select-none"
           onClick={() => setActiveTab('overview')}
         >
-          <div className="w-9 h-9 rounded-xl overflow-hidden shadow-xs flex items-center justify-center transition-transform active:scale-95">
-            <img 
-              src="/app-logo.jpg" 
-              alt="KasKu Logo" 
-              className="w-full h-full object-cover"
-            />
+          <div className="w-9 h-9 rounded-xl overflow-hidden shadow-xs flex items-center justify-center transition-transform active:scale-95 bg-emerald-600 text-white">
+            {!imgError && APP_LOGO_BASE64 ? (
+              <img
+                src={APP_LOGO_BASE64}
+                alt="KasKu Logo"
+                className="w-full h-full object-cover"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <div className="p-1.5 w-full h-full flex items-center justify-center">
+                <KasKuBrandLogo className="w-full h-full" />
+              </div>
+            )}
           </div>
           <span className="font-extrabold text-lg tracking-tight text-emerald-600">
             KasKu

@@ -1,22 +1,23 @@
 {
-  "latestVersion": "1.1.0",
-  "minRequiredVersion": "1.0.0",
-  "forceUpdate": false,
-  "releaseNotes": "Fitur baru: AI Voice Input lebih akurat, sinkronisasi tabungan impian, portal web download APK, serta optimasi performa dan perbaikan bug kecil.",
-  "updateUrl": "/download",
+  "latestVersion": "1.1.2",
+  "minRequiredVersion": "1.1.2",
+  "forceUpdate": true,
+  "releaseNotes": "Fitur baru: AI Voice Input Native dengan Google Speech Recognition, perbaikan update otomatis, dan kestabilan performa.",
+  "updateUrl": "https://kasku.kheireditz.my.id/download",
   "releases": [
     {
-      "version": "1.1.0",
+      "version": "1.1.2",
       "releaseDate": "2026-09-03",
-      "fileSize": "14.8 MB",
-      "downloadUrl": "/apk/kasku-v1.1.0.apk",
+      "fileSize": "368 KB",
+      "downloadUrl": "/apk/KasKu.apk",
       "isLatest": true,
       "minAndroid": "Android 7.0 (Nougat)+",
       "highlights": [
-        "Koneksi sinkronisasi langsung dengan Web KasKu",
-        "Penambahan asisten suara cerdas (Voice AI Transaction)",
+        "Fitur AI Voice Input Native dengan Google Speech Recognition",
+        "Sistem Strict Force Update & auto-redirect ke web portal",
+        "Pencatatan kas otomatis dari suara harian (Instan & Akurat)",
         "Fitur Multi-Tabungan Impian dan progress bar interaktif",
-        "Peningkatan kecepatan loading dan animasi ultra-smooth"
+        "Peningkatan kecepatan loading dan ukuran file super ringan (~368 KB)"
       ]
     },
     {

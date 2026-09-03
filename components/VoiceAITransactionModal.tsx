@@ -45,8 +45,48 @@ export default function VoiceAITransactionModal({
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-      if (!SpeechRecognition) {
+      const hasAndroidVoice = typeof (window as any).AndroidVoice !== 'undefined'
+      if (!SpeechRecognition && !hasAndroidVoice) {
         setIsSupported(false)
+      } else {
+        setIsSupported(true)
+      }
+
+      // Pasang global listener untuk event Android Native Voice
+      (window as any).onSpeechReady = () => {
+        setIsListening(true)
+        setTranscript('')
+        setHasParsed(false)
+      }
+
+      (window as any).onSpeechBegin = () => {
+        setIsListening(true)
+      }
+
+      (window as any).onSpeechPartial = (text: string) => {
+        if (text) {
+          setTranscript(text)
+          parseNaturalLanguage(text)
+        }
+      }
+
+      (window as any).onSpeechResult = (text: string) => {
+        setIsListening(false)
+        if (text) {
+          setTranscript(text)
+          parseNaturalLanguage(text)
+        }
+      }
+
+      (window as any).onSpeechEnd = () => {
+        setIsListening(false)
+      }
+
+      (window as any).onSpeechError = (errMsg: string) => {
+        setIsListening(false)
+        if (errMsg) {
+          showToast(errMsg)
+        }
       }
     }
   }, [])
@@ -70,6 +110,11 @@ export default function VoiceAITransactionModal({
     } else {
       document.body.style.overflow = 'unset'
       resetForm()
+      if (typeof (window as any) !== 'undefined' && (window as any).AndroidVoice) {
+        try {
+          (window as any).AndroidVoice.stopListening()
+        } catch (e) {}
+      }
     }
     return () => {
       document.body.style.overflow = 'unset'
@@ -164,8 +209,30 @@ export default function VoiceAITransactionModal({
     setHasParsed(true)
   }
 
-  // Rekam Suara
+  // Rekam Suara (Hybrid: Native Android & Web Speech Recognition)
   const toggleListening = () => {
+    // 1. Cek apakah ada Android Native Bridge
+    if (typeof (window as any) !== 'undefined' && (window as any).AndroidVoice) {
+      if (isListening) {
+        try {
+          (window as any).AndroidVoice.stopListening()
+        } catch (e) {}
+        setIsListening(false)
+      } else {
+        try {
+          setIsListening(true)
+          setTranscript('')
+          setHasParsed(false)
+          (window as any).AndroidVoice.startListening()
+        } catch (e) {
+          setIsListening(false)
+          showToast('Gagal memulai suara native')
+        }
+      }
+      return
+    }
+
+    // 2. Fallback Web Speech API standar
     if (isListening) {
       recognitionRef.current?.stop()
       setIsListening(false)
@@ -174,7 +241,7 @@ export default function VoiceAITransactionModal({
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SpeechRecognition) {
-      showToast('Browser belum mendukung suara')
+      showToast('Perangkat belum mendukung input suara')
       return
     }
 
