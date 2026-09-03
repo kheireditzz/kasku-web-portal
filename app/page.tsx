@@ -109,10 +109,7 @@ export default function KaskuLandingDownloadPage() {
 
           {/* Clean Nav Actions */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-[11px] font-medium hidden sm:inline">Server Sync Aktif</span>
-            </div>
+            
 
             <button
               onClick={() => setShowSupportModal(true)}
@@ -129,8 +126,7 @@ export default function KaskuLandingDownloadPage() {
                 download
                 className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition"
               >
-                <ArrowDownTrayIcon className="w-3.5 h-3.5" />
-                <span>Unduh v{latestRelease.version}</span>
+                <ArrowDownTrayIcon className="w-5 h-5" />
               </a>
             )}
           </div>
