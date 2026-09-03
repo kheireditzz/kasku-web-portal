@@ -1,0 +1,98 @@
+name: Build & Publish Kasku APK
+
+# --------------------------------------------------------------
+# Trigger on every **tag** push (e.g. v1.2.0, v2.0.0‑beta)
+# --------------------------------------------------------------
+on:
+  push:
+    tags:
+      - 'v*'        # any tag that starts with “v”
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./android   # <‑‑ adjust if needed
+
+    steps:
+      # --------------------------------------------------------
+      # 1️⃣ Checkout the repo
+      # --------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------------
+      # 2️⃣ Set up Java + Android SDK
+      # --------------------------------------------------------
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Android SDK cmdline-tools
+        uses: android-actions/setup-android@v2
+        with:
+          api-level: 34          # latest stable API
+          ndk: '25.2.9519653'    # optional, only if you use the NDK
+          gradle-version: '8.5'  # matches the gradle wrapper in the repo
+
+      # --------------------------------------------------------
+      # 3️⃣ Build the release APK (gradlew assembleRelease)
+      # --------------------------------------------------------
+      - name: Build Release APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease   # produces app-release.apk
+        env:
+          # If you use environment variables for keystore signing, set them here:
+          # KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          # KEY_ALIAS_PASSWORD: ${{ secrets.KEY_ALIAS_PASSWORD }}
+
+      # --------------------------------------------------------
+      # 4️⃣ Locate the generated APK (path may differ)
+      # --------------------------------------------------------
+      - name: Locate APK
+        id: apk
+        run: |
+          APK_PATH=$(find ./app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "apk_name=$(basename $APK_PATH)" >> $GITHUB_OUTPUT
+
+      # --------------------------------------------------------
+      # 5️⃣ Create (or update) a GitHub Release for the tag
+      # --------------------------------------------------------
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}      # e.g. v1.2.0
+          release_name: Kasku ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
+      # --------------------------------------------------------
+      # 6️⃣ Upload the APK as a release asset (use constant name for stable URL)
+      # --------------------------------------------------------
+      - name: Upload APK to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.apk.outputs.apk_path }}
+          tag_name: ${{ github.ref_name }}
+          name: kasku.apk   # constant filename for the "latest" download URL
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # --------------------------------------------------------
+      # 7️⃣ (Optional) Update a “latest” tag for easier URLs
+      # --------------------------------------------------------
+      - name: Update latest tag
+        if: github.ref_type == 'tag'
+        run: |
+          git tag -f latest ${{ github.sha }}
+          git push origin latest --force
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
