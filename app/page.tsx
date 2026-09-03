@@ -269,7 +269,7 @@ export default function KaskuLandingDownloadPage() {
                       <span className="font-extrabold text-xs text-emerald-600">KasKu</span>
                     </div>
                     <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">
-                      v1.1.0
+                      v1.1.2
                     </span>
                   </div>
 
