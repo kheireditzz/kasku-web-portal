@@ -14,12 +14,12 @@
   "savedNotification": "Jangan Lupa Catat Laporan Keuangan Yaa",
   "scheduledNotification": {
     "active": true,
-    "hour": 13,
+    "hour": 20,
     "minute": 0,
-    "time": "13:00",
+    "time": "20:00",
     "title": "KasKu",
     "message": "Jangan Lupa Catat Laporan Keuangan Yaa",
-    "updatedAt": "2026-09-05T22:58:57.706Z"
+    "updatedAt": "2026-09-05T22:59:08.665Z"
   },
   "releases": [
     {
