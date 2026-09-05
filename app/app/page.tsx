@@ -6,11 +6,13 @@ import BottomNav from '@/components/BottomNav'
 import AddTransactionModal from '@/components/AddTransactionModal'
 import SettingsModal from '@/components/SettingsModal'
 import VoiceAITransactionModal from '@/components/VoiceAITransactionModal'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import ForceUpdateModal, { UpdateInfo } from '@/components/ForceUpdateModal'
 import OnboardingModal from '@/components/OnboardingModal'
 import SavingsSection, { SavingGoal } from '@/components/SavingsSection'
 import ConfirmModal, { ConfirmDialogState } from '@/components/ConfirmModal'
 import SupportDevModal from '@/components/SupportDevModal'
+import AnalyticsSection from '@/components/AnalyticsSection'
 import {
   WalletIcon,
   ArrowTrendingUpIcon,
@@ -29,8 +31,10 @@ import {
   CutePiggyIcon,
   TrophyIcon,
   RocketIcon,
-  TableCellsIcon
+  TableCellsIcon,
+  PencilSquareIcon
 } from '@/components/Icons'
+import { APP_LOGO_BASE64 } from '@/components/appLogoBase64'
 
 export interface Transaction {
   id: string
@@ -42,17 +46,16 @@ export interface Transaction {
   note?: string
 }
 
-const DEFAULT_CATEGORIES = [
-  'Lain-lain'
-]
+const DEFAULT_CATEGORIES: string[] = []
 
 // Versi aplikasi yang terinstall saat ini (Simulasi Versi Lawas untuk Tes Kunci Update)
-const APP_CURRENT_VERSION = '1.1.30'
+const APP_CURRENT_VERSION = '1.1.95'
 
 export default function KaskuApp() {
   const [activeTab, setActiveTab] = useState<'overview' | 'savings' | 'analytics' | 'categories'>('overview')
   const [isLoaded, setIsLoaded] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false)
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null)
@@ -100,33 +103,23 @@ export default function KaskuApp() {
       const savedCategories = localStorage.getItem('kasku_categories_v2')
       if (savedCategories) {
         const parsedCats = JSON.parse(savedCategories)
-        if (Array.isArray(parsedCats) && parsedCats.length > 0) {
-          setCategories(parsedCats)
-          setSelectedCategory(parsedCats[0])
-        } else {
-          setSelectedCategory(DEFAULT_CATEGORIES[0])
+        if (Array.isArray(parsedCats)) {
+          // Jika data tersimpan adalah default lawas ['Lain-lain'], migrasi ke kosong []
+          const filtered = parsedCats.filter(c => c !== 'Lain-lain')
+          setCategories(filtered)
+          setSelectedCategory(filtered[0] || '')
+          localStorage.setItem('kasku_categories_v2', JSON.stringify(filtered))
         }
       } else {
-        setSelectedCategory(DEFAULT_CATEGORIES[0])
+        setCategories([])
+        setSelectedCategory('')
+        localStorage.setItem('kasku_categories_v2', JSON.stringify([]))
       }
 
       // Cek apakah user baru pertama kali membuka web/aplikasi
       const hasOnboarded = localStorage.getItem('kasku_has_onboarded_v1')
       if (!hasOnboarded) {
         setShowOnboarding(true)
-      } else {
-        // Jika sudah selesai onboarding dan berada di menu utama, cek notif Support Dev (Hanya sekali seumur hidup, otomatis tutup 3 detik)
-        const hasSeenSupportDev = localStorage.getItem('kasku_support_dev_notified_v1')
-        if (!hasSeenSupportDev) {
-          setTimeout(() => {
-            setShowSupportDevModal(true)
-            try {
-              localStorage.setItem('kasku_support_dev_notified_v1', 'true')
-            } catch (err) {
-              console.error(err)
-            }
-          }, 1500)
-        }
       }
 
       setTxDate(new Date().toISOString().split('T')[0])
@@ -136,8 +129,17 @@ export default function KaskuApp() {
       setIsLoaded(true)
     }
 
-    // Cek Pembaruan Aplikasi secara otomatis (OTA Update Checker & Strict Force Update)
+    // Cek Pembaruan Aplikasi secara otomatis (OTA Update Checker: Blocking vs Opsional)
     const checkAppUpdate = async () => {
+      // Lewati pengecekan HANYA jika sedang di local dev server (localhost / 127.0.0.1)
+      if (typeof window !== 'undefined') {
+        const h = window.location.hostname
+        if (h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0') {
+          return
+        }
+      }
+
+      // Endpoint remote utama dan fallback jika offline / gagal
       const endpoints = [
         'https://kasku.kheireditz.my.id/api/version',
         'https://kasku.kheireditz.my.id/version.json',
@@ -145,15 +147,16 @@ export default function KaskuApp() {
         `/version.json?t=${Date.now()}`
       ]
 
-      // Helper function to compare semver strings (v1 > v2 => >0, v1 < v2 => <0, v1 == v2 => 0)
-      const compareVersions = (v1: string, v2: string) => {
-        const p1 = v1.replace(/^v/, '').split('.').map(Number)
-        const p2 = v2.replace(/^v/, '').split('.').map(Number)
-        for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
-          const num1 = p1[i] || 0
-          const num2 = p2[i] || 0
-          if (num1 > num2) return 1
-          if (num1 < num2) return -1
+      // Helper function pembanding semver (v1 > v2 => 1, v1 < v2 => -1, sama => 0)
+      const semverCompare = (v1: string, v2: string): number => {
+        const p1 = (v1 || '0').replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0)
+        const p2 = (v2 || '0').replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0)
+        const len = Math.max(p1.length, p2.length)
+        for (let i = 0; i < len; i++) {
+          const a = p1[i] || 0
+          const b = p2[i] || 0
+          if (a > b) return 1
+          if (a < b) return -1
         }
         return 0
       }
@@ -161,7 +164,7 @@ export default function KaskuApp() {
       for (const endpoint of endpoints) {
         try {
           const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 4000)
+          const timeoutId = setTimeout(() => controller.abort(), 3500)
           const res = await fetch(`${endpoint}${endpoint.includes('?') ? '&' : '?'}t=${Date.now()}`, {
             signal: controller.signal
           })
@@ -170,9 +173,19 @@ export default function KaskuApp() {
           if (res.ok) {
             const data = await res.json()
             if (data && data.latestVersion) {
-              // Hanya tampilkan force update JIKA versi server lebih baru dari versi terinstall (remote > local)
-              const isOutdated = compareVersions(data.latestVersion, APP_CURRENT_VERSION) > 0
-              if (isOutdated) {
+              const latestVer = String(data.latestVersion).trim()
+              const minReqVer = String(data.minRequiredVersion || data.latestVersion).trim()
+
+              // Evaluasi apakah versi sekarang lebih kecil dari versi rilis terbaru
+              const hasNewerVersion = semverCompare(latestVer, APP_CURRENT_VERSION) > 0
+
+              if (hasNewerVersion) {
+                // Mode blocking JIKA versi terpasang lebih kecil dari minRequiredVersion
+                // Atau jika data.forceUpdate secara eksplisit bernilai true
+                const isBlocking = Boolean(
+                  semverCompare(minReqVer, APP_CURRENT_VERSION) > 0 || data.forceUpdate === true
+                )
+
                 let targetUrl = data.updateUrl || 'https://kasku.kheireditz.my.id/download'
                 if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
                   targetUrl = `https://kasku.kheireditz.my.id${targetUrl.startsWith('/') ? '' : '/'}${targetUrl}`
@@ -181,17 +194,24 @@ export default function KaskuApp() {
                 setUpdateInfo({
                   isOutdated: true,
                   currentVersion: APP_CURRENT_VERSION,
-                  latestVersion: data.latestVersion,
-                  forceUpdate: true,
-                  releaseNotes: data.releaseNotes || 'Pembaruan sistem terbaru wajib diunduh untuk melanjutkan penggunaan KasKu.',
+                  latestVersion: latestVer,
+                  forceUpdate: isBlocking,
+                  releaseNotes: data.releaseNotes || (
+                    isBlocking
+                      ? 'Pembaruan sistem wajib untuk menjaga keamanan dan kestabilan data transaksi Anda.'
+                      : 'Pembaruan fitur baru dan perbaikan bug tersedia.'
+                  ),
                   updateUrl: targetUrl
                 })
-                break // Update info ditemukan, hentikan loop
+                break // Berhasil mendapatkan update info, hentikan loop
+              } else {
+                // Versi sudah paling baru
+                break
               }
             }
           }
         } catch (err) {
-          // Lanjut ke endpoint berikutnya
+          // Gagal / timeout pada endpoint ini, coba fallback berikutnya secara silent tanpa crash
         }
       }
     }
@@ -276,6 +296,36 @@ export default function KaskuApp() {
     }).format(safeVal)
   }
 
+  // Format ringkas dan cerdas untuk angka besar (Miliar, Juta, Triliun) agar tidak jebol desain layar HP
+  const formatRupiahCompact = (val: number) => {
+    const safeVal = (typeof val === 'number' && !isNaN(val)) ? val : 0
+    const absVal = Math.abs(safeVal)
+    const sign = safeVal < 0 ? '-' : ''
+
+    if (absVal >= 1_000_000_000_000) {
+      const formatted = (absVal / 1_000_000_000_000).toLocaleString('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      })
+      return `${sign}Rp ${formatted} T`
+    }
+    if (absVal >= 1_000_000_000) {
+      const formatted = (absVal / 1_000_000_000).toLocaleString('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      })
+      return `${sign}Rp ${formatted} M`
+    }
+    if (absVal >= 100_000_000) {
+      const formatted = (absVal / 1_000_000).toLocaleString('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 1
+      })
+      return `${sign}Rp ${formatted} Jt`
+    }
+    return formatRupiah(safeVal)
+  }
+
   // Calculations (Dengan proteksi nilai safe)
   const totalIncome = transactions
     .filter(t => t && t.type === 'income')
@@ -289,7 +339,7 @@ export default function KaskuApp() {
 
   const totalSavings = savings.reduce((acc, curr) => acc + (Number(curr?.currentAmount) || 0), 0)
 
-  // Handle Add Transaction
+  // Handle Add or Edit Transaction
   const handleAddTransaction = (e: React.FormEvent) => {
     if (e && e.preventDefault) e.preventDefault()
     const cleanAmount = parseFloat(amount)
@@ -314,6 +364,31 @@ export default function KaskuApp() {
       }
     }
 
+    if (editingTx) {
+      // Mode Update / Edit
+      const updatedList = transactions.map(t => {
+        if (t.id === editingTx.id) {
+          return {
+            ...t,
+            title: title.trim(),
+            amount: cleanAmount,
+            type,
+            category: savedCatName,
+            date: txDate || new Date().toISOString().split('T')[0],
+            note: note.trim() ? note.trim() : undefined
+          }
+        }
+        return t
+      })
+      setTransactions(updatedList)
+      setEditingTx(null)
+      setTitle('')
+      setAmount('')
+      setNote('')
+      showToast(`Berhasil memperbarui transaksi "${title.trim()}"!`)
+      return
+    }
+
     const newTx: Transaction = {
       id: `TX-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       title: title.trim(),
@@ -329,6 +404,18 @@ export default function KaskuApp() {
     setAmount('')
     setNote('')
     showToast(`Berhasil menyimpan ${type === 'income' ? 'pemasukan' : 'pengeluaran'}`)
+  }
+
+  // Handle Buka Modal Edit Transaksi
+  const handleOpenEditTransaction = (tx: Transaction) => {
+    setEditingTx(tx)
+    setTitle(tx.title)
+    setAmount(tx.amount.toString())
+    setType(tx.type)
+    setSelectedCategory(tx.category)
+    setTxDate(tx.date)
+    setNote(tx.note || '')
+    setIsModalOpen(true)
   }
 
   // Handle Auto Record from Savings
@@ -379,6 +466,11 @@ export default function KaskuApp() {
 
     const updated = [...categories, trimmed]
     setCategories(updated)
+    try {
+      localStorage.setItem('kasku_categories_v2', JSON.stringify(updated))
+    } catch (err) {
+      console.error(err)
+    }
     setNewCatInput('')
     if (!selectedCategory) setSelectedCategory(trimmed)
     showToast(`Kategori "${trimmed}" ditambahkan`)
@@ -386,10 +478,6 @@ export default function KaskuApp() {
 
   // Handle Delete Custom Category
   const handleDeleteCategory = (catToDelete: string) => {
-    if (categories.length <= 1) {
-      showToast('Minimal harus ada 1 kategori')
-      return
-    }
     
     setConfirmDialog({
       isOpen: true,
@@ -401,6 +489,11 @@ export default function KaskuApp() {
       onConfirm: () => {
         const updated = categories.filter(c => c !== catToDelete)
         setCategories(updated)
+        try {
+          localStorage.setItem('kasku_categories_v2', JSON.stringify(updated))
+        } catch (err) {
+          console.error(err)
+        }
         if (selectedCategory === catToDelete) {
           setSelectedCategory(updated[0])
         }
@@ -627,10 +720,9 @@ export default function KaskuApp() {
           localStorage.removeItem('kasku_savings_v1')
           localStorage.removeItem('kasku_categories_v2')
 
-          // Simpan default kategori tunggal 'Lain-lain'
           localStorage.setItem('kasku_transactions_v2', JSON.stringify([]))
           localStorage.setItem('kasku_savings_v1', JSON.stringify([]))
-          localStorage.setItem('kasku_categories_v2', JSON.stringify(['Lain-lain']))
+          localStorage.setItem('kasku_categories_v2', JSON.stringify([]))
         } catch (e) {
           console.error(e)
         }
@@ -638,8 +730,8 @@ export default function KaskuApp() {
         // Update semua React State secara langsung
         setTransactions([])
         setSavings([])
-        setCategories(['Lain-lain'])
-        setSelectedCategory('Lain-lain')
+        setCategories([])
+        setSelectedCategory('')
         setFilterCat('all')
         setFilterType('all')
         setSearchQuery('')
@@ -657,6 +749,7 @@ export default function KaskuApp() {
     date: string
     note?: string
   }) => {
+    console.log('Menerima data dari voice modal:', tx)
     try {
       const cleanTitle = (tx?.title || 'Transaksi KasKu').trim()
       const cleanAmount = Number(tx?.amount) || 0
@@ -665,6 +758,7 @@ export default function KaskuApp() {
       const cleanDate = (tx?.date && tx.date.length === 10) ? tx.date : new Date().toISOString().slice(0, 10)
 
       if (cleanAmount <= 0) {
+        console.warn('[handleSaveVoiceTransaction] Ditolak: nominal <= 0', cleanAmount)
         showToast('Nominal transaksi tidak valid!')
         return
       }
@@ -759,105 +853,236 @@ export default function KaskuApp() {
         savingsCount={savings.length}
       />
 
-      {/* Add Transaction Modal */}
-      <AddTransactionModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAddTransaction={handleAddTransaction}
-        type={type}
-        setType={setType}
-        title={title}
-        setTitle={setTitle}
-        amount={amount}
-        setAmount={setAmount}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
-        categories={categories}
-        txDate={txDate}
-        setTxDate={setTxDate}
-        note={note}
-        setNote={setNote}
-        onOpenCategoriesTab={() => setActiveTab('categories')}
-      />
-
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6" style={{ transform: 'translateZ(0)' }}>
         
         {/* TAB 1: OVERVIEW (HALAMAN UTAMA) */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
-            {/* TOP SUMMARY STATS - HANYA DI HALAMAN UTAMA */}
-            <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* TOP SUMMARY STATS - Ultra-Premium Modern Fintech Cards */}
+            <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4.5">
               
-              {/* Card Saldo Kas Bersih */}
-              <div className="surface-card rounded-2xl p-5 relative">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-slate-500 tracking-wide uppercase">Saldo Kas</span>
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              {/* Card 1: Saldo Kas Bersih (Emerald / Mint Luxury) */}
+              <div className="relative group overflow-hidden rounded-[24px] bg-gradient-to-b from-white to-emerald-50/30 p-4 sm:p-5 border border-emerald-500/25 shadow-[0_4px_24px_-4px_rgba(16,185,129,0.12)] hover:shadow-[0_12px_32px_-6px_rgba(16,185,129,0.22)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[160px] sm:min-h-[170px]">
+                {/* Ambient Soft Mesh Gradient & Glass Shimmer */}
+                <div className="absolute -top-12 -right-12 w-32 h-32 bg-emerald-400/15 rounded-full blur-2xl pointer-events-none group-hover:scale-110 transition-transform duration-500" />
+
+                {/* Card Header: Title & Icon */}
+                <div className="flex items-center justify-between gap-1.5 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 ring-2 ring-emerald-100"></span>
+                    </span>
+                    <span className="text-[11px] font-extrabold tracking-wider uppercase text-emerald-950/80">
+                      Saldo Kas
+                    </span>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center ring-1 ring-emerald-500/25 shadow-xs shrink-0 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
                     <WalletIcon className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="mt-2">
-                  <div className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${netBalance >= 0 ? 'text-slate-900' : 'text-rose-600'}`}>
+
+                {/* Card Body: Main Amount & Compact Hint */}
+                <div className="my-auto py-2 relative z-10">
+                  <div 
+                    title={formatRupiah(netBalance)}
+                    className={`font-black tracking-tight font-display truncate leading-none ${
+                      Math.abs(netBalance) >= 1_000_000_000 
+                        ? 'text-base sm:text-xl lg:text-2xl' 
+                        : Math.abs(netBalance) >= 100_000_000 
+                        ? 'text-lg sm:text-2xl' 
+                        : 'text-xl sm:text-2xl lg:text-[26px]'
+                    } ${netBalance >= 0 ? 'text-slate-900' : 'text-rose-600'}`}
+                  >
                     {formatRupiah(netBalance)}
                   </div>
-                  <span className="text-[10px] text-emerald-600 font-mono mt-0.5 flex items-center gap-1 font-semibold">
+                  <div className="h-4.5 flex items-center mt-1">
+                    {Math.abs(netBalance) >= 1_000_000 ? (
+                      <span className="text-[10px] sm:text-[11px] font-bold text-emerald-700/70 block truncate font-display">
+                        ≈ {formatRupiahCompact(netBalance)}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] sm:text-[11px] font-medium text-slate-400 block truncate">
+                        Sisa uang tunai
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Footer: Status Pill Badge */}
+                <div className="pt-1.5 relative z-10 flex items-center">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 text-[10px] sm:text-[11px] font-extrabold border border-emerald-500/20 truncate shadow-2xs">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    <span>Kas Siap Pakai</span>
+                    Kas Siap Pakai
                   </span>
                 </div>
               </div>
 
-              {/* Card Tabungan */}
+              {/* Card 2: Celengan Impian (Warm Amber & Gold) */}
               <div 
                 onClick={() => setActiveTab('savings')}
-                className="surface-card rounded-2xl p-5 relative cursor-pointer hover:border-amber-300 transition-colors"
+                className="relative group overflow-hidden rounded-[24px] bg-gradient-to-b from-white to-amber-50/30 p-4 sm:p-5 border border-amber-500/25 shadow-[0_4px_24px_-4px_rgba(245,158,11,0.12)] hover:shadow-[0_12px_32px_-6px_rgba(245,158,11,0.22)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[160px] sm:min-h-[170px] active:scale-[0.98]"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-slate-500 tracking-wide uppercase">Total Celengan</span>
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                {/* Ambient Soft Mesh Gradient & Glass Shimmer */}
+                <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-400/15 rounded-full blur-2xl pointer-events-none group-hover:scale-110 transition-transform duration-500" />
+
+                {/* Card Header */}
+                <div className="flex items-center justify-between gap-1.5 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-100"></span>
+                    <span className="text-[11px] font-extrabold tracking-wider uppercase text-amber-950/80">
+                      Celengan
+                    </span>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center ring-1 ring-amber-500/25 shadow-xs shrink-0 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
                     <CutePiggyIcon className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="mt-2">
-                  <div className="text-xl sm:text-2xl font-black font-mono tracking-tight text-amber-600">
+
+                {/* Card Body */}
+                <div className="my-auto py-2 relative z-10">
+                  <div 
+                    title={formatRupiah(totalSavings)}
+                    className={`font-black tracking-tight font-display text-amber-600 truncate leading-none ${
+                      totalSavings >= 1_000_000_000 
+                        ? 'text-base sm:text-xl lg:text-2xl' 
+                        : totalSavings >= 100_000_000 
+                        ? 'text-lg sm:text-2xl' 
+                        : 'text-xl sm:text-2xl lg:text-[26px]'
+                    }`}
+                  >
                     {formatRupiah(totalSavings)}
                   </div>
-                  <span className="text-[10px] text-slate-500 font-mono mt-0.5 flex items-center justify-between">
-                    <span>{savings.length} Target</span>
-                    <span className="text-amber-600 underline font-sans text-[10px] font-semibold">Buka &rarr;</span>
+                  <div className="h-4.5 flex items-center mt-1">
+                    {totalSavings >= 1_000_000 ? (
+                      <span className="text-[10px] sm:text-[11px] font-bold text-amber-700/70 block truncate font-display">
+                        ≈ {formatRupiahCompact(totalSavings)}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] sm:text-[11px] font-medium text-slate-400 block truncate">
+                        Target tabungan
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Footer: Target Count & Action Arrow */}
+                <div className="pt-1.5 relative z-10 flex items-center justify-between gap-1">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-900 text-[10px] sm:text-[11px] font-extrabold border border-amber-500/20 truncate shadow-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    {savings.length} Target
+                  </span>
+                  <span className="text-[10px] sm:text-[11px] font-black text-amber-600 group-hover:text-amber-700 flex items-center gap-0.5 shrink-0 transition-transform group-hover:translate-x-0.5">
+                    Buka &rarr;
                   </span>
                 </div>
               </div>
 
-              {/* Card Pemasukan */}
-              <div className="surface-card rounded-2xl p-5 relative">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-slate-500 tracking-wide uppercase">Total Masuk</span>
-                  <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+              {/* Card 3: Total Pemasukan (Teal / Cyan Crystal) */}
+              <div className="relative group overflow-hidden rounded-[24px] bg-gradient-to-b from-white to-teal-50/30 p-4 sm:p-5 border border-teal-500/25 shadow-[0_4px_24px_-4px_rgba(20,184,166,0.12)] hover:shadow-[0_12px_32px_-6px_rgba(20,184,166,0.22)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[160px] sm:min-h-[170px]">
+                {/* Ambient Soft Mesh Gradient & Glass Shimmer */}
+                <div className="absolute -top-12 -right-12 w-32 h-32 bg-teal-400/15 rounded-full blur-2xl pointer-events-none group-hover:scale-110 transition-transform duration-500" />
+
+                {/* Card Header */}
+                <div className="flex items-center justify-between gap-1.5 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-teal-500 ring-2 ring-teal-100"></span>
+                    <span className="text-[11px] font-extrabold tracking-wider uppercase text-teal-950/80">
+                      Pemasukan
+                    </span>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-teal-500/10 text-teal-600 flex items-center justify-center ring-1 ring-teal-500/25 shadow-xs shrink-0 group-hover:bg-teal-500 group-hover:text-white transition-all duration-300">
                     <ArrowTrendingUpIcon className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="mt-2">
-                  <div className="text-xl sm:text-2xl font-black font-mono tracking-tight text-teal-600">
+
+                {/* Card Body */}
+                <div className="my-auto py-2 relative z-10">
+                  <div 
+                    title={formatRupiah(totalIncome)}
+                    className={`font-black tracking-tight font-display text-teal-600 truncate leading-none ${
+                      totalIncome >= 1_000_000_000 
+                        ? 'text-base sm:text-xl lg:text-2xl' 
+                        : totalIncome >= 100_000_000 
+                        ? 'text-lg sm:text-2xl' 
+                        : 'text-xl sm:text-2xl lg:text-[26px]'
+                    }`}
+                  >
                     +{formatRupiah(totalIncome)}
                   </div>
-                  <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{transactions.filter(t => t.type === 'income').length} Transaksi</span>
+                  <div className="h-4.5 flex items-center mt-1">
+                    {totalIncome >= 1_000_000 ? (
+                      <span className="text-[10px] sm:text-[11px] font-bold text-teal-700/70 block truncate font-display">
+                        ≈ +{formatRupiahCompact(totalIncome)}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] sm:text-[11px] font-medium text-slate-400 block truncate">
+                        Arus masuk kas
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Footer */}
+                <div className="pt-1.5 relative z-10 flex items-center">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-500/10 text-teal-900 text-[10px] sm:text-[11px] font-extrabold border border-teal-500/20 truncate shadow-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                    {transactions.filter(t => t.type === 'income').length} Transaksi
+                  </span>
                 </div>
               </div>
 
-              {/* Card Pengeluaran */}
-              <div className="surface-card rounded-2xl p-5 relative">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-slate-500 tracking-wide uppercase">Pengeluaran</span>
-                  <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+              {/* Card 4: Total Pengeluaran (Rose / Ruby Clean) */}
+              <div className="relative group overflow-hidden rounded-[24px] bg-gradient-to-b from-white to-rose-50/30 p-4 sm:p-5 border border-rose-500/25 shadow-[0_4px_24px_-4px_rgba(244,63,94,0.12)] hover:shadow-[0_12px_32px_-6px_rgba(244,63,94,0.22)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[160px] sm:min-h-[170px]">
+                {/* Ambient Soft Mesh Gradient & Glass Shimmer */}
+                <div className="absolute -top-12 -right-12 w-32 h-32 bg-rose-400/15 rounded-full blur-2xl pointer-events-none group-hover:scale-110 transition-transform duration-500" />
+
+                {/* Card Header */}
+                <div className="flex items-center justify-between gap-1.5 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-100"></span>
+                    <span className="text-[11px] font-extrabold tracking-wider uppercase text-rose-950/80">
+                      Pengeluaran
+                    </span>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center ring-1 ring-rose-500/25 shadow-xs shrink-0 group-hover:bg-rose-500 group-hover:text-white transition-all duration-300">
                     <ArrowTrendingDownIcon className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="mt-2">
-                  <div className="text-xl sm:text-2xl font-black font-mono tracking-tight text-rose-600">
+
+                {/* Card Body */}
+                <div className="my-auto py-2 relative z-10">
+                  <div 
+                    title={formatRupiah(totalExpense)}
+                    className={`font-black tracking-tight font-display text-rose-600 truncate leading-none ${
+                      totalExpense >= 1_000_000_000 
+                        ? 'text-base sm:text-xl lg:text-2xl' 
+                        : totalExpense >= 100_000_000 
+                        ? 'text-lg sm:text-2xl' 
+                        : 'text-xl sm:text-2xl lg:text-[26px]'
+                    }`}
+                  >
                     -{formatRupiah(totalExpense)}
                   </div>
-                  <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{transactions.filter(t => t.type === 'expense').length} Transaksi</span>
+                  <div className="h-4.5 flex items-center mt-1">
+                    {totalExpense >= 1_000_000 ? (
+                      <span className="text-[10px] sm:text-[11px] font-bold text-rose-700/70 block truncate font-display">
+                        ≈ -{formatRupiahCompact(totalExpense)}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] sm:text-[11px] font-medium text-slate-400 block truncate">
+                        Arus keluar kas
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Footer */}
+                <div className="pt-1.5 relative z-10 flex items-center">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-900 text-[10px] sm:text-[11px] font-extrabold border border-rose-500/20 truncate shadow-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                    {transactions.filter(t => t.type === 'expense').length} Transaksi
+                  </span>
                 </div>
               </div>
 
@@ -867,66 +1092,66 @@ export default function KaskuApp() {
               
               {/* FORM INPUT DESKTOP */}
               <div className="hidden lg:block lg:col-span-5 space-y-6">
-                <div className="surface-card rounded-2xl p-6 relative">
+                <div className="surface-card rounded-[28px] p-6 relative">
                   
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-2xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center">
                         <BanknotesIcon className="w-5 h-5" />
                       </div>
                       <div>
-                        <h2 className="text-sm font-bold text-slate-900 tracking-wide">Pencatatan Kas</h2>
-                        <p className="text-[11px] text-slate-500">Tersimpan lokal di HP</p>
+                        <h2 className="text-sm font-extrabold text-slate-900 tracking-tight">Pencatatan Kas</h2>
+                        <p className="text-[11px] text-slate-400 font-medium">Tersimpan lokal di perangkat</p>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Offline Sync
+                    <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Offline First
                     </span>
                   </div>
 
                   <form onSubmit={handleAddTransaction} className="space-y-4 text-xs">
-                    <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-100">
+                    <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl bg-[#767680]/12">
                       <button
                         type="button"
                         onClick={() => setType('income')}
-                        className={`py-2 rounded-lg font-bold transition flex items-center justify-center gap-2 ${
+                        className={`py-2 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-2 ${
                           type === 'income'
-                            ? 'bg-white text-emerald-700 shadow-sm'
-                            : 'text-slate-600 hover:text-slate-900'
+                            ? 'bg-white text-emerald-600 shadow-ios-sm scale-[1.01]'
+                            : 'text-slate-500 hover:text-slate-800'
                         }`}
                       >
-                        <PlusCircleIcon className="w-4 h-4" />
+                        <PlusCircleIcon className="w-4 h-4 text-emerald-600" />
                         <span>Kas Masuk</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setType('expense')}
-                        className={`py-2 rounded-lg font-bold transition flex items-center justify-center gap-2 ${
+                        className={`py-2 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-2 ${
                           type === 'expense'
-                            ? 'bg-white text-rose-700 shadow-sm'
-                            : 'text-slate-600 hover:text-slate-900'
+                            ? 'bg-white text-rose-600 shadow-ios-sm scale-[1.01]'
+                            : 'text-slate-500 hover:text-slate-800'
                         }`}
                       >
-                        <MinusCircleIcon className="w-4 h-4" />
+                        <MinusCircleIcon className="w-4 h-4 text-rose-600" />
                         <span>Pengeluaran</span>
                       </button>
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-slate-700 font-semibold block">Keterangan *</label>
+                      <label className="text-slate-700 font-bold block text-[11px] uppercase tracking-wider">Keterangan *</label>
                       <input
                         type="text"
                         required
                         placeholder="Contoh: Honor Coding, Makan Siang, Sewa Server"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl kas-input text-xs"
+                        className="w-full px-3.5 py-2.5 rounded-2xl kas-input text-xs font-medium"
                       />
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-slate-700 font-semibold block">Nominal (Rp) *</label>
+                      <label className="text-slate-700 font-bold block text-[11px] uppercase tracking-wider">Nominal (Rp) *</label>
                       <div className="relative">
                         <span className="absolute left-3.5 top-2.5 text-slate-400 font-mono font-bold text-xs">Rp</span>
                         <input
@@ -937,62 +1162,53 @@ export default function KaskuApp() {
                           placeholder="0"
                           value={amount}
                           onChange={(e) => setAmount(e.target.value)}
-                          className="w-full pl-10 pr-3.5 py-2.5 rounded-xl kas-input text-xs font-mono font-semibold"
+                          className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl kas-input text-xs font-mono font-extrabold text-slate-900"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <label className="text-slate-700 font-semibold">Kategori</label>
-                          <button
-                            type="button"
-                            onClick={() => setActiveTab('categories')}
-                            className="text-[10px] text-emerald-600 font-medium hover:underline"
-                          >
-                            + Kustom
-                          </button>
-                        </div>
+                        <label className="text-slate-700 font-bold block text-[11px] uppercase tracking-wider">Kategori</label>
                         <select
                           value={selectedCategory}
                           onChange={(e) => setSelectedCategory(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl kas-input text-xs"
+                          className="w-full px-3 py-2.5 rounded-2xl kas-input text-xs font-medium cursor-pointer"
                         >
-                          {categories.map((cat, idx) => (
-                            <option key={idx} value={cat} className="bg-white text-slate-800">
-                              {cat}
-                            </option>
+                          {categories.map((c, i) => (
+                            <option key={i} value={c}>{c}</option>
                           ))}
                         </select>
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-slate-700 font-semibold block">Tanggal</label>
+                        <label className="text-slate-700 font-bold block text-[11px] uppercase tracking-wider">Tanggal</label>
                         <input
                           type="date"
                           value={txDate}
                           onChange={(e) => setTxDate(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl kas-input text-xs font-mono"
+                          className="w-full px-3 py-2.5 rounded-2xl kas-input text-xs font-mono font-medium"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-slate-500 font-medium block">Catatan Tambahan (Opsional)</label>
+                      <label className="text-slate-700 font-bold block text-[11px] uppercase tracking-wider">Catatan Tambahan (Opsional)</label>
                       <input
                         type="text"
-                        placeholder="Nomor invoice, catatan pembayaran, dll"
+                        placeholder="Nomor invoice, catatan kecil, dll"
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl kas-input text-xs"
+                        className="w-full px-3.5 py-2.5 rounded-2xl kas-input text-xs font-medium"
                       />
                     </div>
 
                     <button
                       type="submit"
-                      className={`w-full py-3 rounded-xl font-bold text-xs tracking-wide transition active:scale-[0.98] flex items-center justify-center gap-2 ${
-                        type === 'income' ? 'btn-primary' : 'btn-danger'
+                      className={`w-full py-3.5 rounded-2xl font-extrabold text-xs tracking-wide transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-ios ${
+                        type === 'income' 
+                          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white' 
+                          : 'bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white'
                       }`}
                     >
                       <PlusCircleIcon className="w-4 h-4" />
@@ -1002,40 +1218,53 @@ export default function KaskuApp() {
                 </div>
               </div>
 
-              {/* DAFTAR MUTASI TRANSAKSI */}
+              {/* DAFTAR MUTASI TRANSAKSI - iOS Inset Grouped List Look */}
               <div className="lg:col-span-7 space-y-4 w-full">
-                <div className="surface-card rounded-2xl p-5 sm:p-6 space-y-5">
+                <div className="surface-card rounded-[28px] p-5 sm:p-6 space-y-5">
                   
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                    <div>
-                      <h2 className="text-sm font-bold text-slate-900">Riwayat Mutasi Kas</h2>
-                      <p className="text-[11px] text-slate-500">
-                        Menampilkan {filteredTransactions.length} dari {transactions.length} mutasi
-                      </p>
+                    <div className="flex items-center justify-between w-full sm:w-auto">
+                      <div>
+                        <h2 className="text-base font-extrabold text-slate-900 tracking-tight">Riwayat Mutasi Kas</h2>
+                        <p className="text-[11px] text-slate-400 font-medium">
+                          Menampilkan {filteredTransactions.length} dari {transactions.length} mutasi
+                        </p>
+                      </div>
+
+                      {/* Tombol Catat Transaksi Cepat di Mobile */}
+                      <button
+                        type="button"
+                        onClick={() => setIsModalOpen(true)}
+                        className="sm:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[11px] font-extrabold shadow-sm active:scale-95 transition-all touch-manipulation cursor-pointer"
+                      >
+                        <PlusIcon className="w-3.5 h-3.5 stroke-[2.8]" />
+                        <span>Catat Kas</span>
+                      </button>
                     </div>
 
                     <div className="flex items-center gap-2 self-start sm:self-auto">
-                      <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 text-[11px] font-semibold">
+                      {/* iOS Segmented Filter */}
+                      <div className="flex items-center gap-1 p-1 rounded-2xl bg-[#767680]/12 text-[11px] font-bold">
                         <button
                           onClick={() => setFilterType('all')}
-                          className={`px-3 py-1 rounded-lg transition ${
-                            filterType === 'all' ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                          className={`px-3 py-1 rounded-xl transition-all duration-200 ${
+                            filterType === 'all' ? 'bg-white text-slate-900 shadow-ios-sm scale-[1.02]' : 'text-slate-500 hover:text-slate-800'
                           }`}
                         >
                           Semua
                         </button>
                         <button
                           onClick={() => setFilterType('income')}
-                          className={`px-3 py-1 rounded-lg transition ${
-                            filterType === 'income' ? 'bg-white text-emerald-700 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                          className={`px-3 py-1 rounded-xl transition-all duration-200 ${
+                            filterType === 'income' ? 'bg-white text-emerald-600 shadow-ios-sm scale-[1.02]' : 'text-slate-500 hover:text-slate-800'
                           }`}
                         >
                           Masuk
                         </button>
                         <button
                           onClick={() => setFilterType('expense')}
-                          className={`px-3 py-1 rounded-lg transition ${
-                            filterType === 'expense' ? 'bg-white text-rose-700 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                          className={`px-3 py-1 rounded-xl transition-all duration-200 ${
+                            filterType === 'expense' ? 'bg-white text-rose-600 shadow-ios-sm scale-[1.02]' : 'text-slate-500 hover:text-slate-800'
                           }`}
                         >
                           Keluar
@@ -1047,10 +1276,10 @@ export default function KaskuApp() {
                         <button
                           onClick={handleExportExcel}
                           title="Ekspor Laporan Excel Berwarna (.xls)"
-                          className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
+                          className="p-2 sm:px-3 sm:py-1.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-ios-sm"
                         >
                           <TableCellsIcon className="w-4 h-4 text-emerald-600" />
-                          <span className="hidden sm:inline">Ekspor Excel</span>
+                          <span className="hidden sm:inline">Excel</span>
                         </button>
                       )}
                     </div>
@@ -1061,10 +1290,10 @@ export default function KaskuApp() {
                     <MagnifyingGlassIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                     <input
                       type="text"
-                      placeholder="Cari transaksi..."
+                      placeholder="Cari keterangan atau catatan..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl kas-input text-xs"
+                      className="w-full pl-10 pr-3 py-2.5 rounded-2xl kas-input text-xs font-medium"
                     />
                   </div>
 
@@ -1072,7 +1301,7 @@ export default function KaskuApp() {
                     <select
                       value={filterCat}
                       onChange={(e) => setFilterCat(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl kas-input text-xs"
+                      className="w-full px-3.5 py-2.5 rounded-2xl kas-input text-xs font-medium cursor-pointer"
                     >
                       <option value="all">Semua Kategori</option>
                       {categories.map((c, i) => (
@@ -1082,37 +1311,41 @@ export default function KaskuApp() {
                   </div>
                 </div>
 
+                {/* List Mutasi iOS Inset Grouped Table Row */}
                 <div className="divide-y divide-slate-100 max-h-[550px] overflow-y-auto pr-1">
                   {filteredTransactions.length === 0 ? (
                     <div className="py-14 text-center space-y-3">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-100 mx-auto flex items-center justify-center text-slate-400">
-                        <WalletIcon className="w-6 h-6" />
+                      <div className="w-14 h-14 rounded-3xl bg-slate-100/80 mx-auto flex items-center justify-center text-slate-400">
+                        <WalletIcon className="w-7 h-7" />
                       </div>
                       <p className="text-xs text-slate-500 font-medium max-w-sm mx-auto">
                         {transactions.length === 0
-                          ? 'Belum ada catatan mutasi. Ketuk tombol tambah (+) untuk mulai mencatat keuangan Anda!'
+                          ? 'Belum ada catatan mutasi. Ketuk tombol tambah (+) di bawah untuk mulai mencatat keuangan Anda!'
                           : 'Tidak ada transaksi yang cocok dengan filter Anda.'}
                       </p>
                       {transactions.length === 0 && (
                         <button
-                          onClick={() => setIsModalOpen(true)}
-                          className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl btn-primary text-xs font-bold"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setIsModalOpen(true)
+                          }}
+                          className="mt-2 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-ios transition active:scale-95"
                         >
-                          <PlusIcon className="w-4 h-4" />
+                          <PlusIcon className="w-4 h-4 stroke-[2.5]" />
                           <span>Catat Transaksi Pertama</span>
                         </button>
                       )}
                     </div>
                   ) : (
                     filteredTransactions.map((tx) => (
-                      <div key={tx.id} className="py-3 px-2.5 flex items-center justify-between gap-3 group transition-colors hover:bg-slate-50 rounded-xl">
+                      <div key={tx.id} className="py-3 px-2 flex items-center justify-between gap-3 group transition-colors hover:bg-[#f2f2f7]/80 rounded-2xl">
                         
                         <div className="flex items-center gap-3 min-w-0">
                           <div
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                            className={`w-11 h-11 rounded-[16px] flex items-center justify-center shrink-0 border ${
                               tx.type === 'income'
-                                ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
-                                : 'bg-rose-50 border-rose-100 text-rose-600'
+                                ? 'bg-emerald-500/15 border-emerald-500/20 text-emerald-600'
+                                : 'bg-rose-500/15 border-rose-500/20 text-rose-600'
                             }`}
                           >
                             {tx.type === 'income' ? (
@@ -1123,11 +1356,11 @@ export default function KaskuApp() {
                           </div>
 
                           <div className="truncate space-y-0.5">
-                            <h3 className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
+                            <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                               {tx.title}
                             </h3>
-                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
-                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-sans font-medium">
+                            <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-sans font-semibold">
                                 {tx.category}
                               </span>
                               <span>&bull;</span>
@@ -1142,22 +1375,44 @@ export default function KaskuApp() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2.5 shrink-0">
-                          <span
-                            className={`font-mono font-bold text-xs sm:text-sm tracking-tight ${
-                              tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'
-                            }`}
-                          >
-                            {tx.type === 'income' ? '+' : '-'}{formatRupiah(tx.amount)}
-                          </span>
+                        <div className="flex items-center gap-2 sm:gap-3 shrink-0 text-right">
+                          <div className="flex flex-col items-end">
+                            <span
+                              title={formatRupiah(tx.amount)}
+                              className={`font-mono font-black tracking-tight leading-none ${
+                                tx.amount >= 1_000_000_000
+                                  ? 'text-[11px] sm:text-xs'
+                                  : 'text-xs sm:text-sm'
+                              } ${
+                                tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'
+                              }`}
+                            >
+                              {tx.type === 'income' ? '+' : '-'}{formatRupiah(tx.amount)}
+                            </span>
+                            {tx.amount >= 10_000_000 && (
+                              <span className="text-[9px] font-mono text-slate-400 mt-0.5">
+                                ≈ {tx.type === 'income' ? '+' : '-'}{formatRupiahCompact(tx.amount)}
+                              </span>
+                            )}
+                          </div>
 
-                          <button
-                            onClick={() => handleDeleteTransaction(tx.id, tx.title)}
-                            className="w-7 h-7 rounded-lg hover:bg-rose-50 flex items-center justify-center text-slate-400 hover:text-rose-600 transition"
-                            title="Hapus Transaksi"
-                          >
-                            <TrashIcon className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => handleOpenEditTransaction(tx)}
+                              className="w-7 h-7 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition active:scale-90 shrink-0"
+                              title="Edit Transaksi"
+                            >
+                              <PencilSquareIcon className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteTransaction(tx.id, tx.title)}
+                              className="w-7 h-7 rounded-full hover:bg-rose-50 flex items-center justify-center text-slate-300 hover:text-rose-600 transition active:scale-90 shrink-0"
+                              title="Hapus Transaksi"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
 
                       </div>
@@ -1168,176 +1423,116 @@ export default function KaskuApp() {
               </div>
             </div>
 
-            </div>
           </div>
+        </div>
         )}
 
         {/* TAB 2: TABUNGAN & CELENGAN TARGET */}
         {activeTab === 'savings' && (
-          <SavingsSection
-            savings={savings}
-            setSavings={setSavings}
-            showToast={showToast}
-            formatRupiah={formatRupiah}
-            onAutoRecordTransaction={handleAutoRecordFromSavings}
-            onRequestDeleteGoal={handleRequestDeleteGoal}
-          />
+          <ErrorBoundary>
+            <SavingsSection
+              savings={savings}
+              setSavings={setSavings}
+              showToast={showToast}
+              formatRupiah={formatRupiah}
+              onAutoRecordTransaction={handleAutoRecordFromSavings}
+              onRequestDeleteGoal={handleRequestDeleteGoal}
+            />
+          </ErrorBoundary>
         )}
 
-        {/* TAB 3: ANALYTICS */}
+        {/* TAB 3: ANALYTICS (Diagram Donut Interaktif & Pisah Pemasukan/Pengeluaran) */}
         {activeTab === 'analytics' && (
-          <div className="space-y-6 animate-slide-up">
-            <div className="surface-card rounded-2xl p-6 sm:p-8">
-              <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600">
-                  <ChartPieIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">Analisis Distribusi Kas</h2>
-                  <p className="text-xs text-slate-500">Peta perbandingan alokasi pengeluaran dan arus kas masuk</p>
-                </div>
-              </div>
-
-              {transactions.length === 0 ? (
-                <div className="py-16 text-center text-xs text-slate-400 font-mono">
-                  Belum ada data transaksi untuk dianalisis.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-rose-600 uppercase tracking-wider flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-                      Pengeluaran Menurut Kategori
-                    </h3>
-
-                    <div className="space-y-2.5">
-                      {Object.keys(expenseByCategory).length === 0 ? (
-                        <p className="text-xs text-slate-400 font-mono">Belum ada pengeluaran</p>
-                      ) : (
-                        Object.entries(expenseByCategory).map(([cat, total]) => {
-                          const percent = totalExpense > 0 ? ((total / totalExpense) * 100).toFixed(1) : '0'
-                          return (
-                            <div key={cat} className="space-y-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                              <div className="flex justify-between items-center text-xs">
-                                <span className="font-semibold text-slate-700">{cat}</span>
-                                <span className="font-mono font-bold text-rose-600">
-                                  {formatRupiah(total)} <span className="text-[10px] text-slate-400 font-normal">({percent}%)</span>
-                                </span>
-                              </div>
-                              <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
-                                <div
-                                  className="h-full bg-rose-500 rounded-full transition-all duration-500"
-                                  style={{ width: `${percent}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                          )
-                        })
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-teal-600 uppercase tracking-wider flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-teal-500"></span>
-                      Pemasukan Menurut Kategori
-                    </h3>
-
-                    <div className="space-y-2.5">
-                      {Object.keys(incomeByCategory).length === 0 ? (
-                        <p className="text-xs text-slate-400 font-mono">Belum ada pemasukan</p>
-                      ) : (
-                        Object.entries(incomeByCategory).map(([cat, total]) => {
-                          const percent = totalIncome > 0 ? ((total / totalIncome) * 100).toFixed(1) : '0'
-                          return (
-                            <div key={cat} className="space-y-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                              <div className="flex justify-between items-center text-xs">
-                                <span className="font-semibold text-slate-700">{cat}</span>
-                                <span className="font-mono font-bold text-teal-600">
-                                  {formatRupiah(total)} <span className="text-[10px] text-slate-400 font-normal">({percent}%)</span>
-                                </span>
-                              </div>
-                              <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
-                                <div
-                                  className="h-full bg-teal-500 rounded-full transition-all duration-500"
-                                  style={{ width: `${percent}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                          )
-                        })
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <ErrorBoundary>
+            <AnalyticsSection
+              transactions={transactions}
+              totalIncome={totalIncome}
+              totalExpense={totalExpense}
+              formatRupiah={formatRupiah}
+              formatRupiahCompact={formatRupiahCompact}
+            />
+          </ErrorBoundary>
         )}
 
         {/* TAB 4: CATEGORIES */}
         {activeTab === 'categories' && (
-          <div className="max-w-3xl mx-auto space-y-6 animate-slide-up">
-            <div className="surface-card rounded-2xl p-6 sm:p-8 space-y-6">
-              
-              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
-                  <TagIcon className="w-5 h-5" />
+          <div className="max-w-2xl mx-auto space-y-5 animate-slide-up pb-10">
+            {/* Header Card */}
+            <div className="surface-card rounded-[28px] p-5 sm:p-7 space-y-5">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-purple-500/15 text-purple-600 flex items-center justify-center shadow-ios-sm shrink-0">
+                  <TagIcon className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">Kelola & Kustom Kategori</h2>
-                  <p className="text-xs text-slate-500">
-                    Tambah kategori baru sesuai kebutuhan pencatatan Anda
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Kategori Transaksi</h2>
+                  <p className="text-xs text-slate-400 font-medium">
+                    Atur kategori pengeluaran dan pemasukan keuangan Anda
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={handleAddCategory} className="flex gap-2.5">
-                <input
-                  type="text"
-                  required
-                  placeholder="Nama kategori baru (cth: Langganan AI, Servis Motor)..."
-                  value={newCatInput}
-                  onChange={(e) => setNewCatInput(e.target.value)}
-                  className="flex-1 px-4 py-2.5 rounded-xl kas-input text-xs"
-                />
+              {/* Add Input iOS Bar */}
+              <form onSubmit={handleAddCategory} className="flex flex-col sm:flex-row gap-2.5">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nama kategori baru (cth: Langganan AI, Skincare)..."
+                    value={newCatInput}
+                    onChange={(e) => setNewCatInput(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl bg-[#F2F2F7] border border-black/5 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
+                  />
+                </div>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition active:scale-95 flex items-center gap-1.5"
+                  className="px-6 py-3 rounded-2xl bg-purple-600 hover:bg-purple-700 active:scale-[0.98] text-white font-bold text-xs shadow-ios-sm transition flex items-center justify-center gap-2 shrink-0"
                 >
                   <PlusIcon className="w-4 h-4" />
-                  <span>Tambah</span>
+                  <span>Tambah Kategori</span>
                 </button>
               </form>
+            </div>
 
-              <div className="space-y-3">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+            {/* List Group iOS Style */}
+            <div className="surface-card rounded-[28px] p-5 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
                   Daftar Kategori Aktif ({categories.length})
                 </label>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {categories.map((cat, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 group hover:border-purple-300 transition"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                        <span className="text-xs font-semibold text-slate-800">{cat}</span>
-                      </div>
-
-                      <button
-                        onClick={() => handleDeleteCategory(cat)}
-                        className="text-slate-400 hover:text-rose-600 transition p-1"
-                        title="Hapus Kategori"
-                      >
-                        <TrashIcon className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                <span className="text-[11px] font-semibold text-purple-600 bg-purple-500/10 px-2.5 py-0.5 rounded-full border border-purple-500/20">
+                  Siap Digunakan
+                </span>
               </div>
 
+              <div className="divide-y divide-slate-100/80 rounded-2xl bg-[#F2F2F7]/70 border border-black/5 overflow-hidden">
+                {categories.length === 0 ? (
+                  <div className="p-8 text-center space-y-1.5">
+                    <p className="text-xs font-bold text-slate-400">Belum ada kategori</p>
+                    <p className="text-[11px] text-slate-400">Ketik nama kategori di atas untuk menambahkan kategori kustom Anda</p>
+                  </div>
+                ) : (
+                  categories.map((cat, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3.5 sm:px-4 bg-white/70 hover:bg-white transition-all gap-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0 shadow-sm"></div>
+                      <span className="text-xs font-bold text-slate-800 break-words line-clamp-2 leading-relaxed">
+                        {cat}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => handleDeleteCategory(cat)}
+                      className="w-8 h-8 rounded-xl bg-slate-100/80 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition flex items-center justify-center shrink-0 active:scale-95"
+                      title="Hapus Kategori"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                )))}
+              </div>
             </div>
           </div>
         )}
@@ -1349,7 +1544,39 @@ export default function KaskuApp() {
         activeTab={activeTab}
         setActiveTab={(tab: any) => setActiveTab(tab)}
         onOpenAddModal={() => setIsModalOpen(true)}
+        onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
+        onOpenSettingsModal={() => setIsSettingsOpen(true)}
       />
+
+      {/* Add & Edit Transaction Modal (Bottom Sheet Slide from bottom) */}
+      <ErrorBoundary>
+        <AddTransactionModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false)
+            setEditingTx(null)
+            setTitle('')
+            setAmount('')
+            setNote('')
+          }}
+          onAddTransaction={handleAddTransaction}
+          type={type}
+          setType={setType}
+          title={title}
+          setTitle={setTitle}
+          amount={amount}
+          setAmount={setAmount}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          categories={categories}
+          txDate={txDate}
+          setTxDate={setTxDate}
+          note={note}
+          setNote={setNote}
+          onOpenCategoriesTab={() => setActiveTab('categories')}
+          isEditing={Boolean(editingTx)}
+        />
+      </ErrorBoundary>
 
       {/* Modern Custom Confirm Modal (Replaces browser window.confirm) */}
       <ConfirmModal
@@ -1358,31 +1585,35 @@ export default function KaskuApp() {
       />
 
       {/* Settings Modal (Backup JSON, Restore JSON, Reset LocalStorage, Export Excel) */}
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        transactions={transactions}
-        savings={savings}
-        categories={categories}
-        onExportExcel={handleExportExcel}
-        onImportAllData={handleImportAllData}
-        onClearAllData={handleClearAllData}
-        onOpenOnboarding={() => setShowOnboarding(true)}
-        showToast={showToast}
-      />
+      <ErrorBoundary>
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          transactions={transactions}
+          savings={savings}
+          categories={categories}
+          onImportAllData={handleImportAllData}
+          onClearAllData={handleClearAllData}
+          onOpenOnboarding={() => setShowOnboarding(true)}
+          showToast={showToast}
+        />
+      </ErrorBoundary>
 
       {/* Voice AI Transaction Modal (Catat Kas Lewat Suara AI) */}
-      <VoiceAITransactionModal
-        isOpen={isVoiceModalOpen}
-        onClose={() => setIsVoiceModalOpen(false)}
-        onSaveTransaction={handleSaveVoiceTransaction}
-        categories={categories}
-        showToast={showToast}
-      />
+      <ErrorBoundary>
+        <VoiceAITransactionModal
+          isOpen={isVoiceModalOpen}
+          onClose={() => setIsVoiceModalOpen(false)}
+          onSaveTransaction={handleSaveVoiceTransaction}
+          categories={categories}
+          showToast={showToast}
+        />
+      </ErrorBoundary>
 
       {/* Force Update Modal (Kunci Akses Jika Versi Lama & Wajib Update) */}
       <ForceUpdateModal
         updateInfo={updateInfo}
+        onDismiss={() => setUpdateInfo(null)}
       />
 
       {/* Onboarding Panduan Aplikasi Bertahap (Sebelum Masuk ke Aplikasi) */}
@@ -1395,19 +1626,6 @@ export default function KaskuApp() {
             localStorage.setItem('kasku_has_onboarded_v1', 'true')
           } catch (e) {
             console.error(e)
-          }
-
-          // Setelah selesai pengenalan dan masuk ke menu utama: Munculkan notif Support Dev 3 detik (Hanya sekali)
-          const hasSeenSupportDev = localStorage.getItem('kasku_support_dev_notified_v1')
-          if (!hasSeenSupportDev) {
-            setTimeout(() => {
-              setShowSupportDevModal(true)
-              try {
-                localStorage.setItem('kasku_support_dev_notified_v1', 'true')
-              } catch (err) {
-                console.error(err)
-              }
-            }, 800)
           }
         }}
       />

@@ -86,7 +86,11 @@ node /data/data/com.termux/files/home/Nilaidbam/node_modules/esbuild/bin/esbuild
   --outfile="$BUILD_DIR/assets/app.bundle.js"
 
 echo "=== [2/6] Memperbarui asset static ke kasku_build ==="
+cp "$PROJECT_DIR/public/index.html" "$BUILD_DIR/assets/index.html" 2>/dev/null || true
 cp "$PROJECT_DIR/public/app-logo.jpg" "$BUILD_DIR/assets/app-logo.jpg" 2>/dev/null || true
+cp "$PROJECT_DIR/public/app-logo.png" "$BUILD_DIR/assets/app-logo.png" 2>/dev/null || true
+sed -i "s/app\.bundle\.js?v=[0-9]*/app\.bundle\.js?v=$NEXT_CODE/g" "$BUILD_DIR/assets/index.html" 2>/dev/null || true
+sed -i "s/styles\.css?v=[0-9]*/styles\.css?v=$NEXT_CODE/g" "$BUILD_DIR/assets/index.html" 2>/dev/null || true
 
 echo "=== [3/6] Meng-compile Resource & Generate R.java (AAPT2) ==="
 mkdir -p "$BUILD_DIR/build/gen" "$BUILD_DIR/build/classes" "$BUILD_DIR/build/dex"
@@ -141,6 +145,7 @@ java -cp "$BUILD_TOOLS/lib/apksigner.jar" com.android.apksigner.ApkSignerTool ve
 
 # Copy ke direktori project kasku, download portal, dan folder Download HP
 cp "$BUILD_DIR/build/KasKu.apk" "$PROJECT_DIR/KasKu.apk"
+cp "$BUILD_DIR/build/KasKu.apk" "$PROJECT_DIR/public/apk/KasKu.apk" 2>/dev/null || true
 cp "$BUILD_DIR/build/KasKu.apk" "$PROJECT_DIR/public/apk/kasku.apk" 2>/dev/null || true
 cp "$BUILD_DIR/build/KasKu.apk" /sdcard/Download/KasKu.apk 2>/dev/null || true
 cp "$BUILD_DIR/build/KasKu.apk" /storage/emulated/0/Download/KasKu.apk 2>/dev/null || true

@@ -1,103 +1,214 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    background-color: #f8fafc;
-    color: #0f172a;
+    background-color: #f2f2f7;
+    color: #1c1c1e;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #f1f5f9; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
 
-/* Light Theme Cards & Panels */
+/* iOS Glass Nav & Dockbar Elements - GPU Accelerated & Battery Friendly */
 .glass-nav {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid #e2e8f0;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 
+    0 10px 30px -8px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.04);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
-.surface-card {
+.ios-glass-bar {
+  background: rgba(242, 242, 247, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: none !important;
+  box-shadow: none;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.ios-sheet {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.12);
+}
+
+@media (min-width: 640px) {
+  .ios-sheet {
+    border-radius: 28px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* iOS Cards (Grouped Table View Look) */
+.surface-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 0.5px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .surface-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.09);
 }
 
-.kas-input {
+.ios-card {
   background: #ffffff;
-  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  border: 0.5px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+/* iOS Form Inputs - Polished, Crisp, and Substantial */
+.kas-input {
+  background: #f1f5f9;
+  border: 1.5px solid #e2e8f0;
   color: #0f172a;
-  transition: border-color 0.15s ease;
+  border-radius: 14px;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.kas-input::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
 }
 
 .kas-input:focus {
   background: #ffffff;
-  border-color: #059669;
+  border-color: #10b981;
+  color: #0f172a;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
 }
 
+/* iOS Primary & Action Buttons */
 .btn-primary {
-  background: #059669;
+  background: #007aff;
   color: #ffffff;
-  font-weight: 600;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  font-weight: 700;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(0, 122, 255, 0.28);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-primary:hover {
-  background: #047857;
+  background: #0066d6;
+  box-shadow: 0 6px 20px rgba(0, 122, 255, 0.35);
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
+}
+
+.btn-emerald {
+  background: #10b981;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-emerald:hover {
+  background: #059669;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+}
+
+.btn-emerald:active {
+  transform: scale(0.96);
 }
 
 .btn-danger {
-  background: #e11d48;
+  background: #f43f5e;
   color: #ffffff;
-  font-weight: 600;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  font-weight: 700;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-danger:hover {
-  background: #be123c;
+  background: #e11d48;
+}
+
+.btn-danger:active {
+  transform: scale(0.96);
 }
 
 .btn-amber {
-  background: #d97706;
+  background: #f59e0b;
   color: #ffffff;
-  font-weight: 600;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  font-weight: 700;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-amber:hover {
-  background: #b45309;
+  background: #d97706;
 }
 
-/* Fast Lightweight Animation without GPU strain */
-@keyframes slide-up {
-  from {
+.btn-amber:active {
+  transform: scale(0.96);
+}
+
+/* iOS High-Performance Physics & Silky Smooth Sheet Transitions */
+@keyframes ios-spring-up {
+  0% {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(28px) scale(0.97);
   }
-  to {
+  100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .animate-slide-up {
-  animation: slide-up 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: ios-spring-up 0.36s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes slide-bottom-sheet {
+  0% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-bottom {
+  animation: slide-bottom-sheet 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (min-width: 640px) {
+  .sm\:animate-slide-up {
+    animation: ios-spring-up 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
 }
 
 @keyframes fade-in {
@@ -106,7 +217,7 @@
 }
 
 .animate-fade-in {
-  animation: fade-in 0.15s ease-out forwards;
+  animation: fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Security & Protection: Disable text copying, image dragging, context menu, and long-press download across the App */

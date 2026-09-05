@@ -26,6 +26,7 @@ interface AddTransactionModalProps {
   note: string
   setNote: (note: string) => void
   onOpenCategoriesTab: () => void
+  isEditing?: boolean
 }
 
 export default function AddTransactionModal({
@@ -45,7 +46,8 @@ export default function AddTransactionModal({
   setTxDate,
   note,
   setNote,
-  onOpenCategoriesTab
+  onOpenCategoriesTab,
+  isEditing = false
 }: AddTransactionModalProps) {
   // Mode kustom ketik kategori langsung
   const [isCustomCategory, setIsCustomCategory] = useState(false)
@@ -63,16 +65,32 @@ export default function AddTransactionModal({
   // Lock body scroll saat modal terbuka
   React.useEffect(() => {
     if (isOpen) {
+      const originalBodyOverflow = document.body.style.overflow
       document.body.style.overflow = 'hidden'
       setIsCustomCategory(false)
       setCustomCatInput('')
+      return () => {
+        document.body.style.overflow = originalBodyOverflow || 'unset'
+      }
     } else {
-      document.body.style.overflow = 'unset'
       setIsCustomCategory(false)
       setCustomCatInput('')
     }
-    return () => {
-      document.body.style.overflow = 'unset'
+  }, [isOpen])
+
+  // Gesture tarik ke bawah (drag down to dismiss)
+  const [dragY, setDragY] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const startYRef = React.useRef(0)
+  const isDraggingRef = React.useRef(false)
+  const mountTimeRef = React.useRef(0)
+
+  React.useEffect(() => {
+    if (isOpen) {
+      mountTimeRef.current = Date.now()
+      setDragY(0)
+      setIsDragging(false)
+      isDraggingRef.current = false
     }
   }, [isOpen])
 
@@ -91,30 +109,101 @@ export default function AddTransactionModal({
     onClose()
   }
 
+  const onDragStart = (e: React.TouchEvent) => {
+    if (!e.touches || e.touches.length === 0) return
+    startYRef.current = e.touches[0].clientY
+    isDraggingRef.current = true
+    setIsDragging(true)
+  }
+
+  const onDragMove = (e: React.TouchEvent) => {
+    if (!isDraggingRef.current || !e.touches || e.touches.length === 0) return
+    const delta = e.touches[0].clientY - startYRef.current
+    if (delta > 0) {
+      setDragY(delta)
+    } else {
+      setDragY(0)
+    }
+  }
+
+  const onDragEnd = () => {
+    if (!isDraggingRef.current) return
+    isDraggingRef.current = false
+    setIsDragging(false)
+    // Ambang batas 150px untuk menutup modal
+    if (dragY > 150) {
+      setDragY(500)
+      setTimeout(() => {
+        onClose()
+        setDragY(0)
+      }, 200)
+    } else {
+      // Pastikan state isDragging false aktif sebelum/saat dragY di-reset ke 0 agar transisi snap-back mulus
+      requestAnimationFrame(() => {
+        setDragY(0)
+      })
+    }
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in touch-none select-none">
-      {/* Modal Container */}
+    <div 
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 select-none"
+    >
+      {/* Dark Overlay Backdrop - Explicit click only */}
       <div 
-        className="w-full sm:max-w-lg bg-white border border-slate-200 rounded-t-3xl sm:rounded-2xl p-5 sm:p-6 shadow-xl space-y-4 animate-slide-up max-h-[90vh] overflow-y-auto"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+        onClick={() => {
+          if (Date.now() - mountTimeRef.current > 400) {
+            onClose()
+          }
+        }}
+      />
+
+      {/* Modal Container iOS Sheet */}
+      <div 
+        className={`relative z-10 w-full sm:max-w-lg bg-white border-t sm:border border-slate-200/80 rounded-t-[32px] sm:rounded-[28px] p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto ${
+          dragY === 0 && !isDragging ? 'animate-slide-bottom sm:animate-slide-up' : ''
+        }`}
+        style={{
+          transform: dragY > 0 ? `translateY(${dragY}px)` : 'translateY(0px)',
+          transition: isDragging ? 'none' : 'transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+          willChange: 'transform',
+          touchAction: 'pan-y',
+          overscrollBehavior: 'contain'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        
+        {/* iOS Grabber Handle Bar (Area Geser Turun) */}
+        <div 
+          className="w-full pt-1 pb-4 -mt-2 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none"
+          onTouchStart={onDragStart}
+          onTouchMove={onDragMove}
+          onTouchEnd={onDragEnd}
+          onTouchCancel={onDragEnd}
+        >
+          <div className="w-12 h-1.5 bg-slate-300 hover:bg-slate-400 rounded-full transition-colors opacity-80 pointer-events-none"></div>
+        </div>
+
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <BanknotesIcon className="w-4 h-4" />
+        <div className="flex items-center justify-between pb-1">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-9 h-9 rounded-2xl flex items-center justify-center transition-colors ${type === 'income' ? 'bg-emerald-500/15 text-emerald-600' : 'bg-rose-500/15 text-rose-600'}`}>
+              <BanknotesIcon className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Catat Transaksi</h2>
-              <p className="text-[11px] text-slate-400">Pemasukan atau pengeluaran kas</p>
+              <h2 className="text-base font-extrabold text-slate-900 tracking-tight">
+                {isEditing ? 'Edit Transaksi' : 'Catat Transaksi'}
+              </h2>
+              <p className="text-[11px] text-slate-400 font-medium">
+                {isEditing ? 'Perbarui rincian data kas' : 'Pemasukan atau pengeluaran kas baru'}
+              </p>
             </div>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center font-bold text-xs transition"
+            className="w-8 h-8 rounded-full bg-[#767680]/10 hover:bg-[#767680]/20 text-slate-500 flex items-center justify-center font-bold text-xs transition active:scale-90"
           >
             ✕
           </button>
@@ -162,7 +251,6 @@ export default function AddTransactionModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-3 py-2 rounded-xl kas-input text-xs"
-              autoFocus
             />
           </div>
 
@@ -266,9 +354,8 @@ export default function AddTransactionModal({
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition active:scale-95 flex items-center justify-center gap-1.5"
+              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition active:scale-95 flex items-center justify-center"
             >
-              <BanknotesIcon className="w-3.5 h-3.5" />
               <span>Simpan Transaksi</span>
             </button>
           </div>

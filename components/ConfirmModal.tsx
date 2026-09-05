@@ -50,50 +50,40 @@ export default function ConfirmModal({
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in touch-none select-none"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-fade-in touch-none select-none"
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-xs sm:max-w-sm bg-white border border-slate-200 rounded-2xl p-5 shadow-xl space-y-3.5 animate-slide-up"
+        className="w-full max-w-xs sm:max-w-sm bg-white/95 backdrop-blur-xl border border-white/60 rounded-[28px] p-5 shadow-ios-float space-y-4 animate-slide-up text-center"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Bersih */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div 
-              className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                isDanger 
-                  ? 'bg-rose-100 text-rose-600' 
-                  : 'bg-amber-100 text-amber-600'
-              }`}
-            >
-              <TrashIcon className="w-4 h-4" />
-            </div>
-            <h3 className="text-sm font-bold text-slate-900">
-              {dialog.title}
-            </h3>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center font-bold text-xs transition"
+        {/* Icon & Judul iOS Dialog Style */}
+        <div className="flex flex-col items-center gap-2.5 pt-1">
+          <div 
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+              isDanger 
+                ? 'bg-rose-500/15 text-rose-600' 
+                : 'bg-amber-500/15 text-amber-600'
+            }`}
           >
-            ✕
-          </button>
+            <TrashIcon className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
+            {dialog.title}
+          </h3>
         </div>
 
-        {/* Pesan Singkat & Padat */}
-        <p className="text-xs text-slate-600 leading-normal">
+        {/* Pesan Dialog */}
+        <p className="text-xs text-slate-500 leading-relaxed px-2 font-medium">
           {dialog.message}
         </p>
 
-        {/* Tombol Aksi Rapi */}
-        <div className="flex gap-2 pt-1">
+        {/* Tombol Aksi iOS Dialog (Grouped Pill Buttons) */}
+        <div className="flex gap-2 pt-2">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition active:scale-95"
+            className="flex-1 py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition active:scale-95"
           >
             {dialog.cancelText || 'Batal'}
           </button>
@@ -103,13 +93,13 @@ export default function ConfirmModal({
               dialog.onConfirm()
               onClose()
             }}
-            className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs text-white shadow-sm transition active:scale-95 flex items-center justify-center gap-1 ${
+            className={`flex-1 py-2.5 px-4 rounded-2xl font-bold text-xs text-white shadow-ios-sm transition active:scale-95 flex items-center justify-center gap-1 ${
               isDanger
-                ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20'
-                : 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
+                ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/25'
+                : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/25'
             }`}
           >
-            <span>{dialog.confirmText || 'Ya, Hapus'}</span>
+            <span>{dialog.confirmText || 'Ya, Lanjutkan'}</span>
           </button>
         </div>
 

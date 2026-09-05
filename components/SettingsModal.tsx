@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import {
   Cog6ToothIcon,
   ArrowDownTrayIcon,
@@ -8,7 +8,7 @@ import {
   CheckCircleIcon,
   TrashIcon,
   HeartIcon,
-  TableCellsIcon
+  MicrophoneIcon
 } from './Icons'
 import SupportDevModal from './SupportDevModal'
 
@@ -18,7 +18,6 @@ interface SettingsModalProps {
   transactions: any[]
   savings: any[]
   categories: string[]
-  onExportExcel?: () => void
   onImportAllData: (data: { transactions?: any[]; savings?: any[]; categories?: string[] }) => void
   onClearAllData: () => void
   onOpenOnboarding?: () => void
@@ -31,7 +30,6 @@ export default function SettingsModal({
   transactions,
   savings,
   categories,
-  onExportExcel,
   onImportAllData,
   onClearAllData,
   onOpenOnboarding,
@@ -40,22 +38,43 @@ export default function SettingsModal({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const [showQrModal, setShowQrModal] = useState(false)
+  const [voiceAutoSave, setVoiceAutoSave] = useState(true)
 
-  // Kunci total scroll background (html, body, dan prevent touch event leak)
+  // Baca preferensi Voice AI Auto Save
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('kasku_voice_auto_save')
+      if (saved !== null) {
+        setVoiceAutoSave(saved === 'true')
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }, [isOpen])
+
+  // Kunci scroll background saat modal terbuka
   React.useEffect(() => {
     if (isOpen) {
       const originalBodyOverflow = document.body.style.overflow
-      const originalHtmlOverflow = document.documentElement.style.overflow
-      
       document.body.style.overflow = 'hidden'
-      document.documentElement.style.overflow = 'hidden'
-      document.body.style.touchAction = 'none'
 
       return () => {
         document.body.style.overflow = originalBodyOverflow || 'unset'
-        document.documentElement.style.overflow = originalHtmlOverflow || 'unset'
-        document.body.style.touchAction = 'auto'
       }
+    }
+  }, [isOpen])
+
+  // Gesture tarik ke bawah (drag down to dismiss)
+  const [dragY, setDragY] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const startYRef = useRef(0)
+  const isDraggingRef = useRef(false)
+  const isBackdropTouchRef = useRef(false)
+  const mountTimeRef = useRef(0)
+
+  useEffect(() => {
+    if (isOpen) {
+      mountTimeRef.current = Date.now()
     }
   }, [isOpen])
 
@@ -75,25 +94,16 @@ export default function SettingsModal({
         }
       }
 
-      const rawJson = JSON.stringify(backupData, null, 2)
-      const filename = `kasku_cadangan_${new Date().toISOString().split('T')[0]}.json`
+      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+        JSON.stringify(backupData, null, 2)
+      )}`
 
-      // Jika berjalan di Android Native APK
-      if (typeof (window as any) !== 'undefined' && (window as any).AndroidFile) {
-        try {
-          const base64Data = btoa(unescape(encodeURIComponent(rawJson)))
-          ;(window as any).AndroidFile.saveAndOpenFile(base64Data, filename, 'application/json')
-          showToast('Cadangan data JSON berhasil disimpan di Download!')
-          return
-        } catch (err) {
-          console.error(err)
-        }
-      }
-
-      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(rawJson)}`
       const downloadAnchor = document.createElement('a')
       downloadAnchor.setAttribute('href', jsonString)
-      downloadAnchor.setAttribute('download', filename)
+      downloadAnchor.setAttribute(
+        'download',
+        `kasku_cadangan_${new Date().toISOString().split('T')[0]}.json`
+      )
       document.body.appendChild(downloadAnchor)
       downloadAnchor.click()
       downloadAnchor.remove()
@@ -149,33 +159,94 @@ export default function SettingsModal({
     reader.readAsText(file)
   }
 
+
+  const onDragStart = (e: React.TouchEvent) => {
+    e.stopPropagation()
+    startYRef.current = e.touches[0].clientY
+    isDraggingRef.current = true
+    setIsDragging(true)
+  }
+
+  const onDragMove = (e: React.TouchEvent) => {
+    if (!isDraggingRef.current) return
+    e.stopPropagation()
+    const delta = e.touches[0].clientY - startYRef.current
+    if (delta > 0) {
+      setDragY(delta)
+    } else {
+      setDragY(0)
+    }
+  }
+
+  const onDragEnd = (e: React.TouchEvent) => {
+    if (!isDraggingRef.current) return
+    e.stopPropagation()
+    isDraggingRef.current = false
+    setIsDragging(false)
+    if (dragY > 150) {
+      setDragY(450)
+      setTimeout(() => {
+        onClose()
+        setDragY(0)
+      }, 200)
+    } else {
+      requestAnimationFrame(() => {
+        setDragY(0)
+      })
+    }
+  }
+
   return (
     <>
-      <div 
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in select-none overscroll-none touch-none"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) onClose()
-        }}
-        onTouchMove={(e) => {
-          if (e.target === e.currentTarget) e.preventDefault()
-        }}
-      >
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 select-none">
+        {/* Dark Overlay Backdrop - Explicit click only */}
         <div 
-          className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl space-y-4 border border-slate-100 max-h-[90vh] overflow-y-auto overscroll-contain touch-pan-y"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 z-0"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && Date.now() - mountTimeRef.current > 400) {
+              onClose()
+            }
+          }}
+        />
+
+        <div 
+          className={`relative z-10 w-full sm:max-w-md bg-white border-t sm:border border-slate-200/80 rounded-t-[32px] sm:rounded-[28px] p-5 sm:p-6 shadow-ios-float space-y-4 max-h-[90vh] overflow-y-auto ${
+            dragY === 0 && !isDragging ? 'animate-slide-bottom sm:animate-slide-up' : ''
+          }`}
+          style={{
+            transform: dragY > 0 ? `translateY(${dragY}px)` : 'translateY(0px)',
+            transition: isDragging ? 'none' : 'transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+            willChange: 'transform',
+            touchAction: 'pan-y',
+            overscrollBehavior: 'contain'
+          }}
           onClick={(e) => e.stopPropagation()}
         >
-          
-          {/* Header */}
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
-                <Cog6ToothIcon className="w-4 h-4" />
+          {/* iOS Grabber Handle Bar (Area Geser Turun) */}
+          <div 
+            className="w-full pt-1 pb-4 -mt-2 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none"
+            onTouchStart={onDragStart}
+            onTouchMove={onDragMove}
+            onTouchEnd={onDragEnd}
+            onTouchCancel={onDragEnd}
+          >
+            <div className="w-12 h-1.5 bg-slate-300 hover:bg-slate-400 rounded-full transition-colors opacity-80 pointer-events-none"></div>
+          </div>
+
+          {/* Header iOS Style */}
+          <div className="flex items-center justify-between pb-1">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-800">
+                <Cog6ToothIcon className="w-5 h-5" />
               </div>
-              <h3 className="font-extrabold text-sm text-slate-900">Pengaturan & Cadangan</h3>
+              <div>
+                <h3 className="font-extrabold text-base text-slate-900 tracking-tight">Pengaturan & Cadangan</h3>
+                <p className="text-[11px] text-slate-400 font-medium">Cadangan data & preferensi kas</p>
+              </div>
             </div>
             <button
               onClick={onClose}
-              className="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs font-bold"
+              className="w-8 h-8 rounded-full bg-[#767680]/10 hover:bg-[#767680]/20 text-slate-500 flex items-center justify-center font-bold text-xs transition active:scale-90"
             >
               ✕
             </button>
@@ -209,38 +280,74 @@ export default function SettingsModal({
             </p>
           </div>
 
-          {/* Ekspor Laporan Excel & Backup Data */}
+          {/* Mode Voice AI (Opsi A Auto-Save vs Opsi B Konfirmasi) */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                  <MicrophoneIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-extrabold text-slate-900 block leading-tight">
+                    Mode Voice AI
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium block">
+                    {voiceAutoSave ? 'Opsi A: Auto-Save Langsung' : 'Opsi B: Konfirmasi Form'}
+                  </span>
+                </div>
+              </div>
+
+              {/* iOS Style Toggle Switch */}
+              <button
+                type="button"
+                onClick={() => {
+                  const newVal = !voiceAutoSave
+                  setVoiceAutoSave(newVal)
+                  try {
+                    localStorage.setItem('kasku_voice_auto_save', String(newVal))
+                  } catch (e) {
+                    console.error(e)
+                  }
+                  showToast(newVal ? 'Voice AI: Auto-Save Langsung aktif' : 'Voice AI: Mode Konfirmasi Form aktif')
+                }}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  voiceAutoSave ? 'bg-emerald-600' : 'bg-slate-300'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                    voiceAutoSave ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <p className="text-[10.5px] text-slate-500 leading-relaxed">
+              {voiceAutoSave ? (
+                <span>
+                  <strong className="text-emerald-700 font-bold">Opsi A Aktif:</strong> Begitu selesai bicara & nominal terdeteksi, transaksi langsung tersimpan otomatis tanpa perlu klik tombol lagi.
+                </span>
+              ) : (
+                <span>
+                  <strong className="text-slate-800 font-bold">Opsi B Aktif:</strong> Setelah bicara, form hasil AI akan muncul dan layar otomatis scroll ke tombol Simpan untuk Anda periksa terlebih dahulu.
+                </span>
+              )}
+            </p>
+          </div>
+
+          {/* Backup & Restore Data */}
           <div className="space-y-2">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Ekspor Laporan &amp; Cadangan Data
+              Cadangan Data (JSON)
             </span>
 
-            {/* Tombol Ekspor Excel Berwarna */}
-            {onExportExcel && (
-              <button
-                onClick={() => {
-                  onClose()
-                  onExportExcel()
-                }}
-                className="w-full py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-bold flex items-center justify-between transition active:scale-95 border border-emerald-200"
-              >
-                <div className="flex items-center gap-2">
-                  <TableCellsIcon className="w-4 h-4 text-emerald-600" />
-                  <span>Ekspor Excel (.xls) Berwarna</span>
-                </div>
-                <span className="text-[9px] font-bold bg-emerald-200/80 text-emerald-800 px-2 py-0.5 rounded-md font-mono">
-                  EXCEL
-                </span>
-              </button>
-            )}
-
-            {/* Tombol Backup JSON */}
+            {/* Tombol Backup */}
             <button
               onClick={handleExportJSON}
               className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-between transition active:scale-95 border border-slate-200"
             >
               <div className="flex items-center gap-2">
-                <ArrowDownTrayIcon className="w-4 h-4 text-slate-600" />
+                <ArrowDownTrayIcon className="w-4 h-4 text-emerald-600" />
                 <span>Unduh Cadangan (Backup JSON)</span>
               </div>
               <span className="text-[10px] text-slate-400 font-mono">.json</span>

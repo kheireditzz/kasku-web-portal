@@ -102,59 +102,61 @@ export default function OnboardingModal({ isOpen, onFinish, appVersion = '1.1.6'
   }
 
   return (
-    <div className="fixed inset-0 z-[1000] w-full h-full bg-white flex flex-col justify-between p-6 select-none touch-none animate-fade-in">
+    <div className="fixed inset-0 z-[1000] w-full h-full bg-[#f2f2f7] flex flex-col justify-between p-6 select-none touch-none animate-fade-in">
       
-      {/* Top Header: Brand & Tombol Lewati Semua */}
+      {/* Top Header: Brand & Tombol Lewati */}
       <div className="w-full flex items-center justify-between pt-2">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg overflow-hidden shadow-xs bg-emerald-600 text-white flex items-center justify-center">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl overflow-hidden shadow-sm flex items-center justify-center bg-[#0d1117]">
             {APP_LOGO_BASE64 ? (
               <img src={APP_LOGO_BASE64} alt="Logo" className="w-full h-full object-cover" />
             ) : (
               <KasKuBrandLogo className="w-4 h-4" />
             )}
           </div>
-          <span className="font-extrabold text-sm text-emerald-600 tracking-tight">KasKu</span>
+          <span className="font-extrabold text-base text-slate-900 tracking-tight">KasKu</span>
         </div>
 
         <button
           type="button"
           onClick={onFinish}
-          className="text-xs font-bold text-slate-400 hover:text-slate-700 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition active:scale-95"
+          className="text-xs font-bold text-slate-400 hover:text-slate-700 px-3.5 py-1.5 rounded-full bg-white/80 hover:bg-white shadow-ios-sm transition active:scale-95"
         >
-          Lewati Semua
+          Lewati
         </button>
       </div>
 
-      {/* Konten Utama di Tengah Layar Full */}
+      {/* Konten Utama di Tengah Layar iOS Welcome Style */}
       <div className="my-auto max-w-sm mx-auto w-full text-center space-y-6 animate-slide-up">
         
-        {/* Ikon Besar / Ilustrasi Fitur */}
-        <div className="py-2">
-          {stepData.icon}
+        {/* Ikon Besar / Ilustrasi Fitur iOS Squircle */}
+        <div className="py-3 flex justify-center">
+          <div className="p-3 bg-white/80 rounded-[32px] shadow-ios-lg backdrop-blur-md">
+            {stepData.icon}
+          </div>
         </div>
 
         {/* Info Judul & Subtitle */}
         <div className="space-y-2">
-          <span className="text-[11px] font-mono uppercase tracking-wider font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+          <span className="text-[11px] font-mono uppercase tracking-wider font-bold px-3 py-1 rounded-full bg-white text-emerald-700 shadow-ios-sm border border-black/5">
             {stepData.badge}
           </span>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight pt-2">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pt-2">
             {stepData.title}
           </h1>
-          <p className="text-sm font-semibold text-emerald-600">
+          <p className="text-sm font-bold text-emerald-600">
             {stepData.subtitle}
           </p>
         </div>
 
-        {/* Deskripsi Bersih */}
-        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
+        {/* Deskripsi Apple Card */}
+        <div className="p-5 rounded-3xl bg-white shadow-ios-sm border border-black/5 text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
           <p>{stepData.description}</p>
         </div>
 
       </div>
 
-      {/* Bagian Bawah: Indikator Dots & Tombol Lewati */}
+      {/* Bagian Bawah: Indikator Dots & Tombol iOS Lanjutkan */}
       <div className="w-full max-w-sm mx-auto space-y-4 pb-4">
         {/* Indikator Titik (Dots) */}
         <div className="flex items-center justify-center gap-2">
@@ -163,21 +165,21 @@ export default function OnboardingModal({ isOpen, onFinish, appVersion = '1.1.6'
               key={idx}
               className={`h-2 rounded-full transition-all duration-300 ${
                 idx === currentStep
-                  ? 'w-8 bg-emerald-600'
-                  : 'w-2 bg-slate-200'
+                  ? 'w-7 bg-emerald-600'
+                  : 'w-2 bg-slate-300'
               }`}
             />
           ))}
         </div>
 
-        {/* Tombol Aksi Utama */}
+        {/* Tombol Aksi iOS Continue Button */}
         <button
           type="button"
           onClick={handleNext}
-          className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-sm shadow-lg shadow-emerald-600/25 transition flex items-center justify-center gap-2"
+          className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 text-white font-extrabold text-sm shadow-ios transition flex items-center justify-center gap-2"
         >
-          <span>{isLastStep ? 'Mulai Masuk Aplikasi' : 'Lewati'}</span>
-          <span className="text-xs opacity-75 font-mono">({currentStep + 1}/{ONBOARDING_STEPS.length})</span>
+          <span>{isLastStep ? 'Mulai Gunakan KasKu' : 'Lanjutkan'}</span>
+          <span className="text-xs opacity-80 font-mono">({currentStep + 1}/{ONBOARDING_STEPS.length})</span>
         </button>
       </div>
 

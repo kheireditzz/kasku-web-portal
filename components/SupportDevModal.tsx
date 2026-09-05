@@ -61,7 +61,7 @@ export default function SupportDevModal({ isOpen, onClose, autoCloseSeconds = 3 
 
   return (
     <div 
-      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in select-none overscroll-none touch-none"
+      className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fade-in select-none overscroll-none touch-none"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -70,47 +70,54 @@ export default function SupportDevModal({ isOpen, onClose, autoCloseSeconds = 3 
       }}
     >
       <div 
-        className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl space-y-4 border border-slate-100 max-h-[92vh] overflow-y-auto overscroll-contain touch-pan-y"
+        className="w-full sm:max-w-sm bg-white border-t sm:border border-slate-200/80 rounded-t-[32px] sm:rounded-[28px] p-6 shadow-ios-float space-y-4 max-h-[92vh] overflow-y-auto overscroll-contain touch-pan-y animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        
+        {/* iOS Grabber */}
+        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2 sm:hidden opacity-75"></div>
+
         {/* Header Modal */}
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <HeartIcon className="w-4 h-4 fill-current" />
+        <div className="flex items-center justify-between pb-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-rose-500/15 text-rose-600 flex items-center justify-center">
+              <HeartIcon className="w-5 h-5 fill-current" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm text-slate-900 leading-tight">
-                Bantuan &amp; Support Dev
+              <h3 className="font-extrabold text-base text-slate-900 tracking-tight">
+                Support Developer
               </h3>
-              <span className="text-[10px] text-slate-400">KasKu Developer</span>
+              <span className="text-[11px] text-slate-400 font-medium">Bantuan & Donasi QRIS DANA</span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs font-bold"
+            className="w-8 h-8 rounded-full bg-[#767680]/10 hover:bg-[#767680]/20 text-slate-500 flex items-center justify-center text-xs font-bold transition active:scale-90"
           >
             ✕
           </button>
         </div>
 
-        {/* Gambar QRIS DANA (Direct Embedded Base64) */}
+        {/* Gambar QRIS DANA */}
         <div className="text-center space-y-2">
-          <div className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200 shadow-xs inline-block mx-auto overflow-hidden">
-            <img
-              src={QRIS_DANA_IMAGE}
-              alt="QRIS DANA Support Developer"
-              className="w-52 h-auto object-contain rounded-xl mx-auto block"
-              loading="eager"
-            />
+          <div className="p-3 rounded-3xl bg-slate-50 border border-slate-200/80 shadow-ios-sm inline-block mx-auto overflow-hidden">
+            {QRIS_DANA_IMAGE ? (
+              <img
+                src={QRIS_DANA_IMAGE}
+                alt="QRIS DANA Support Dev"
+                className="w-48 h-48 sm:w-52 sm:h-52 object-contain mx-auto rounded-2xl"
+              />
+            ) : (
+              <div className="w-48 h-48 sm:w-52 sm:h-52 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 text-xs font-bold">
+                QRIS DANA
+              </div>
+            )}
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-              DANA / QRIS Terverifikasi
+          <div className="space-y-0.5">
+            <span className="text-xs font-extrabold text-slate-800 block">
+              Scan via DANA / GoPay / OVO / Bank
             </span>
-            <p className="text-xs text-slate-600 pt-1.5 leading-relaxed">
-              Dukung kelanjutan KasKu agar tetap <strong>bebas iklan</strong>, cepat, dan selalu mendapatkan update.
+            <p className="text-[10px] text-slate-400 font-medium">
+              Setiap donasi sangat berarti untuk kelangsungan KasKu
             </p>
           </div>
         </div>

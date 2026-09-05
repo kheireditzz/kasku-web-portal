@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   PiggyBankIcon,
   CutePiggyIcon,
@@ -11,8 +12,19 @@ import {
   SparklesIcon,
   CheckCircleIcon,
   ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon
+  ArrowTrendingDownIcon,
+  PencilSquareIcon,
+  CalendarIcon,
+  XMarkIcon
 } from './Icons'
+
+export interface SavingHistoryItem {
+  id: string
+  type: 'deposit' | 'withdraw'
+  amount: number
+  date: string
+  note?: string
+}
 
 export interface SavingGoal {
   id: string
@@ -22,6 +34,7 @@ export interface SavingGoal {
   targetDate?: string
   color: string
   categoryIcon?: string
+  history?: SavingHistoryItem[]
 }
 
 export default function SavingsSection({
@@ -45,11 +58,60 @@ export default function SavingsSection({
   const [targetDate, setTargetDate] = useState('')
   const [selectedColor, setSelectedColor] = useState('amber')
 
-  // Top up / Deposit state
+  // Top up / Deposit / Withdraw state
   const [depositModalGoal, setDepositModalGoal] = useState<SavingGoal | null>(null)
   const [depositAmount, setDepositAmount] = useState('')
+  const [depositNote, setDepositNote] = useState('')
   const [isWithdrawMode, setIsWithdrawMode] = useState(false)
-  const [autoSyncWithKas, setAutoSyncWithKas] = useState(true)
+
+  // Edit Goal state
+  const [editModalGoal, setEditModalGoal] = useState<SavingGoal | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editTargetAmount, setEditTargetAmount] = useState('')
+  const [editCurrentAmount, setEditCurrentAmount] = useState('')
+  const [editTargetDate, setEditTargetDate] = useState('')
+  const [editColor, setEditColor] = useState('amber')
+  const [mounted, setMounted] = useState(false)
+
+  // Drag-to-dismiss state for Edit Modal
+  const [editDragY, setEditDragY] = useState(0)
+  const [editIsDragging, setEditIsDragging] = useState(false)
+  const editStartYRef = React.useRef(0)
+  const editIsDraggingRef = React.useRef(false)
+
+  // Drag-to-dismiss state for Deposit Modal
+  const [depositDragY, setDepositDragY] = useState(0)
+  const [depositIsDragging, setDepositIsDragging] = useState(false)
+  const depositStartYRef = React.useRef(0)
+  const depositIsDraggingRef = React.useRef(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Kunci scroll background saat modal edit atau modal setor/tarik aktif
+  useEffect(() => {
+    if (editModalGoal || depositModalGoal) {
+      document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+      document.body.style.touchAction = 'none'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+    } else {
+      document.body.style.overflow = 'unset'
+      document.documentElement.style.overflow = 'unset'
+      document.body.style.touchAction = 'auto'
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+      document.documentElement.style.overflow = 'unset'
+      document.body.style.touchAction = 'auto'
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+  }, [editModalGoal, depositModalGoal])
 
   const COLOR_OPTIONS = [
     { name: 'amber', label: 'Emas / Amber', bg: 'from-amber-500 via-orange-500 to-amber-600', text: 'text-amber-400', badge: 'bg-amber-500/15 border-amber-500/30 text-amber-300' },
@@ -60,6 +122,21 @@ export default function SavingsSection({
   ]
 
   const QUICK_AMOUNTS = [20000, 50000, 100000, 500000, 1000000]
+
+  const formatCompact = (val: number) => {
+    const absVal = Math.abs(val || 0)
+    const sign = val < 0 ? '-' : ''
+    if (absVal >= 1_000_000_000_000) {
+      return `${sign}Rp ${(absVal / 1_000_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} T`
+    }
+    if (absVal >= 1_000_000_000) {
+      return `${sign}Rp ${(absVal / 1_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} M`
+    }
+    if (absVal >= 100_000_000) {
+      return `${sign}Rp ${(absVal / 1_000_000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} Jt`
+    }
+    return formatRupiah(val)
+  }
 
   const totalSaved = savings.reduce((acc, s) => acc + s.currentAmount, 0)
   const totalTarget = savings.reduce((acc, s) => acc + s.targetAmount, 0)
@@ -81,20 +158,17 @@ export default function SavingsSection({
       targetAmount: target,
       currentAmount: Math.max(0, initial),
       targetDate: targetDate || undefined,
-      color: selectedColor
+      color: selectedColor,
+      history: initial > 0 ? [{
+        id: `SAV-HIST-${Date.now()}`,
+        type: 'deposit',
+        amount: initial,
+        date: new Date().toISOString().split('T')[0],
+        note: 'Saldo awal tabungan'
+      }] : []
     }
 
     setSavings([newGoal, ...savings])
-
-    // If initial amount > 0 and callback exists, record as saving expense
-    if (initial > 0 && onAutoRecordTransaction && autoSyncWithKas) {
-      onAutoRecordTransaction(
-        `Setor Awal Tabungan: ${newGoal.title}`,
-        initial,
-        'expense',
-        'Tabungan & Investasi'
-      )
-    }
 
     setGoalTitle('')
     setTargetAmount('')
@@ -112,6 +186,54 @@ export default function SavingsSection({
     }
   }
 
+  // Buka Modal Edit Tabungan
+  const handleOpenEdit = (goal: SavingGoal) => {
+    setEditModalGoal(goal)
+    setEditTitle(goal.title)
+    setEditTargetAmount(goal.targetAmount.toString())
+    setEditCurrentAmount(goal.currentAmount.toString())
+    setEditTargetDate(goal.targetDate || '')
+    setEditColor(goal.color || 'amber')
+  }
+
+  // Simpan Perubahan Edit Tabungan
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editModalGoal) return
+
+    const parsedTarget = parseFloat(editTargetAmount)
+    const parsedCurrent = parseFloat(editCurrentAmount)
+
+    if (!editTitle.trim() || isNaN(parsedTarget) || parsedTarget <= 0) {
+      showToast('Nama tabungan dan target dana harus diisi dengan benar!')
+      return
+    }
+
+    if (isNaN(parsedCurrent) || parsedCurrent < 0) {
+      showToast('Saldo saat ini tidak boleh bernilai negatif!')
+      return
+    }
+
+    const updated = savings.map(s => {
+      if (s.id === editModalGoal.id) {
+        return {
+          ...s,
+          title: editTitle.trim(),
+          targetAmount: parsedTarget,
+          currentAmount: parsedCurrent,
+          targetDate: editTargetDate || undefined,
+          color: editColor
+        }
+      }
+      return s
+    })
+
+    setSavings(updated)
+    setEditModalGoal(null)
+    showToast(`✓ Tabungan "${editTitle.trim()}" berhasil diperbarui!`)
+  }
+
+  // Proses Setor / Tarik Tabungan
   const handleDeposit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!depositModalGoal) return
@@ -125,102 +247,159 @@ export default function SavingsSection({
 
     // Cek jika penarikan melebihi saldo tabungan
     if (isWithdrawMode && rawVal > depositModalGoal.currentAmount) {
-      showToast(`Saldo tabungan hanya ${formatRupiah(depositModalGoal.currentAmount)}!`)
+      showToast(`Saldo tabungan tidak cukup! Tersedia ${formatRupiah(depositModalGoal.currentAmount)}`)
       return
+    }
+
+    const historyItem: SavingHistoryItem = {
+      id: `SAV-HIST-${Date.now()}`,
+      type: isWithdrawMode ? 'withdraw' : 'deposit',
+      amount: rawVal,
+      date: new Date().toISOString().split('T')[0],
+      note: depositNote.trim() || (isWithdrawMode ? 'Penarikan celengan' : 'Setoran tabungan')
     }
 
     const updated = savings.map(s => {
       if (s.id === depositModalGoal.id) {
         const nextAmount = Math.max(0, s.currentAmount + actualAmount)
-        return { ...s, currentAmount: nextAmount }
+        const curHistory = s.history || []
+        return {
+          ...s,
+          currentAmount: nextAmount,
+          history: [historyItem, ...curHistory]
+        }
       }
       return s
     })
 
     setSavings(updated)
 
-    // Sinkronisasi otomatis ke buku kas jika dipilih
-    if (onAutoRecordTransaction && autoSyncWithKas) {
-      if (isWithdrawMode) {
-        // Ambil dari tabungan = Pemasukan ke Kas Dompet
-        onAutoRecordTransaction(
-          `Tarik dari Celengan: ${depositModalGoal.title}`,
-          rawVal,
-          'income',
-          'Tabungan & Investasi'
-        )
-      } else {
-        // Nabung ke celengan = Pengeluaran dari Kas Dompet
-        onAutoRecordTransaction(
-          `Nabung ke Celengan: ${depositModalGoal.title}`,
-          rawVal,
-          'expense',
-          'Tabungan & Investasi'
-        )
-      }
+    // Logika Pemisahan Data:
+    // HANYA TARIK yang masuk ke Data Kas Umum (Kas Masuk),
+    // sedangkan ISI TABUNGAN murni dicatat di internal celengan (tidak tercampur ke transaksi kas umum).
+    if (isWithdrawMode && onAutoRecordTransaction) {
+      onAutoRecordTransaction(
+        `Tarik dari Celengan: ${depositModalGoal.title}`,
+        rawVal,
+        'income',
+        'Tabungan & Investasi'
+      )
     }
 
     setDepositAmount('')
+    setDepositNote('')
     setDepositModalGoal(null)
-    showToast(isWithdrawMode ? '💸 Tabungan ditarik ke Saldo Kas' : '💰 Hore! Tabungan berhasil disetor!')
+    showToast(isWithdrawMode ? '💸 Tabungan ditarik & masuk ke Kas Umum!' : '💰 Hore! Saldo tabungan berhasil bertambah!')
+  }
+
+  // Drag-to-dismiss handlers for Edit Modal
+  const onEditDragStart = (e: React.TouchEvent) => {
+    e.stopPropagation()
+    editStartYRef.current = e.touches[0].clientY
+    editIsDraggingRef.current = true
+    setEditIsDragging(true)
+  }
+  const onEditDragMove = (e: React.TouchEvent) => {
+    if (!editIsDraggingRef.current) return
+    e.stopPropagation()
+    const delta = e.touches[0].clientY - editStartYRef.current
+    setEditDragY(delta > 0 ? delta : 0)
+  }
+  const onEditDragEnd = (e: React.TouchEvent) => {
+    if (!editIsDraggingRef.current) return
+    e.stopPropagation()
+    editIsDraggingRef.current = false
+    setEditIsDragging(false)
+    if (editDragY > 80) {
+      setEditDragY(500)
+      setTimeout(() => { setEditModalGoal(null); setEditDragY(0) }, 200)
+    } else {
+      setEditDragY(0)
+    }
+  }
+
+  // Drag-to-dismiss handlers for Deposit Modal
+  const onDepositDragStart = (e: React.TouchEvent) => {
+    e.stopPropagation()
+    depositStartYRef.current = e.touches[0].clientY
+    depositIsDraggingRef.current = true
+    setDepositIsDragging(true)
+  }
+  const onDepositDragMove = (e: React.TouchEvent) => {
+    if (!depositIsDraggingRef.current) return
+    e.stopPropagation()
+    const delta = e.touches[0].clientY - depositStartYRef.current
+    setDepositDragY(delta > 0 ? delta : 0)
+  }
+  const onDepositDragEnd = (e: React.TouchEvent) => {
+    if (!depositIsDraggingRef.current) return
+    e.stopPropagation()
+    depositIsDraggingRef.current = false
+    setDepositIsDragging(false)
+    if (depositDragY > 80) {
+      setDepositDragY(500)
+      setTimeout(() => { setDepositModalGoal(null); setDepositDragY(0) }, 200)
+    } else {
+      setDepositDragY(0)
+    }
   }
 
   return (
     <div className="space-y-6 animate-slide-up">
       
-      {/* Top Banner Tabungan & Header Ringkasan Impian */}
-      <div className="rounded-2xl surface-card p-6 border border-slate-200">
+      {/* Top Banner Tabungan & Header Ringkasan Impian - iOS Style Grouped Card */}
+      <div className="surface-card rounded-[28px] p-6 sm:p-7">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center shadow-ios-sm">
                 <CutePiggyIcon className="w-6 h-6" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                    Celengan & Target Finansial
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                    Celengan &amp; Target Impian
                   </h2>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Wujudkan impian, dana darurat, wishlist belanja, dan investasi masa depan Anda
+                <p className="text-xs text-slate-400 font-medium mt-0.5">
+                  Wujudkan impian, dana darurat, wishlist belanja, dan tabungan masa depan
                 </p>
               </div>
             </div>
 
-            {/* Micro badges */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-slate-600">
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100">
-                <TrophyIcon className="w-3.5 h-3.5 text-amber-600" />
+            {/* Micro badges iOS Style */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 font-bold border border-amber-500/20">
+                <TrophyIcon className="w-3.5 h-3.5" />
                 <span>{savings.filter(s => s.currentAmount >= s.targetAmount).length} Target Tercapai</span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100">
-                <RocketIcon className="w-3.5 h-3.5 text-cyan-600" />
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 font-bold border border-blue-500/20">
+                <RocketIcon className="w-3.5 h-3.5" />
                 <span>{savings.filter(s => s.currentAmount < s.targetAmount).length} Sedang Berjalan</span>
               </div>
             </div>
           </div>
 
-          {/* Stat Cards Mini */}
+          {/* Stat Cards Mini iOS Widgets */}
           <div className="grid grid-cols-2 sm:flex sm:items-center gap-3 self-start lg:self-auto w-full lg:w-auto">
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex-1 min-w-[140px]">
-              <span className="text-[10px] uppercase font-mono text-slate-500 font-semibold block">Total Terkumpul</span>
-              <span className="text-lg sm:text-xl font-bold font-mono text-amber-600 block mt-0.5">
+            <div className="p-4 rounded-2xl bg-[#f2f2f7] border border-black/5 flex-1 min-w-[140px]">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Terkumpul</span>
+              <span className="text-lg sm:text-xl font-black font-mono text-amber-500 block mt-1">
                 {formatRupiah(totalSaved)}
               </span>
-              <span className="text-[10px] text-slate-400 font-mono block">
+              <span className="text-[10px] text-slate-400 font-mono block font-medium">
                 Target: {formatRupiah(totalTarget)}
               </span>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex-1 min-w-[130px]">
-              <span className="text-[10px] uppercase font-mono text-slate-500 font-semibold block">Rata-rata Progress</span>
-              <span className="text-lg sm:text-xl font-bold font-mono text-emerald-600 block mt-0.5">
+            <div className="p-4 rounded-2xl bg-[#f2f2f7] border border-black/5 flex-1 min-w-[130px]">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Pencapaian</span>
+              <span className="text-lg sm:text-xl font-black font-mono text-emerald-600 block mt-1">
                 {totalPercentage}%
               </span>
-              <div className="w-full h-1.5 rounded-full bg-slate-200 mt-1.5 overflow-hidden">
+              <div className="w-full h-2 rounded-full bg-slate-200 mt-2 overflow-hidden">
                 <div 
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
                   style={{ width: `${totalPercentage}%` }}
                 />
               </div>
@@ -328,20 +507,6 @@ export default function SavingsSection({
                 </div>
               </div>
 
-              {/* Toggle Sync ke Saldo Kas */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <span className="text-[11px] font-semibold text-slate-800 block">Hubungkan ke Saldo Kas</span>
-                  <span className="text-[10px] text-slate-500 block">Catat otomatis mutasi saat nabung/tarik</span>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={autoSyncWithKas}
-                  onChange={(e) => setAutoSyncWithKas(e.target.checked)}
-                  className="w-4 h-4 rounded accent-emerald-600 cursor-pointer"
-                />
-              </div>
-
               <button
                 type="submit"
                 className="w-full py-3 rounded-xl font-bold text-xs tracking-wide bg-amber-600 hover:bg-amber-700 text-white shadow-sm transition active:scale-[0.98] flex items-center justify-center gap-2 mt-2"
@@ -426,51 +591,89 @@ export default function SavingsSection({
 
                       {/* Amounts */}
                       <div className="space-y-1 pt-0.5">
-                        <div className="flex items-baseline justify-between">
-                          <span className="text-base font-bold font-mono text-slate-900 tracking-tight">
+                        <div className="flex items-baseline justify-between gap-2 overflow-hidden">
+                          <span 
+                            title={formatRupiah(s.currentAmount)}
+                            className={`font-black font-mono text-slate-900 tracking-tight truncate ${
+                              s.currentAmount >= 1_000_000_000 
+                                ? 'text-sm sm:text-base' 
+                                : 'text-base'
+                            }`}
+                          >
                             {formatRupiah(s.currentAmount)}
                           </span>
-                          <span className="text-[11px] font-semibold font-mono text-slate-400">
-                            / {formatRupiah(s.targetAmount)}
+                          <span 
+                            title={`Target: ${formatRupiah(s.targetAmount)}`}
+                            className="text-[11px] font-semibold font-mono text-slate-400 truncate shrink-0"
+                          >
+                            / {s.targetAmount >= 100_000_000 ? formatCompact(s.targetAmount) : formatRupiah(s.targetAmount)}
                           </span>
                         </div>
 
                         {/* Progress Bar */}
-                        <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                           <div
                             className={`h-full rounded-full bg-gradient-to-r ${colorObj.bg} transition-all duration-500`}
                             style={{ width: `${percent}%` }}
                           />
                         </div>
 
-                        <div className="flex justify-between items-center text-[11px] pt-0.5">
-                          <span className={`font-bold font-mono ${isFinished ? 'text-emerald-600' : 'text-slate-600'}`}>
+                        <div className="flex justify-between items-center text-[11px] pt-0.5 gap-1">
+                          <span className={`font-bold font-mono truncate ${isFinished ? 'text-emerald-600' : 'text-slate-600'}`}>
                             {isFinished ? '🎉 Selesai!' : `${percent}% terkumpul`}
                           </span>
-                          <span className="font-mono text-slate-400 text-[10px]">
+                          <span className="font-mono text-slate-400 text-[10px] truncate shrink-0">
                             {isFinished 
                               ? 'Target tercapai' 
-                              : `Sisa ${formatRupiah(Math.max(0, s.targetAmount - s.currentAmount))}`}
+                              : `Sisa ${formatCompact(Math.max(0, s.targetAmount - s.currentAmount))}`}
                           </span>
                         </div>
                       </div>
 
-                      {/* Action Button: Nabung / Ambil */}
-                      <button
-                        onClick={() => {
-                          setDepositModalGoal(s)
-                          setDepositAmount('')
-                          setIsWithdrawMode(false)
-                        }}
-                        className={`w-full py-2 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 ${
-                          isFinished 
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' 
-                            : 'bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 hover:border-amber-300'
-                        }`}
-                      >
-                        <PlusIcon className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Isi / Tarik Tabungan</span>
-                      </button>
+                      {/* Action Buttons: Edit, Nabung (+), Tarik (-) */}
+                      <div className="pt-1 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(s)}
+                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition active:scale-95 flex items-center justify-center"
+                          title="Edit Target Tabungan"
+                        >
+                          <PencilSquareIcon className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDepositModalGoal(s)
+                            setDepositAmount('')
+                            setDepositNote('')
+                            setIsWithdrawMode(false)
+                          }}
+                          className="flex-1 py-2 px-2.5 rounded-xl font-bold text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 transition active:scale-95 flex items-center justify-center gap-1"
+                        >
+                          <PlusIcon className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Isi</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={s.currentAmount <= 0}
+                          onClick={() => {
+                            setDepositModalGoal(s)
+                            setDepositAmount('')
+                            setDepositNote('')
+                            setIsWithdrawMode(true)
+                          }}
+                          className={`flex-1 py-2 px-2.5 rounded-xl font-bold text-xs transition active:scale-95 flex items-center justify-center gap-1 ${
+                            s.currentAmount > 0
+                              ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80'
+                              : 'bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed'
+                          }`}
+                        >
+                          <ArrowTrendingDownIcon className="w-3.5 h-3.5 text-rose-500" />
+                          <span>Tarik</span>
+                        </button>
+                      </div>
 
                     </div>
                   )
@@ -483,57 +686,258 @@ export default function SavingsSection({
 
       </div>
 
-      {/* Modal Nabung / Tarik Celengan Modern White */}
-      {depositModalGoal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl p-6 space-y-4 animate-slide-up shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+      {/* Modal Edit Tabungan - Bersih, Clean & Keluar dari Bawah (Portal ke Body) */}
+      {editModalGoal && mounted && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md animate-fade-in touch-none select-none"
+          onClick={() => setEditModalGoal(null)}
+        >
+          <div 
+            className={`w-full sm:max-w-lg bg-white border-t sm:border border-slate-200/80 rounded-t-[32px] sm:rounded-[28px] p-6 shadow-ios-float space-y-4 max-h-[92vh] overflow-y-auto ${
+              editIsDragging ? '' : 'transition-transform duration-200 ease-out'
+            } ${editDragY === 0 && !editIsDragging ? 'animate-slide-bottom sm:animate-slide-up' : ''}`}
+            style={{
+              transform: editDragY > 0 ? `translateY(${editDragY}px)` : 'translateY(0px)',
+              overscrollBehavior: 'contain'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* iOS Drag Indicator Handle on Mobile - Swipe Down to Close */}
+            <div 
+              className="w-full pt-1 pb-3 -mt-2 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
+              onTouchStart={onEditDragStart}
+              onTouchMove={onEditDragMove}
+              onTouchEnd={onEditDragEnd}
+              onTouchCancel={onEditDragEnd}
+            >
+              <div className="w-12 h-1.5 bg-slate-300 hover:bg-slate-400 rounded-full transition-colors opacity-80 pointer-events-none"></div>
+            </div>
+            {/* Header Modal - Konsisten dengan Target Celengan Baru */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                  <CutePiggyIcon className="w-5 h-5" />
+                  <PencilSquareIcon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">{depositModalGoal.title}</h3>
-                  <p className="text-[10px] text-slate-500 font-mono">
+                  <h3 className="text-sm font-bold text-slate-900 tracking-wide">Edit Target Tabungan</h3>
+                  <p className="text-[11px] text-slate-500">Sesuaikan target, saldo, atau warna impian Anda</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 font-bold border border-amber-200">
+                  Perbarui
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setEditModalGoal(null)}
+                  className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center font-bold text-xs transition"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
+              {/* Nama Tabungan */}
+              <div className="space-y-1.5">
+                <label className="text-slate-700 font-semibold block">Nama Impian / Wishlist *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Beli iPhone, Dana Darurat, Liburan Bali"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl kas-input text-xs font-medium"
+                />
+              </div>
+
+              {/* Target & Saldo */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-slate-700 font-semibold block">Target Dana (Rp) *</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-2.5 text-slate-400 font-mono font-bold text-xs">Rp</span>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={editTargetAmount}
+                      onChange={(e) => setEditTargetAmount(e.target.value)}
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl kas-input text-xs font-mono font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-slate-700 font-semibold block">Saldo Saat Ini (Rp) *</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-2.5 text-amber-500 font-mono font-bold text-xs">Rp</span>
+                    <input
+                      type="number"
+                      min="0"
+                      required
+                      value={editCurrentAmount}
+                      onChange={(e) => setEditCurrentAmount(e.target.value)}
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl kas-input text-xs font-mono font-semibold text-amber-700"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Target Tanggal */}
+              <div className="space-y-1.5">
+                <label className="text-slate-700 font-semibold block">Target Tanggal</label>
+                <input
+                  type="date"
+                  value={editTargetDate}
+                  onChange={(e) => setEditTargetDate(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl kas-input text-xs font-mono"
+                />
+              </div>
+
+              {/* Pilihan Warna Tema Kartu Tabungan */}
+              <div className="space-y-2 pt-1">
+                <label className="text-slate-500 font-semibold block">Palet Warna Kartu Celengan</label>
+                <div className="grid grid-cols-5 gap-2">
+                  {COLOR_OPTIONS.map((c) => (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onClick={() => setEditColor(c.name)}
+                      className={`h-8 rounded-xl bg-gradient-to-tr ${c.bg} transition-all flex items-center justify-center ${
+                        editColor === c.name 
+                          ? 'ring-2 ring-slate-800 scale-105 shadow-sm' 
+                          : 'opacity-70 hover:opacity-100'
+                      }`}
+                      title={c.label}
+                    >
+                      {editColor === c.name && (
+                        <CheckCircleIcon className="w-4 h-4 text-white drop-shadow" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditModalGoal(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition active:scale-95 text-xs"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-[2] py-2.5 rounded-xl font-bold text-xs tracking-wide bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white shadow-sm transition flex items-center justify-center gap-1.5"
+                >
+                  <SparklesIcon className="w-4 h-4" />
+                  <span>Simpan Perubahan</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal Isi (Setor) & Tarik Tabungan - Bersih, Clean & Keluar dari Bawah (Portal ke Body) */}
+      {depositModalGoal && mounted && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md animate-fade-in touch-none select-none"
+          onClick={() => setDepositModalGoal(null)}
+        >
+          <div 
+            className={`w-full sm:max-w-lg bg-white border-t sm:border border-slate-200/80 rounded-t-[32px] sm:rounded-[28px] p-6 shadow-ios-float space-y-4 max-h-[92vh] overflow-y-auto ${
+              depositIsDragging ? '' : 'transition-transform duration-200 ease-out'
+            } ${depositDragY === 0 && !depositIsDragging ? 'animate-slide-bottom sm:animate-slide-up' : ''}`}
+            style={{
+              transform: depositDragY > 0 ? `translateY(${depositDragY}px)` : 'translateY(0px)',
+              overscrollBehavior: 'contain'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* iOS Drag Indicator Handle on Mobile - Swipe Down to Close */}
+            <div 
+              className="w-full pt-1 pb-3 -mt-2 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
+              onTouchStart={onDepositDragStart}
+              onTouchMove={onDepositDragMove}
+              onTouchEnd={onDepositDragEnd}
+              onTouchCancel={onDepositDragEnd}
+            >
+              <div className="w-12 h-1.5 bg-slate-300 hover:bg-slate-400 rounded-full transition-colors opacity-80 pointer-events-none"></div>
+            </div>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                  isWithdrawMode ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
+                }`}>
+                  {isWithdrawMode ? (
+                    <ArrowTrendingDownIcon className="w-5 h-5" />
+                  ) : (
+                    <ArrowTrendingUpIcon className="w-5 h-5" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 tracking-wide">{depositModalGoal.title}</h3>
+                  <p className="text-[11px] text-slate-500 font-mono">
                     Saldo: <span className="text-amber-600 font-bold">{formatRupiah(depositModalGoal.currentAmount)}</span>
                   </p>
                 </div>
               </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md font-bold border ${
+                  isWithdrawMode 
+                    ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                }`}>
+                  {isWithdrawMode ? 'Tarik' : 'Isi'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setDepositModalGoal(null)}
+                  className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center font-bold text-xs transition"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
-            {/* Switch Mode: Nabung (+) vs Tarik (-) */}
+            {/* Switch Tab: Isi Tabungan (+) vs Tarik (-) */}
             <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-100">
               <button
                 type="button"
                 onClick={() => setIsWithdrawMode(false)}
-                className={`py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                className={`py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                   !isWithdrawMode 
                     ? 'bg-white text-amber-700 shadow-sm' 
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <ArrowTrendingUpIcon className="w-3.5 h-3.5 text-amber-600" />
-                <span>Nabung (+)</span>
+                <ArrowTrendingUpIcon className="w-4 h-4 text-amber-600" />
+                <span>Isi Tabungan</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsWithdrawMode(true)}
-                className={`py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                className={`py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                   isWithdrawMode 
                     ? 'bg-white text-rose-700 shadow-sm' 
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <ArrowTrendingDownIcon className="w-3.5 h-3.5 text-rose-600" />
-                <span>Tarik Dana (-)</span>
+                <ArrowTrendingDownIcon className="w-4 h-4 text-rose-600" />
+                <span>Tarik Dana</span>
               </button>
             </div>
 
             <form onSubmit={handleDeposit} className="space-y-4 text-xs">
               <div className="space-y-1.5">
                 <label className="text-slate-700 font-semibold block">
-                  {isWithdrawMode ? 'Nominal Tarik Tunai (Rp)' : 'Nominal Setor Tabungan (Rp)'}
+                  {isWithdrawMode ? 'Nominal Tarik Tunai (Rp) *' : 'Nominal Setor Tabungan (Rp) *'}
                 </label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-2.5 text-slate-400 font-mono font-bold text-xs">Rp</span>
@@ -553,7 +957,7 @@ export default function SavingsSection({
               {/* Quick Amount Chips */}
               <div className="space-y-1.5">
                 <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">
-                  Nominal Cepat:
+                  Pilih Cepat:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {QUICK_AMOUNTS.map((amt) => (
@@ -569,41 +973,51 @@ export default function SavingsSection({
                 </div>
               </div>
 
-              {/* Checkbox Sinkron ke Kas */}
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                <span className="text-[11px] text-slate-700 font-medium">
-                  {isWithdrawMode ? 'Tambah ke Kas Masuk' : 'Potong dari Kas Dompet'}
-                </span>
+              {/* Catatan Tambahan (Opsional) */}
+              <div className="space-y-1.5">
+                <label className="text-slate-700 font-semibold block">Catatan (Opsional)</label>
                 <input
-                  type="checkbox"
-                  checked={autoSyncWithKas}
-                  onChange={(e) => setAutoSyncWithKas(e.target.checked)}
-                  className="w-4 h-4 rounded accent-amber-600 cursor-pointer"
+                  type="text"
+                  placeholder={isWithdrawMode ? "Keperluan penarikan..." : "Sumber tabungan..."}
+                  value={depositNote}
+                  onChange={(e) => setDepositNote(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl kas-input text-xs font-medium"
                 />
               </div>
 
-              <div className="flex gap-2.5 pt-1">
+              <div className="flex gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => setDepositModalGoal(null)}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition"
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition active:scale-95 text-xs"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className={`flex-[2] py-2.5 rounded-xl font-bold text-xs text-white shadow transition active:scale-95 ${
+                  className={`flex-[2] py-2.5 rounded-xl font-bold text-xs text-white shadow-sm transition active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                     isWithdrawMode 
-                      ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20' 
-                      : 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
+                      ? 'bg-rose-600 hover:bg-rose-700' 
+                      : 'bg-amber-600 hover:bg-amber-700'
                   }`}
                 >
-                  {isWithdrawMode ? 'Tarik Sekarang' : 'Nabung Sekarang'}
+                  {isWithdrawMode ? (
+                    <>
+                      <ArrowTrendingDownIcon className="w-4 h-4" />
+                      <span>Tarik &amp; Masuk Kas</span>
+                    </>
+                  ) : (
+                    <>
+                      <SparklesIcon className="w-4 h-4" />
+                      <span>Setor Tabungan</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
