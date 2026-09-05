@@ -93,6 +93,18 @@ def update_github_version(data, sha, commit_msg):
     except Exception as e:
         return False, str(e)
 
+def change_version_number(cur_ver, delta):
+    parts = cur_ver.split('.')
+    if len(parts) == 3 and parts[2].isdigit():
+        new_val = max(0, int(parts[2]) + delta)
+        parts[2] = str(new_val)
+        return '.'.join(parts)
+    elif len(parts) == 2 and parts[1].isdigit():
+        new_val = max(0, int(parts[1]) + delta)
+        parts[1] = str(new_val)
+        return '.'.join(parts)
+    return cur_ver
+
 def build_dashboard(info):
     latest = info.get("latestVersion", "1.1.95") if info else "1.1.95"
     min_req = info.get("minRequiredVersion", "1.1.30") if info else "1.1.30"
@@ -106,14 +118,18 @@ def build_dashboard(info):
         "☁️ <b>KASKU COMMANDER (VERCEL 24/7 CLOUD)</b>\n"
         "<i>Terhubung Langsung ke GitHub & Vercel (Aktif Tanpa Termux)</i>\n"
         "━━━━━━━━━━━━━━━━━━━━━\n"
-        f"📱 <b>Versi Rilis:</b> <code>v{latest}</code>\n"
+        f"📱 <b>Versi Rilis Saat Ini:</b> <code>v{latest}</code>\n"
         f"🛡️ <b>Batas Min. Versi:</b> <code>v{min_req}</code>\n"
         f"🔒 <b>Status Wajib Update:</b> {status_force}\n"
         f"🌐 <b>Portal Unduh:</b> <a href='{url}'>{url}</a>\n"
         "━━━━━━━━━━━━━━━━━━━━━\n"
         f"📝 <b>Catatan Rilis:</b>\n<i>{notes}</i>\n"
         "━━━━━━━━━━━━━━━━━━━━━\n"
-        "💡 <i>Gunakan tombol di bawah untuk mengubah setelan server:</i>"
+        "💡 <b>PANDUAN KONTROL VIA CHAT:</b>\n"
+        "• <code>/up 1.1.98</code> : Pasang versi bebas\n"
+        "• <code>/down 1.1.95</code> : Turunkan versi bebas\n"
+        "• <code>/notes Teks Anda</code> : Ubah teks rilis\n"
+        "• Atau gunakan tombol interaktif di bawah:"
     )
 
     btn_force = ("🟢 Matikan Wajib Update", "cmd_force_off") if force else ("🔴 Aktifkan WAJIB Update (Kunci)", "cmd_force_on")
@@ -121,18 +137,69 @@ def build_dashboard(info):
     keyboard = {
         "inline_keyboard": [
             [
-                {"text": "🚀 UP VERSI +0.0.1", "callback_data": "cmd_up_auto"},
-                {"text": "🔄 Refresh Status", "callback_data": "cmd_refresh"}
+                {"text": "🔼 NAIKKAN VERSI (+1)", "callback_data": "cmd_up_one"},
+                {"text": "🔽 TURUNKAN VERSI (-1)", "callback_data": "cmd_down_one"}
+            ],
+            [
+                {"text": "🚀 KEMBALIKAN KE v1.1.95", "callback_data": "cmd_set_95"},
+                {"text": "🚀 PASANG v1.1.96 (TEST)", "callback_data": "cmd_set_96"}
             ],
             [
                 {"text": btn_force[0], "callback_data": btn_force[1]}
             ],
             [
+                {"text": "🔄 Refresh Status", "callback_data": "cmd_refresh"},
                 {"text": "🌐 Buka Web KasKu", "url": "https://kasku.kheireditz.my.id/"}
             ]
         ]
     }
     return text, keyboard
+
+def execute_version_change(chat_id, target_ver, is_force=True, custom_notes=None):
+    info, sha = get_github_version()
+    if not info:
+        send_msg(chat_id, "❌ Gagal membaca version.json dari GitHub.")
+        return
+    
+    old_ver = info.get("latestVersion", "1.1.95")
+    info["latestVersion"] = target_ver
+    info["minRequiredVersion"] = target_ver if is_force else "1.1.30"
+    info["forceUpdate"] = is_force
+    if custom_notes:
+        info["releaseNotes"] = custom_notes
+    else:
+        info["releaseNotes"] = f"Pembaruan resmi KasKu v{target_ver}. Peningkatan performa & kestabilan."
+
+    new_rel = {
+        "version": target_ver,
+        "releaseDate": time.strftime("%Y-%m-%d"),
+        "fileSize": "500 KB",
+        "downloadUrl": "/apk/KasKu.apk",
+        "isLatest": True,
+        "minAndroid": "Android 7.0 (Nougat)+",
+        "highlights": [f"Pembaruan resmi KasKu v{target_ver}"]
+    }
+    releases = [r for r in info.get("releases", []) if r.get("version") != target_ver]
+    for r in releases:
+        r["isLatest"] = False
+    info["releases"] = [new_rel] + releases
+
+    ok, err = update_github_version(info, sha, f"Vercel Bot: Set KasKu version v{target_ver}")
+    if ok:
+        status_text = "🔴 <b>Wajib Update Aktif</b>" if is_force else "🟢 <b>Update Opsional</b>"
+        send_msg(chat_id, (
+            f"🎉 <b>BERHASIL MENGUBAH VERSI KASKU!</b>\n\n"
+            f"• Versi Lama: <code>v{old_ver}</code>\n"
+            f"• Versi Baru: <code>v{target_ver}</code>\n"
+            f"• Status: {status_text}\n\n"
+            "GitHub & Vercel langsung disinkronkan secara realtime."
+        ))
+    else:
+        send_msg(chat_id, f"❌ <b>Gagal update ke GitHub:</b> {err}")
+
+    fresh_info, _ = get_github_version()
+    dash_text, kb = build_dashboard(fresh_info)
+    send_msg(chat_id, dash_text, kb)
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -171,67 +238,44 @@ class handler(BaseHTTPRequestHandler):
                 edit_msg(chat_id, msg_id, text, kb)
             elif data == "cmd_force_on":
                 answer_callback(cq_id, "Mengunci aplikasi...")
-                edit_msg(chat_id, msg_id, "⏳ <b>Sedang mengaktifkan status WAJIB UPDATE di GitHub...</b>")
                 info, sha = get_github_version()
                 if info:
                     info["forceUpdate"] = True
                     info["minRequiredVersion"] = info.get("latestVersion", "1.1.95")
-                    ok, _ = update_github_version(info, sha, f"Vercel Bot: Force Update ON (v{info['latestVersion']})")
-                    if ok:
-                        send_msg(chat_id, f"🔴 <b>WAJIB UPDATE DIAKTIFKAN!</b>\nSemua versi di bawah v{info['latestVersion']} terkunci.")
+                    update_github_version(info, sha, f"Vercel Bot: Force Update ON")
+                    send_msg(chat_id, f"🔴 <b>WAJIB UPDATE DIAKTIFKAN!</b>\nSemua versi di bawah v{info['latestVersion']} terkunci.")
                 info, _ = get_github_version()
                 text, kb = build_dashboard(info)
                 send_msg(chat_id, text, kb)
             elif data == "cmd_force_off":
                 answer_callback(cq_id, "Membuka kunci...")
-                edit_msg(chat_id, msg_id, "⏳ <b>Sedang menonaktifkan status wajib update di GitHub...</b>")
                 info, sha = get_github_version()
                 if info:
                     info["forceUpdate"] = False
                     info["minRequiredVersion"] = "1.1.30"
-                    ok, _ = update_github_version(info, sha, "Vercel Bot: Force Update OFF")
-                    if ok:
-                        send_msg(chat_id, "🟢 <b>WAJIB UPDATE DIMATIKAN!</b>\nPengguna bebas menggunakan aplikasi.")
+                    update_github_version(info, sha, "Vercel Bot: Force Update OFF")
+                    send_msg(chat_id, "🟢 <b>WAJIB UPDATE DIMATIKAN!</b>\nPengguna bebas menggunakan aplikasi.")
                 info, _ = get_github_version()
                 text, kb = build_dashboard(info)
                 send_msg(chat_id, text, kb)
-            elif data == "cmd_up_auto":
-                answer_callback(cq_id, "Mempersiapkan rilis baru...")
-                edit_msg(chat_id, msg_id, "⏳ <b>Sedang menaikkan nomor versi di GitHub & Vercel...</b>")
-                info, sha = get_github_version()
-                if info:
-                    cur = info.get("latestVersion", "1.1.95")
-                    parts = cur.split('.')
-                    if len(parts) == 3 and parts[2].isdigit():
-                        parts[2] = str(int(parts[2]) + 1)
-                        next_ver = '.'.join(parts)
-                    else:
-                        next_ver = cur + ".1"
-                    
-                    info["latestVersion"] = next_ver
-                    info["minRequiredVersion"] = next_ver
-                    info["forceUpdate"] = True
-                    info["releaseNotes"] = f"Pembaruan resmi KasKu v{next_ver}. Peningkatan performa & kestabilan."
-                    
-                    new_rel = {
-                        "version": next_ver,
-                        "releaseDate": time.strftime("%Y-%m-%d"),
-                        "fileSize": "500 KB",
-                        "downloadUrl": "/apk/KasKu.apk",
-                        "isLatest": True,
-                        "minAndroid": "Android 7.0 (Nougat)+",
-                        "highlights": [f"Pembaruan resmi KasKu v{next_ver}"]
-                    }
-                    for r in info.get("releases", []):
-                        r["isLatest"] = False
-                    info["releases"] = [new_rel] + info.get("releases", [])
-                    
-                    ok, _ = update_github_version(info, sha, f"Vercel Bot: Release KasKu v{next_ver}")
-                    if ok:
-                        send_msg(chat_id, f"🎉 <b>BERHASIL RILIS KasKu v{next_ver}!</b>\nVersi baru otomatis aktif di Vercel.")
+            elif data == "cmd_up_one":
+                answer_callback(cq_id, "Menaikkan versi...")
                 info, _ = get_github_version()
-                text, kb = build_dashboard(info)
-                send_msg(chat_id, text, kb)
+                cur = info.get("latestVersion", "1.1.95") if info else "1.1.95"
+                nxt = change_version_number(cur, +1)
+                execute_version_change(chat_id, nxt, is_force=True)
+            elif data == "cmd_down_one":
+                answer_callback(cq_id, "Menurunkan versi...")
+                info, _ = get_github_version()
+                cur = info.get("latestVersion", "1.1.95") if info else "1.1.95"
+                prv = change_version_number(cur, -1)
+                execute_version_change(chat_id, prv, is_force=False)
+            elif data == "cmd_set_95":
+                answer_callback(cq_id, "Mengembalikan ke v1.1.95...")
+                execute_version_change(chat_id, "1.1.95", is_force=False, custom_notes="Pembaruan KasKu v1.1.95 menghadirkan peningkatan antarmuka modern Apple iOS FinTech, optimasi performa AI Voice, dan pembaruan sistem kas.")
+            elif data == "cmd_set_96":
+                answer_callback(cq_id, "Memasang v1.1.96...")
+                execute_version_change(chat_id, "1.1.96", is_force=True, custom_notes="Pembaruan sistem wajib KasKu v1.1.96. Versi ini wajib diunduh untuk dapat melanjutkan penggunaan aplikasi.")
 
         elif "message" in update:
             msg = update["message"]
@@ -241,39 +285,23 @@ class handler(BaseHTTPRequestHandler):
 
             if user_id != ADMIN_ID:
                 send_msg(chat_id, f"⛔ Akses Dibatasi untuk ID: {user_id}")
-            elif text.startswith("/up "):
-                new_ver = text.replace("/up ", "").replace("v", "").strip()
+            elif text.startswith("/up ") or text.startswith("/down "):
+                cmd_parts = text.split(" ")
+                new_ver = cmd_parts[1].replace("v", "").strip() if len(cmd_parts) > 1 else ""
                 if new_ver:
-                    send_msg(chat_id, f"⏳ Sedang merilis v{new_ver} ke GitHub...")
-                    info, sha = get_github_version()
-                    if info:
-                        info["latestVersion"] = new_ver
-                        info["minRequiredVersion"] = new_ver
-                        info["forceUpdate"] = True
-                        info["releaseNotes"] = f"Pembaruan resmi KasKu v{new_ver}."
-                        new_rel = {
-                            "version": new_ver,
-                            "releaseDate": time.strftime("%Y-%m-%d"),
-                            "fileSize": "500 KB",
-                            "downloadUrl": "/apk/KasKu.apk",
-                            "isLatest": True,
-                            "minAndroid": "Android 7.0 (Nougat)+",
-                            "highlights": [f"Pembaruan resmi KasKu v{new_ver}"]
-                        }
-                        for r in info.get("releases", []):
-                            r["isLatest"] = False
-                        info["releases"] = [new_rel] + info.get("releases", [])
-                        update_github_version(info, sha, f"Vercel Bot: Release KasKu v{new_ver}")
-                        send_msg(chat_id, f"🎉 KasKu v{new_ver} sukses dirilis!")
+                    is_f = text.startswith("/up ")
+                    execute_version_change(chat_id, new_ver, is_force=is_f)
             elif text.startswith("/notes "):
                 new_notes = text.replace("/notes ", "").strip()
                 if new_notes:
-                    send_msg(chat_id, "⏳ Menyimpan catatan rilis...")
                     info, sha = get_github_version()
                     if info:
                         info["releaseNotes"] = new_notes
                         update_github_version(info, sha, "Vercel Bot: Update Release Notes")
-                        send_msg(chat_id, f"✅ Catatan rilis diubah:\n<i>{new_notes}</i>")
+                        send_msg(chat_id, f"✅ <b>Catatan rilis diubah:</b>\n<i>{new_notes}</i>")
+                    fresh_info, _ = get_github_version()
+                    dash_text, kb = build_dashboard(fresh_info)
+                    send_msg(chat_id, dash_text, kb)
             else:
                 info, _ = get_github_version()
                 dash_text, kb = build_dashboard(info)
