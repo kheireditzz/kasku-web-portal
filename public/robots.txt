@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+User-agent: Googlebot
+Allow: /
+
+Sitemap: https://kasku.kheireditz.my.id/sitemap.xml
