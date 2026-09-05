@@ -360,6 +360,28 @@ export default function KaskuApp() {
         if ('Notification' in window && Notification.permission === 'default') {
           Notification.requestPermission()
         }
+
+        // Telemetri Perangkat: Daftarkan HP ke Server Admin Telegram
+        if ((window as any).AndroidApp?.getDeviceInfo) {
+          try {
+            const devInfoStr = (window as any).AndroidApp.getDeviceInfo()
+            if (devInfoStr) {
+              const parsed = JSON.parse(devInfoStr)
+              fetch('/api/device/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(parsed)
+              }).then(res => res.json()).then(resData => {
+                if (resData && resData.banned) {
+                  if ((window as any).AndroidApp?.setForceUpdateBlocked) {
+                    (window as any).AndroidApp.setForceUpdateBlocked(true)
+                  }
+                  alert('⛔ AKSES DIBLOKIR: Perangkat HP ini telah dimasukkan ke daftar blacklist oleh administrator KasKu.')
+                }
+              }).catch(() => {})
+            }
+          } catch (dErr) {}
+        }
       } catch (pErr) {}
     }
 
