@@ -333,7 +333,7 @@ export async function POST(req: Request) {
         const fresh = await getGithubVersion()
         const { text: t, keyboard: k } = buildDashboard(fresh?.data)
         await sendMsg(chatId, t, k)
-      } else if (text.startsWith('/up ') || text.startswith('/down ')) {
+      } else if (text.startsWith('/up ') || text.startsWith('/down ')) {
         const cmdParts = text.split(' ')
         const newVer = cmdParts[1] ? cmdParts[1].replace('v', '').trim() : ''
         if (newVer) {
