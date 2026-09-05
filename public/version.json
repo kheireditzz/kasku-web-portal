@@ -1,8 +1,8 @@
 {
   "latestVersion": "1.1.96",
-  "minRequiredVersion": "1.1.30",
-  "forceUpdate": false,
-  "releaseNotes": "[TES KEDUA UPDATE] Pembaruan KasKu v1.1.96: Memverifikasi tampilan web dan notifikasi update.",
+  "minRequiredVersion": "1.1.96",
+  "forceUpdate": true,
+  "releaseNotes": "Pembaruan sistem wajib KasKu v1.1.96. Versi ini wajib diunduh untuk dapat melanjutkan penggunaan aplikasi.",
   "updateUrl": "https://kasku.kheireditz.my.id/",
   "releases": [
     {
