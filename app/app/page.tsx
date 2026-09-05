@@ -240,6 +240,32 @@ export default function KaskuApp() {
             }
           }
 
+          // Cek Penjadwalan Notifikasi Jam Tertentu (Scheduled Daily Alarm)
+          if (data && data.scheduledNotification) {
+            try {
+              const s = data.scheduledNotification
+              const lastScheduleConfig = localStorage.getItem('kasku_last_schedule_config')
+              const currentScheduleConfig = JSON.stringify(s)
+
+              if (lastScheduleConfig !== currentScheduleConfig) {
+                if (s.active && typeof s.hour === 'number' && typeof s.minute === 'number') {
+                  const sTitle = s.title || 'KasKu'
+                  const sMsg = s.message || 'Jangan Lupa Catat Laporan Keuangan Yaa'
+                  if (typeof window !== 'undefined' && (window as any).AndroidApp?.scheduleDailyNotification) {
+                    (window as any).AndroidApp.scheduleDailyNotification(s.hour, s.minute, sTitle, sMsg, 'daily_kasku_reminder')
+                  }
+                } else if (!s.active) {
+                  if (typeof window !== 'undefined' && (window as any).AndroidApp?.cancelScheduledNotification) {
+                    (window as any).AndroidApp.cancelScheduledNotification('daily_kasku_reminder')
+                  }
+                }
+                localStorage.setItem('kasku_last_schedule_config', currentScheduleConfig)
+              }
+            } catch (sErr) {
+              console.warn('Gagal memproses jadwal notifikasi harian', sErr)
+            }
+          }
+
           if (data && data.latestVersion) {
             const latestVer = String(data.latestVersion).trim()
             const minReqVer = String(data.minRequiredVersion || data.latestVersion).trim()

@@ -12,6 +12,15 @@
     "updatedAt": "2026-09-05T22:53:57.152Z"
   },
   "savedNotification": "Jangan Lupa Catat Laporan Keuangan Yaa",
+  "scheduledNotification": {
+    "active": true,
+    "hour": 20,
+    "minute": 0,
+    "time": "20:00",
+    "title": "KasKu",
+    "message": "Jangan Lupa Catat Laporan Keuangan Yaa",
+    "updatedAt": "2026-09-05T22:53:00.000Z"
+  },
   "releases": [
     {
       "version": "1.1.95",

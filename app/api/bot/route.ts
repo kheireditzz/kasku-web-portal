@@ -133,6 +133,12 @@ function buildDashboard(info: any) {
 
   const savedNotif = info?.savedNotification || 'Jangan Lupa Catat Laporan Keuangan Yaa'
 
+  const sched = info?.scheduledNotification
+  const schedTime = (sched && sched.time) ? sched.time : (typeof sched?.hour === 'number' ? `${String(sched.hour).padStart(2, '0')}:${String(sched.minute || 0).padStart(2, '0')}` : '20:00')
+  const schedStatus = sched?.active 
+    ? `⏰ <b>Jadwal Pengingat Harian:</b> 🟢 <b>AKTIF (${schedTime} WIB)</b>\n  └ <i>« ${sched?.message || savedNotif} »</i>` 
+    : '⏰ <b>Jadwal Pengingat Harian:</b> ⚪ <b>NONAKTIF</b>'
+
   const text =
     '┏━━━━━━━━━━━━━━━━━━━━━┓\n' +
     '   💎 <b>KASKU CLOUD COMMANDER</b>\n' +
@@ -147,6 +153,7 @@ function buildDashboard(info: any) {
     '📝 <b>CATATAN RILIS TERBARU:</b>\n' +
     `  └ <i>« ${notes} »</i>\n\n` +
     `${broadcastStatus}\n` +
+    `${schedStatus}\n` +
     `📌 <b>Template Notif Tersimpan:</b>\n  └ <i>« ${savedNotif} »</i>\n\n` +
     '⚡ <i>Sentuh tombol di bawah untuk mengontrol server secara instan:</i>'
 
@@ -154,6 +161,14 @@ function buildDashboard(info: any) {
     inline_keyboard: [
       [
         { text: '⚡ Notif Cepat: Catat Laporan Keuangan', callback_data: 'cmd_quick_notif' }
+      ],
+      [
+        { text: '⏰ Set Jam 20:00 (Malam)', callback_data: 'cmd_set_jadwal_20' },
+        { text: '⏰ Set Jam 13:00 (Siang)', callback_data: 'cmd_set_jadwal_13' }
+      ],
+      [
+        { text: '⏰ Panduan Jam Bebas', callback_data: 'cmd_prompt_jadwal' },
+        { text: '🔕 Matikan Jadwal Jam', callback_data: 'cmd_clear_jadwal' }
       ],
       [
         { text: '🔼 Naikkan (+1)', callback_data: 'cmd_up_one' },
@@ -458,6 +473,80 @@ export async function POST(req: Request) {
             '<code>/setnotif Jangan Lupa Catat Laporan Keuangan Yaa</code>\n\n' +
             '<i>Setelah disimpan, Anda cukup menekan tombol "🚀 Kirim Notif Tersimpan" kapan saja untuk membroadcast ulang tanpa perlu mengetik lagi!</i>'
         )
+      } else if (data === 'cmd_set_jadwal_20' || data === 'cmd_set_jadwal_13') {
+        const hour = data === 'cmd_set_jadwal_20' ? 20 : 13
+        const minute = 0
+        const timeStr = `${String(hour).padStart(2, '0')}:00`
+        await answerCallback(cqId, `⏰ Menyetel jadwal pengingat pukul ${timeStr}...`)
+        await editMsg(chatId, msgId, `⏳ <b>[1/2] Menyetel alarm pengingat harian jam ${timeStr} WIB di cloud...</b>`)
+        await sendChatAction(chatId, 'typing')
+
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          const defaultMsg = fileInfo.data.savedNotification || 'Jangan Lupa Catat Laporan Keuangan Yaa'
+          fileInfo.data.scheduledNotification = {
+            active: true,
+            hour: hour,
+            minute: minute,
+            time: timeStr,
+            title: 'KasKu',
+            message: defaultMsg,
+            updatedAt: new Date().toISOString()
+          }
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Set Schedule ${timeStr}`)
+          await editMsg(
+            chatId,
+            msgId,
+            `⏰ <b>[2/2] JADWAL PENGINGAT HARIAN AKTIF!</b>\n` +
+              `━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• <b>Waktu:</b> Setiap hari pukul <b>${timeStr} WIB</b>\n` +
+              `• <b>Judul:</b> KasKu\n` +
+              `• <b>Pesan:</b> ${defaultMsg}\n` +
+              `━━━━━━━━━━━━━━━━━━━━━\n` +
+              `📱 <i>Aplikasi di HP seluruh pengguna akan otomatis membunyikan notifikasi setiap pukul ${timeStr}!</i>`
+          )
+        }
+        const fresh = await getGithubVersion()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, t, k)
+      } else if (data === 'cmd_prompt_jadwal') {
+        await answerCallback(cqId, 'Ketik /jadwal HH:mm [pesan]')
+        await sendMsg(
+          chatId,
+          '⏰ <b>CARA MENGATUR JADWAL NOTIFIKASI JAM BEBAS:</b>\n' +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            'Format perintah:\n' +
+            '<code>/jadwal [Jam:Menit] [Pesan Bebas]</code>\n\n' +
+            '<b>Contoh 1:</b>\n' +
+            '<code>/jadwal 21:00</code> (Pakai template tersimpan)\n\n' +
+            '<b>Contoh 2:</b>\n' +
+            '<code>/jadwal 07:30 Semangat pagi! Jangan lupa cek saldo kas hari ini.</code>\n\n' +
+            '<b>Contoh 3 (Matikan Jadwal):</b>\n' +
+            '<code>/clearjadwal</code>\n' +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            '<i>Pengingat akan muncul otomatis di jam tersebut di HP pengguna!</i>'
+        )
+      } else if (data === 'cmd_clear_jadwal') {
+        await answerCallback(cqId, '🔕 Mematikan jadwal pengingat...')
+        await editMsg(chatId, msgId, '⏳ <b>Menonaktifkan jadwal pengingat harian...</b>')
+        await sendChatAction(chatId, 'typing')
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          fileInfo.data.scheduledNotification = {
+            active: false,
+            hour: null,
+            minute: null,
+            time: null,
+            title: '',
+            message: '',
+            updatedAt: new Date().toISOString()
+          }
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, 'Vercel Bot: Clear Scheduled Notification')
+          await editMsg(chatId, msgId, '🔕 <b>JADWAL PENGINGAT HARIAN TELAH DINONAKTIFKAN!</b>')
+        }
+        const fresh = await getGithubVersion()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, t, k)
       } else if (data === 'cmd_clear_notif') {
         await answerCallback(cqId, '🔕 Menghapus notifikasi broadcast...')
         await editMsg(chatId, msgId, '⏳ <b>Sedang menonaktifkan broadcast di cloud...</b>')
@@ -507,12 +596,99 @@ export async function POST(req: Request) {
           '• <code>/lock</code> - Mengunci versi lama (Wajib Update ON)\n' +
           '• <code>/unlock</code> - Membuka kunci (Update Opsional)\n' +
           '• <code>/notes [teks]</code> - Mengubah isi catatan rilis\n' +
-          '• <code>/notif [pesan]</code> - <b>Kirim notifikasi langsung ke atas bar HP!</b>\n' +
+          '• <code>/notif [pesan]</code> - <b>Kirim notifikasi instan langsung ke HP!</b>\n' +
+          '• <code>/jadwal [jam] [pesan]</code> - <b>Set jadwal notifikasi harian otomatis</b>\n' +
+          '• <code>/clearjadwal</code> - Menonaktifkan jadwal alarm harian\n' +
           '• <code>/setnotif [pesan]</code> - <b>Simpan template pesan notifikasi</b>\n' +
           '• <code>/clearnotif</code> - Menghapus/menonaktifkan notifikasi broadcast\n' +
           '━━━━━━━━━━━━━━━━━━━━━\n' +
           '💡 <i>Anda juga dapat menekan tombol menu langsung di dasbor interaktif!</i>'
         await sendMsg(chatId, helpText)
+      } else if (text.startsWith('/jadwal ') || text === '/jadwal') {
+        const rawPayload = text.replace('/jadwal', '').trim()
+        let hour = 20
+        let minute = 0
+        let schedMsg = ''
+
+        if (rawPayload) {
+          const parts = rawPayload.split(' ')
+          const timePart = parts[0]
+          if (timePart && timePart.includes(':')) {
+            const timeSub = timePart.split(':')
+            const h = parseInt(timeSub[0], 10)
+            const m = parseInt(timeSub[1], 10)
+            if (!isNaN(h) && h >= 0 && h <= 23) hour = h
+            if (!isNaN(m) && m >= 0 && m <= 59) minute = m
+            schedMsg = parts.slice(1).join(' ').trim()
+          } else if (!isNaN(parseInt(timePart, 10))) {
+            const h = parseInt(timePart, 10)
+            if (h >= 0 && h <= 23) hour = h
+            schedMsg = parts.slice(1).join(' ').trim()
+          } else {
+            schedMsg = rawPayload
+          }
+        }
+
+        const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+        const loadMsg = await sendMsg(chatId, `⏳ <b>Menyetel jadwal alarm pengingat harian ${timeStr} WIB...</b>`)
+        const loadMsgId = loadMsg?.result?.message_id
+        await sendChatAction(chatId, 'typing')
+
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          if (!schedMsg) {
+            schedMsg = fileInfo.data.savedNotification || 'Jangan Lupa Catat Laporan Keuangan Yaa'
+          }
+          fileInfo.data.scheduledNotification = {
+            active: true,
+            hour: hour,
+            minute: minute,
+            time: timeStr,
+            title: 'KasKu',
+            message: schedMsg,
+            updatedAt: new Date().toISOString()
+          }
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Set Schedule ${timeStr}`)
+          if (loadMsgId) {
+            await editMsg(
+              chatId,
+              loadMsgId,
+              `⏰ <b>JADWAL PENGINGAT HARIAN BERHASIL DIAKTIFKAN!</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━━\n` +
+                `• <b>Jam Eksekusi:</b> <b>${timeStr} WIB</b> (Setiap Hari)\n` +
+                `• <b>Pesan:</b> ${schedMsg}\n` +
+                `━━━━━━━━━━━━━━━━━━━━━\n` +
+                `📱 <i>Aplikasi di HP seluruh pengguna akan otomatis membunyikan notifikasi setiap pukul ${timeStr}!</i>`
+            )
+          }
+        }
+        const fresh = await getGithubVersion()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, t, k)
+      } else if (text === '/clearjadwal') {
+        const loadMsg = await sendMsg(chatId, '⏳ <b>Menonaktifkan jadwal pengingat harian di cloud...</b>')
+        const loadMsgId = loadMsg?.result?.message_id
+        await sendChatAction(chatId, 'typing')
+
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          fileInfo.data.scheduledNotification = {
+            active: false,
+            hour: null,
+            minute: null,
+            time: null,
+            title: '',
+            message: '',
+            updatedAt: new Date().toISOString()
+          }
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, 'Vercel Bot: Clear Scheduled Notification')
+          if (loadMsgId) {
+            await editMsg(chatId, loadMsgId, '🔕 <b>JADWAL PENGINGAT HARIAN TELAH DINONAKTIFKAN!</b>')
+          }
+        }
+        const fresh = await getGithubVersion()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, t, k)
       } else if (text.startsWith('/setnotif ') || text === '/setnotif') {
         const newTemplate = text.replace('/setnotif', '').trim() || 'Jangan Lupa Catat Laporan Keuangan Yaa'
         const loadMsg = await sendMsg(chatId, `⏳ <b>Menyimpan template notifikasi ke cloud...</b>\n<i>« ${newTemplate} »</i>`)
