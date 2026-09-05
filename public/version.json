@@ -1,8 +1,8 @@
 {
-  "latestVersion": "1.1.95",
-  "minRequiredVersion": "1.1.95",
+  "latestVersion": "1.1.100",
+  "minRequiredVersion": "1.1.100",
   "forceUpdate": true,
-  "releaseNotes": "Pembaruan resmi KasKu v1.1.95. Peningkatan performa & kestabilan data.",
+  "releaseNotes": "Pembaruan resmi KasKu v1.1.100. Peningkatan kestabilan notifikasi latar belakang dan optimalisasi sistem.",
   "updateUrl": "https://kasku.kheireditz.my.id/",
   "broadcast": {
     "id": "b-1788650494429",
@@ -52,11 +52,24 @@
   ],
   "releases": [
     {
+      "version": "1.1.100",
+      "releaseDate": "2026-09-06",
+      "fileSize": "508 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": true,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan resmi KasKu v1.1.100",
+        "Kunci update versi terbaru (Wajib Update)",
+        "Optimalisasi keandalan notifikasi status bar"
+      ]
+    },
+    {
       "version": "1.1.95",
       "releaseDate": "2026-09-05",
       "fileSize": "500 KB",
       "downloadUrl": "/apk/KasKu.apk",
-      "isLatest": true,
+      "isLatest": false,
       "minAndroid": "Android 7.0 (Nougat)+",
       "highlights": [
         "Pembaruan resmi KasKu v1.1.95"
