@@ -1,16 +1,27 @@
 {
-  "latestVersion": "1.1.95",
-  "minRequiredVersion": "1.1.30",
-  "forceUpdate": false,
-  "releaseNotes": "Pembaruan KasKu v1.1.95 menghadirkan peningkatan antarmuka modern Apple iOS FinTech, optimasi performa AI Voice, dan pembaruan sistem kas.",
+  "latestVersion": "1.2.0",
+  "minRequiredVersion": "1.2.0",
+  "forceUpdate": true,
+  "releaseNotes": "Pembaruan resmi KasKu v1.2.0. Peningkatan performa & kestabilan data.",
   "updateUrl": "https://kasku.kheireditz.my.id/",
   "releases": [
+    {
+      "version": "1.2.0",
+      "releaseDate": "2026-09-05",
+      "fileSize": "500 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": true,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan resmi KasKu v1.2.0"
+      ]
+    },
     {
       "version": "1.1.95",
       "releaseDate": "2026-09-05",
       "fileSize": "500 KB",
       "downloadUrl": "/apk/KasKu.apk",
-      "isLatest": true,
+      "isLatest": false,
       "minAndroid": "Android 7.0 (Nougat)+",
       "highlights": [
         "Pembaruan resmi KasKu v1.1.95"
