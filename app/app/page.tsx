@@ -63,6 +63,7 @@ export default function KaskuApp() {
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showSupportDevModal, setShowSupportDevModal] = useState(false)
+  const [showPermissionLock, setShowPermissionLock] = useState(false)
 
   // Transactions State (PERSISTED)
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -349,27 +350,55 @@ export default function KaskuApp() {
       }
     }
 
-    // Jalankan permintaan izin notifikasi secara otomatis dan wajib
+    // Pengecekan Izin Wajib: Notifikasi & Aktivitas Latar Belakang (Abaikan Penghemat Baterai)
+    const checkPermissionStatus = () => {
+      if (typeof window === 'undefined') return
+      try {
+        const android = (window as any).AndroidApp
+        if (android) {
+          const notifOk = typeof android.isNotificationPermissionGranted === 'function' ? android.isNotificationPermissionGranted() : true
+          const batteryOk = typeof android.isBatteryOptimizationIgnored === 'function' ? android.isBatteryOptimizationIgnored() : true
+          if (!notifOk || !batteryOk) {
+            setShowPermissionLock(true)
+            return
+          } else {
+            setShowPermissionLock(false)
+          }
+        } else if ('Notification' in window) {
+          if (Notification.permission !== 'granted') {
+            setShowPermissionLock(true)
+            return
+          } else {
+            setShowPermissionLock(false)
+          }
+        }
+      } catch (err) {}
+    }
+
+    // Jalankan permintaan izin notifikasi dan cek status awal
     if (typeof window !== 'undefined') {
       try {
-        // Native Android 13+
         if ((window as any).AndroidApp?.requestNotificationPermission) {
           (window as any).AndroidApp.requestNotificationPermission()
         }
-        // Web Notification Browser Fallback
+        if ((window as any).AndroidApp?.openBatteryOptimizationSettings) {
+          (window as any).AndroidApp.openBatteryOptimizationSettings()
+        }
         if ('Notification' in window && Notification.permission === 'default') {
           Notification.requestPermission()
         }
       } catch (pErr) {}
+      setTimeout(checkPermissionStatus, 800)
     }
 
-    // Jalankan pengecekan pertama kali saat aplikasi dibuka
+    // Jalankan pengecekan update pertama kali saat aplikasi dibuka
     checkAppUpdate()
 
-    // 1. Polling Otomatis Tiap 5 Detik: User yang sedang berada DI DALAM aplikasi langsung terkunci/diberitahu begitu admin menaikkan versi
+    // 1. Polling Otomatis Tiap 3 Detik: Cek Update & Cek Status Izin Wajib
     const updatePollingInterval = setInterval(() => {
       checkAppUpdate()
-    }, 5000)
+      checkPermissionStatus()
+    }, 3000)
 
     // 2. Event VisibilityChange & Window Focus: Saat user membuka kunci layar atau beralih dari aplikasi lain kembali ke KasKu
     const handleVisibilityOrFocus = () => {
@@ -1810,6 +1839,67 @@ export default function KaskuApp() {
         onClose={() => setShowSupportDevModal(false)}
         autoCloseSeconds={3}
       />
+
+      {/* Mandatory Permission Lock Modal (Wajib Izinkan Notifikasi & Latar Belakang) */}
+      {showPermissionLock && (
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl border border-slate-100 text-center relative overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 mx-auto flex items-center justify-center mb-4 text-3xl shadow-inner">
+              🔔
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 tracking-tight mb-2 font-display">
+              Izin Notifikasi Wajib
+            </h3>
+            <p className="text-sm text-slate-500 leading-relaxed mb-6">
+              Agar pengingat laporan keuangan harian dan notifikasi penting dapat masuk tepat waktu ke HP Anda, <b>izin Notifikasi</b> dan <b>Aktivitas Latar Belakang</b> wajib diaktifkan.
+            </p>
+
+            <div className="space-y-3 mb-6 text-left text-xs bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <div className="flex items-start gap-2.5">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span className="text-slate-600 font-medium">Bilah Notifikasi Status Bar HP</span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span className="text-slate-600 font-medium">Pengingat 4 Waktu (Pagi, Siang, Malam, Tidur)</span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span className="text-slate-600 font-medium">Tetap Aktif Saat Aplikasi Ditutup</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  const android = (window as any).AndroidApp
+                  if (android) {
+                    if (android.requestNotificationPermission) {
+                      android.requestNotificationPermission()
+                    }
+                    if (android.openBatteryOptimizationSettings) {
+                      android.openBatteryOptimizationSettings()
+                    }
+                  }
+                  if ('Notification' in window && Notification.permission !== 'granted') {
+                    Notification.requestPermission().then(() => {
+                      checkPermissionStatus()
+                    })
+                  }
+                  setTimeout(checkPermissionStatus, 1500)
+                }
+              }}
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 text-white font-semibold rounded-2xl shadow-lg shadow-emerald-500/25 transition-all text-sm flex items-center justify-center gap-2"
+            >
+              <span>🔓 Aktifkan Semua Izin Sekarang</span>
+            </button>
+            <p className="text-[11px] text-slate-400 mt-3 italic">
+              Aplikasi terkunci otomatis hingga seluruh izin disetujui.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Desktop Footer */}
       <footer className="hidden md:block border-t border-slate-200 py-6 text-center text-xs text-slate-400 font-mono mt-auto">
