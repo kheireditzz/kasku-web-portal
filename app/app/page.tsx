@@ -122,6 +122,33 @@ export default function KaskuApp() {
         setShowOnboarding(true)
       }
 
+      // Cek cache pembaruan wajib di localStorage agar modal muncul INSTAN tanpa delay jaringan
+      try {
+        const cachedUpdate = localStorage.getItem('kasku_cached_force_update_v1')
+        if (cachedUpdate) {
+          const parsed = JSON.parse(cachedUpdate)
+          if (parsed && typeof parsed === 'object' && parsed.latestVersion) {
+            const p1 = (parsed.latestVersion || '0').replace(/^v/, '').split('.').map((n: string) => parseInt(n, 10) || 0)
+            const p2 = (APP_CURRENT_VERSION || '0').replace(/^v/, '').split('.').map((n: string) => parseInt(n, 10) || 0)
+            const len = Math.max(p1.length, p2.length)
+            let isOutdatedCached = false
+            for (let i = 0; i < len; i++) {
+              const a = p1[i] || 0
+              const b = p2[i] || 0
+              if (a > b) { isOutdatedCached = true; break; }
+              if (a < b) { isOutdatedCached = false; break; }
+            }
+            if (isOutdatedCached && parsed.forceUpdate) {
+              setUpdateInfo(parsed)
+            } else {
+              localStorage.removeItem('kasku_cached_force_update_v1')
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed reading update cache', e)
+      }
+
       setTxDate(new Date().toISOString().split('T')[0])
     } catch (e) {
       console.error('Failed reading localStorage', e)
@@ -166,7 +193,8 @@ export default function KaskuApp() {
           const controller = new AbortController()
           const timeoutId = setTimeout(() => controller.abort(), 3500)
           const res = await fetch(`${endpoint}${endpoint.includes('?') ? '&' : '?'}t=${Date.now()}`, {
-            signal: controller.signal
+            signal: controller.signal,
+            cache: 'no-store'
           })
           clearTimeout(timeoutId)
 
@@ -186,12 +214,12 @@ export default function KaskuApp() {
                   semverCompare(minReqVer, APP_CURRENT_VERSION) > 0 || data.forceUpdate === true
                 )
 
-                let targetUrl = data.updateUrl || 'https://kasku.kheireditz.my.id/download'
+                let targetUrl = data.updateUrl || 'https://kasku.kheireditz.my.id/'
                 if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
                   targetUrl = `https://kasku.kheireditz.my.id${targetUrl.startsWith('/') ? '' : '/'}${targetUrl}`
                 }
 
-                setUpdateInfo({
+                const newUpdatePayload: UpdateInfo = {
                   isOutdated: true,
                   currentVersion: APP_CURRENT_VERSION,
                   latestVersion: latestVer,
@@ -202,10 +230,26 @@ export default function KaskuApp() {
                       : 'Pembaruan fitur baru dan perbaikan bug tersedia.'
                   ),
                   updateUrl: targetUrl
-                })
+                }
+
+                if (isBlocking) {
+                  try {
+                    localStorage.setItem('kasku_cached_force_update_v1', JSON.stringify(newUpdatePayload))
+                  } catch (e) {}
+                } else {
+                  try {
+                    localStorage.removeItem('kasku_cached_force_update_v1')
+                  } catch (e) {}
+                }
+
+                setUpdateInfo(newUpdatePayload)
                 break // Berhasil mendapatkan update info, hentikan loop
               } else {
-                // Versi sudah paling baru
+                // Versi sudah paling baru, bersihkan cache blocking update jika ada
+                try {
+                  localStorage.removeItem('kasku_cached_force_update_v1')
+                } catch (e) {}
+                setUpdateInfo(null)
                 break
               }
             }

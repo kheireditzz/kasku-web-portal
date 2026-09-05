@@ -13,13 +13,17 @@ KEY_ALIAS="kasku"
 echo "=== [0/6] Auto-Increment Version Checker ==="
 # Baca versionCode lama dari AndroidManifest.xml
 CURRENT_CODE=$(grep -o 'android:versionCode="[0-9]*"' "$BUILD_DIR/AndroidManifest.xml" | grep -o '[0-9]*' || echo "104")
-NEXT_CODE=$((CURRENT_CODE + 1))
-
 # Baca versionName lama dari AndroidManifest.xml
 CURRENT_NAME=$(grep -o 'android:versionName="[^"]*"' "$BUILD_DIR/AndroidManifest.xml" | cut -d'"' -f2 || echo "1.1.4")
 
-# Hitung patch version berikutnya (contoh: 1.1.4 -> 1.1.5)
-NEXT_NAME=$(python3 -c "
+if [ "$1" == "--same-version" ] || [ "$1" == "--no-bump" ]; then
+    NEXT_CODE=$CURRENT_CODE
+    NEXT_NAME=$CURRENT_NAME
+    echo "⚡ Membangun ulang versi yang sama: v$NEXT_NAME (Code: $NEXT_CODE)"
+else
+    NEXT_CODE=$((CURRENT_CODE + 1))
+    # Hitung patch version berikutnya (contoh: 1.1.4 -> 1.1.5)
+    NEXT_NAME=$(python3 -c "
 v = '$CURRENT_NAME'.split('.')
 if len(v) == 3 and v[2].isdigit():
     v[2] = str(int(v[2]) + 1)
@@ -27,8 +31,8 @@ if len(v) == 3 and v[2].isdigit():
 else:
     print('$CURRENT_NAME')
 ")
-
-echo "🚀 Meningkatkan Versi: v$CURRENT_NAME (Code: $CURRENT_CODE) ➔ v$NEXT_NAME (Code: $NEXT_CODE)"
+    echo "🚀 Meningkatkan Versi: v$CURRENT_NAME (Code: $CURRENT_CODE) ➔ v$NEXT_NAME (Code: $NEXT_CODE)"
+fi
 
 # 1. Update AndroidManifest.xml
 sed -i "s/android:versionCode=\"[0-9]*\"/android:versionCode=\"$NEXT_CODE\"/g" "$BUILD_DIR/AndroidManifest.xml"
@@ -37,7 +41,8 @@ sed -i "s/android:versionName=\"[^\"]*\"/android:versionName=\"$NEXT_NAME\"/g" "
 # 2. Update konstanta APP_CURRENT_VERSION di page.tsx
 sed -i "s/const APP_CURRENT_VERSION = '[^']*'/const APP_CURRENT_VERSION = '$NEXT_NAME'/g" "$PROJECT_DIR/app/app/page.tsx"
 
-# 3. Update public/version.json
+# 3. Update public/version.json (Hanya jika versi bertambah)
+if [ "$1" != "--same-version" ] && [ "$1" != "--no-bump" ]; then
 python3 -c "
 import json, os
 
@@ -69,6 +74,7 @@ if os.path.exists(path):
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2)
 "
+fi
 
 echo "=== [1/6] Meng-bundle React Component dengan esbuild & Tailwind CSS ==="
 node /data/data/com.termux/files/home/Nilaidbam/node_modules/tailwindcss/lib/cli.js \

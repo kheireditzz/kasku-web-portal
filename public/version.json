@@ -1,8 +1,8 @@
 {
-  "latestVersion": "1.1.96",
-  "minRequiredVersion": "1.1.96",
-  "forceUpdate": true,
-  "releaseNotes": "Pembaruan sistem wajib KasKu v1.1.96. Versi ini wajib diunduh untuk dapat melanjutkan penggunaan aplikasi.",
+  "latestVersion": "1.1.95",
+  "minRequiredVersion": "1.1.30",
+  "forceUpdate": false,
+  "releaseNotes": "Pembaruan KasKu v1.1.95 menghadirkan peningkatan antarmuka modern Apple iOS FinTech, optimasi performa AI Voice, dan pembaruan sistem kas.",
   "updateUrl": "https://kasku.kheireditz.my.id/",
   "releases": [
     {
