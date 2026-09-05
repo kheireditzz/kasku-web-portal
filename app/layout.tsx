@@ -62,6 +62,9 @@ export const metadata = {
       'max-snippet': -1
     }
   },
+  verification: {
+    google: 'aj_v02nGrLhnzpAnmS9HqcLpNvWjGLkhW-iN8F_TDxE'
+  },
   manifest: '/manifest.json',
   themeColor: '#10b981',
   appleWebApp: {
@@ -102,6 +105,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <head>
+        <meta name="google-site-verification" content="aj_v02nGrLhnzpAnmS9HqcLpNvWjGLkhW-iN8F_TDxE" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="KasKu" />
