@@ -1,10 +1,6 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
-
 import React, { useState, useEffect } from 'react'
-import Link from 'next/link'
 import {
   WalletIcon,
   ArrowTrendingUpIcon,
@@ -22,10 +18,7 @@ import {
   TagIcon,
   MicrophoneIcon,
   HeartIcon,
-  KasKuBrandLogo,
-  TrophyIcon,
-  TableCellsIcon,
-  Cog6ToothIcon
+  KasKuBrandLogo
 } from '@/components/Icons'
 import { APP_LOGO_BASE64 } from '@/components/appLogoBase64'
 import SupportDevModal from '@/components/SupportDevModal'
@@ -67,7 +60,7 @@ export default function KaskuLandingDownloadPage() {
     setLoading(true)
     setServerStatus('checking')
     try {
-      const res = await fetch('/api/version?t=' + Date.now())
+      const res = await fetch(`/api/version?t=${Date.now()}`)
       if (res.ok) {
         const json = await res.json()
         setData(json)
@@ -85,7 +78,7 @@ export default function KaskuLandingDownloadPage() {
 
   const copyOtaUrl = () => {
     if (typeof window !== 'undefined') {
-      const url = window.location.origin + '/api/version'
+      const url = `${window.location.origin}/api/version`
       navigator.clipboard.writeText(url)
       setCopiedLink(true)
       setTimeout(() => setCopiedLink(false), 2500)
@@ -93,107 +86,96 @@ export default function KaskuLandingDownloadPage() {
   }
 
   const latestRelease = data?.releases?.find(r => r.isLatest) || data?.releases?.[0]
-  const currentVer = latestRelease?.version || '1.1.95'
 
   return (
     <div className="min-h-screen bg-[#F2F2F7] text-[#1C1C1E] flex flex-col font-sans antialiased selection:bg-emerald-100 selection:text-emerald-900 relative overflow-x-hidden">
       
-      {/* Dynamic Background Ambient Light Blobs */}
+      {/* Dynamic Background Ambient Blobs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[850px] h-[500px] bg-gradient-to-b from-emerald-400/20 via-teal-300/15 to-transparent rounded-full blur-[110px] animate-pulse-glow" />
-        <div className="absolute top-[40%] -left-48 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px]" />
-        <div className="absolute top-[65%] -right-48 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px]" />
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[750px] h-[450px] bg-gradient-to-b from-emerald-400/20 via-teal-300/15 to-transparent rounded-full blur-[100px] animate-pulse-glow" />
+        <div className="absolute top-[45%] -left-36 w-[450px] h-[450px] bg-emerald-500/10 rounded-full blur-[90px]" />
       </div>
 
-      {/* 1. ULTRA-PREMIUM FROSTED GLASS NAVBAR */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-black/[0.06] shadow-ios-sm transition-all">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      {/* 1. ULTRA-CLEAN MODERN NAVBAR */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100/90 transition-all">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
           
-          {/* Logo Brand matching APK Exactly */}
-          <Link href="/" className="flex items-center gap-2.5 select-none group cursor-pointer">
-            <div className="w-9 h-9 rounded-[13px] overflow-hidden shadow-ios-sm flex items-center justify-center transition-transform duration-300 group-hover:scale-105 active:scale-95 bg-[#0d1117] shrink-0 border border-white/60">
-              {APP_LOGO_BASE64 ? (
-                <img
-                  src={APP_LOGO_BASE64}
-                  alt="KasKu Logo"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <KasKuBrandLogo className="w-full h-full" />
-              )}
+          {/* Clean Brand Logo */}
+          <div className="flex items-center gap-2.5 select-none">
+            <div className="w-8 h-8 rounded-xl overflow-hidden shadow-xs bg-emerald-600 text-white flex items-center justify-center">
+              <img
+                src={APP_LOGO_BASE64}
+                alt="KasKu Logo"
+                className="w-full h-full object-cover"
+              />
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-black text-xl tracking-tight text-slate-900 font-display">
-                  KasKu
-                </span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-700 border border-emerald-500/30">
-                  APK v{currentVer}
-                </span>
-              </div>
-              <span className="text-[10px] font-bold text-slate-400 tracking-wide uppercase -mt-0.5">
-                Pusat Unduhan Resmi
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-lg tracking-tight text-slate-900">
+                KasKu<span className="text-emerald-500">.</span>
+              </span>
+              <span className="hidden sm:inline-block text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2 border-l border-slate-200">
+                APK Portal
               </span>
             </div>
-          </Link>
+          </div>
 
-          {/* Nav Actions */}
-          <div className="flex items-center gap-2.5">
+          {/* Clean Nav Actions */}
+          <div className="flex items-center gap-3">
+            
+
             <button
               onClick={() => setShowSupportModal(true)}
-              className="px-3.5 py-2 rounded-2xl bg-white hover:bg-rose-50 hover:text-rose-600 text-slate-700 text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-1.5 border border-slate-200/80 shadow-2xs group"
-              title="Donasi & Dukung Developer"
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 text-xs font-bold transition active:scale-95 flex items-center gap-1.5 border border-slate-200/80"
+              title="Bantuan & Donasi Support Developer"
             >
-              <HeartIcon className="w-4 h-4 text-rose-500 fill-current group-hover:scale-110 transition-transform" />
-              <span className="hidden sm:inline font-bold">Support Dev</span>
+              <HeartIcon className="w-3.5 h-3.5 text-rose-500 fill-current" />
+              <span className="hidden sm:inline">Support Dev</span>
             </button>
 
             {latestRelease && (
               <a
                 href={latestRelease.downloadUrl}
                 download
-                className="px-4 sm:px-5 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs shadow-ios flex items-center gap-2 transition-all duration-200 group"
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition"
               >
-                <ArrowDownTrayIcon className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
-                <span className="hidden xs:inline">Unduh APK</span>
-                <span className="text-emerald-100 font-mono text-[11px]">({latestRelease.fileSize})</span>
+                <ArrowDownTrayIcon className="w-5 h-5" />
               </a>
             )}
           </div>
         </div>
       </header>
 
-      {/* 2. HERO SECTION DENGAN ELEGANT GLASS CARD & INTERACTIVE SMARTPHONE MOCKUP */}
-      <section className="relative z-10 pt-8 pb-14 sm:pt-14 sm:pb-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+      {/* 2. HERO SECTION WITH ELEGANT LAYOUT & IPHONE 16 PRO MOCKUP */}
+      <section className="relative overflow-hidden pt-10 pb-16 sm:pt-16 sm:pb-24">
+        {/* Subtle background glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-emerald-100/40 via-teal-50/30 to-transparent blur-3xl pointer-events-none -z-10"></div>
+
+        <div className="max-w-6xl mx-auto px-5 sm:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
             
-            {/* Sisi Kiri: Headline, Value Proposition & CTA */}
+            {/* Left Column: Clean Typography & CTA */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               
-              {/* Status Badge Cloud OTA */}
-              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-xl border border-emerald-500/30 text-emerald-800 text-xs font-extrabold shadow-ios-sm">
-                <span className="relative flex h-2.5 w-2.5">
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-emerald-500/25 text-emerald-800 text-xs font-black shadow-ios-sm">
+                <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <span>Rilis Resmi Android KasKu v{currentVer}</span>
+                <span>Rilis Resmi APK Android</span>
                 <span className="text-emerald-300">•</span>
-                <span className="text-[11px] font-mono text-emerald-600 font-bold">OTA Aktif</span>
+                <span className="text-[11px] font-mono font-bold text-emerald-600">v{latestRelease ? latestRelease.version : '1.1.95'}</span>
               </div>
 
-              {/* Judul Utama yang Kuat */}
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.1] font-display">
-                Catat Uang Jadi Cepat, Rapi &amp; Menyenangkan dengan <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 bg-clip-text text-transparent">KasKu</span>
+                Catat Keuangan &amp; Kas Usaha Jadi Lebih Ringan dengan <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 bg-clip-text text-transparent">KasKu</span>
               </h1>
 
-              {/* Deskripsi Menarik */}
-              <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium">
-                Aplikasi keuangan cerdas Android dengan asisten suara AI instan, celengan impian bertarget, diagram analisis realtime, serta sistem <strong className="text-slate-800 font-bold">Force Update &amp; Cloud OTA</strong> otomatis.
+              <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                Aplikasi keuangan dengan pencatatan mutasi kas harian, asisten suara AI pintar, celengan impian bertarget, dan sistem update Over-The-Air (OTA) langsung ke perangkat Anda.
               </p>
 
-              {/* CTA Utama: Download & Jelajahi */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
+              {/* Download Buttons Bar */}
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2">
                 {latestRelease && (
                   <a
                     href={latestRelease.downloadUrl}
@@ -210,86 +192,82 @@ export default function KaskuLandingDownloadPage() {
 
                 <a
                   href="#features"
-                  className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-white/95 hover:bg-white active:scale-95 text-slate-800 font-extrabold text-sm border border-slate-200/90 shadow-ios-sm flex items-center justify-center gap-2 transition-all duration-200 text-center"
+                  className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-white/90 hover:bg-white active:scale-95 text-slate-800 font-extrabold text-sm border border-slate-200/90 shadow-ios-sm flex items-center justify-center gap-2 transition-all duration-200 text-center"
                 >
                   <SparklesIcon className="w-4 h-4 text-emerald-600" />
                   <span>Jelajahi Fitur</span>
                 </a>
               </div>
 
-              {/* Key Trust Highlights dengan Ikon Asli APK */}
-              <div className="pt-3 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs font-bold text-slate-500">
-                <div className="flex items-center gap-1.5 bg-white/70 px-3 py-1.5 rounded-xl border border-black/5 shadow-2xs">
-                  <ShieldCheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>100% Bebas Iklan</span>
+              {/* Trust Indicators */}
+              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs font-semibold text-slate-500">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheckIcon className="w-4 h-4 text-emerald-600" />
+                  <span>100% Aman &amp; Tanpa Iklan</span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-white/70 px-3 py-1.5 rounded-xl border border-black/5 shadow-2xs">
-                  <DevicePhoneMobileIcon className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span>Offline First di HP</span>
+                <span className="text-slate-300">•</span>
+                <div className="flex items-center gap-1.5">
+                  <DevicePhoneMobileIcon className="w-4 h-4 text-slate-500" />
+                  <span>Android 7.0+</span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-white/70 px-3 py-1.5 rounded-xl border border-black/5 shadow-2xs">
-                  <ArrowPathIcon className="w-4 h-4 text-purple-600 shrink-0" />
-                  <span>Update Instan (OTA)</span>
+                <span className="text-slate-300">•</span>
+                <div className="flex items-center gap-1.5">
+                  <ArrowPathIcon className="w-4 h-4 text-emerald-600" />
+                  <span>OTA Cloud Update</span>
                 </div>
               </div>
 
             </div>
 
-            {/* Sisi Kanan: MOCKUP SMARTPHONE INTERAKTIF & SILKY ANIMATED */}
+            {/* Right Column: PREVIEW HP IPHONE DENGAN DYNAMIC ISLAND & BEZEL TITANIUM */}
             <div className="lg:col-span-5 flex flex-col items-center justify-center">
               
-              {/* Screen Tab Switcher */}
-              <div className="mb-3 flex items-center p-1 rounded-2xl bg-white/90 backdrop-blur-xl border border-black/5 shadow-ios-sm text-xs font-bold text-slate-600">
+              {/* Interactive Screen Switcher for Mockup */}
+              <div className="mb-4 flex items-center p-1 rounded-xl bg-slate-200/70 text-[11px] font-bold text-slate-600">
                 <button
                   onClick={() => setActiveScreen('home')}
-                  className={`px-3.5 py-1.5 rounded-xl transition-all duration-200 flex items-center gap-1.5 ${activeScreen === "home" ? "bg-slate-900 text-white shadow-ios-sm font-black" : "hover:text-slate-900"}`}
+                  className={`px-3 py-1 rounded-lg transition ${activeScreen === 'home' ? 'bg-white text-emerald-700 shadow-xs' : 'hover:text-slate-900'}`}
                 >
-                  <WalletIcon className="w-3.5 h-3.5" />
-                  <span>Dashboard</span>
+                  Dashboard
                 </button>
                 <button
                   onClick={() => setActiveScreen('voice')}
-                  className={`px-3.5 py-1.5 rounded-xl transition-all duration-200 flex items-center gap-1.5 ${activeScreen === "voice" ? "bg-slate-900 text-white shadow-ios-sm font-black" : "hover:text-slate-900"}`}
+                  className={`px-3 py-1 rounded-lg transition ${activeScreen === 'voice' ? 'bg-white text-emerald-700 shadow-xs' : 'hover:text-slate-900'}`}
                 >
-                  <MicrophoneIcon className="w-3.5 h-3.5 text-rose-400" />
-                  <span>Voice AI</span>
+                  Suara AI
                 </button>
                 <button
                   onClick={() => setActiveScreen('savings')}
-                  className={`px-3.5 py-1.5 rounded-xl transition-all duration-200 flex items-center gap-1.5 ${activeScreen === "savings" ? "bg-slate-900 text-white shadow-ios-sm font-black" : "hover:text-slate-900"}`}
+                  className={`px-3 py-1 rounded-lg transition ${activeScreen === 'savings' ? 'bg-white text-emerald-700 shadow-xs' : 'hover:text-slate-900'}`}
                 >
-                  <CutePiggyIcon className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Celengan</span>
+                  Celengan
                 </button>
               </div>
 
-              {/* Titanium Device Chassis */}
-              <div className="relative w-[305px] h-[620px] bg-[#1a1f2c] rounded-[52px] p-[10px] shadow-[0_30px_70px_-15px_rgba(0,0,0,0.35)] ring-1 ring-white/10 animate-float-slow">
+              {/* IPHONE CHASSIS (Titanium Edge, Dynamic Island, Ultra-thin Bezel) */}
+              <div className="relative w-[300px] h-[610px] bg-[#1e232a] rounded-[52px] p-[10px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] ring-1 ring-slate-800/80">
                 
-                {/* Hardware Buttons */}
-                <div className="absolute -left-[11px] top-[105px] w-[3px] h-[26px] bg-slate-600 rounded-l-sm"></div>
-                <div className="absolute -left-[11px] top-[145px] w-[3px] h-[48px] bg-slate-600 rounded-l-sm"></div>
-                <div className="absolute -left-[11px] top-[205px] w-[3px] h-[48px] bg-slate-600 rounded-l-sm"></div>
-                <div className="absolute -right-[11px] top-[165px] w-[3px] h-[64px] bg-slate-600 rounded-r-sm"></div>
+                {/* Physical Buttons on Sides */}
+                <div className="absolute -left-[12px] top-[105px] w-[3px] h-[26px] bg-slate-700 rounded-l-sm"></div>
+                <div className="absolute -left-[12px] top-[145px] w-[3px] h-[48px] bg-slate-700 rounded-l-sm"></div>
+                <div className="absolute -left-[12px] top-[205px] w-[3px] h-[48px] bg-slate-700 rounded-l-sm"></div>
+                <div className="absolute -right-[12px] top-[165px] w-[3px] h-[64px] bg-slate-700 rounded-r-sm"></div>
 
-                {/* Inner Screen */}
-                <div className="relative w-full h-full bg-[#f2f2f7] rounded-[42px] overflow-hidden flex flex-col select-none border border-black/10">
+                {/* iPhone Screen Container */}
+                <div className="relative w-full h-full bg-[#f8fafc] rounded-[42px] overflow-hidden flex flex-col select-none border border-slate-200/50">
                   
-                  {/* Dynamic Island Capsule */}
+                  {/* Dynamic Island Notch */}
                   <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-30">
-                    <div className="w-[100px] h-[26px] bg-black rounded-full flex items-center justify-between px-2.5 shadow-md">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#0d131f]"></div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-[8px] text-emerald-400 font-mono font-bold">KasKu</span>
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                      </div>
+                    <div className="w-[96px] h-[26px] bg-black rounded-full flex items-center justify-between px-2.5 shadow-md">
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#0a101d] border border-slate-800"></div>
+                      <div className="w-2 h-2 rounded-full bg-emerald-500/80 animate-ping"></div>
                     </div>
                   </div>
 
-                  {/* Top Status Bar */}
+                  {/* Status Bar */}
                   <div className="pt-2 px-6 h-10 flex items-center justify-between text-[11px] font-bold text-slate-800 z-20">
-                    <span>09:41</span>
-                    <div className="flex items-center gap-1.5 text-[10px] text-slate-700 font-mono">
+                    <span>9:41</span>
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-700">
                       <span>5G</span>
                       <div className="w-5 h-2.5 border border-slate-700 rounded-[3px] p-[1px] flex items-center">
                         <div className="w-full h-full bg-emerald-500 rounded-[1px]"></div>
@@ -297,188 +275,126 @@ export default function KaskuLandingDownloadPage() {
                     </div>
                   </div>
 
-                  {/* Mini KasKu App Header */}
-                  <div className="px-4 py-2 bg-white/95 backdrop-blur-md border-b border-black/[0.06] flex items-center justify-between">
+                  {/* Top Bar KasKu inside iPhone */}
+                  <div className="px-4 py-2 bg-white/90 backdrop-blur-sm border-b border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg overflow-hidden bg-slate-950 flex items-center justify-center">
-                        {APP_LOGO_BASE64 ? (
-                          <img src={APP_LOGO_BASE64} alt="KasKu Logo" className="w-full h-full object-cover" />
-                        ) : (
-                          <KasKuBrandLogo className="w-full h-full" />
-                        )}
+                      <div className="w-6 h-6 rounded-lg overflow-hidden">
+                        <img src="/app-logo.jpg" alt="Logo" className="w-full h-full object-cover" />
                       </div>
-                      <span className="font-black text-sm text-slate-900">KasKu</span>
+                      <span className="font-extrabold text-xs text-emerald-600">KasKu</span>
                     </div>
-                    <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      v{currentVer}
+                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">
+                      v1.1.2
                     </span>
                   </div>
 
-                  {/* Interactive Screen Content */}
+                  {/* Screen Content based on Active Tab */}
                   <div className="flex-1 p-3.5 space-y-3 overflow-y-auto">
                     {activeScreen === 'home' && (
-                      <div className="space-y-3 animate-fade-in">
-                        {/* iOS Modern Saldo Card */}
-                        <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 text-white space-y-2.5 shadow-ios">
-                          <div className="flex justify-between items-center">
-                            <span className="text-[9px] uppercase tracking-wider font-bold text-emerald-100 flex items-center gap-1">
-                              <WalletIcon className="w-3 h-3" />
-                              <span>Total Saldo Kas</span>
-                            </span>
-                            <span className="text-[8px] bg-white/20 px-2 py-0.5 rounded-full font-bold">Lokal HP</span>
-                          </div>
-                          <div className="text-2xl font-black tracking-tight font-display">Rp 14.850.000</div>
-                          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/20 text-[9px]">
-                            <div className="flex items-center gap-1 text-emerald-100">
-                              <ArrowTrendingUpIcon className="w-3 h-3 text-emerald-300" />
-                              <span>+17.500.000</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-rose-100 justify-end">
-                              <ArrowTrendingDownIcon className="w-3 h-3 text-rose-300" />
-                              <span>-2.650.000</span>
-                            </div>
+                      <>
+                        {/* Saldo Card */}
+                        <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white space-y-2 shadow-sm">
+                          <span className="text-[9px] uppercase tracking-wider font-bold text-emerald-100 block">Total Saldo Kas</span>
+                          <div className="text-xl font-black tracking-tight">Rp 12.850.000</div>
+                          <div className="flex justify-between text-[9px] pt-1.5 border-t border-white/20 text-emerald-50">
+                            <span>+ Masuk: 15.000.000</span>
+                            <span>- Keluar: 2.150.000</span>
                           </div>
                         </div>
 
-                        {/* Quick Action Grid */}
+                        {/* Fitur Cepat Mini */}
                         <div className="grid grid-cols-3 gap-2 text-center">
-                          <div className="p-2 rounded-xl bg-white border border-black/5 shadow-2xs">
-                            <div className="w-7 h-7 mx-auto rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1">
-                              <MicrophoneIcon className="w-4 h-4" />
-                            </div>
-                            <span className="text-[9px] font-extrabold text-slate-800 block">Voice AI</span>
+                          <div className="p-2 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
+                            <MicrophoneIcon className="w-4 h-4 mx-auto text-emerald-600 mb-0.5" />
+                            <span className="text-[9px] font-bold text-slate-700 block">Voice AI</span>
                           </div>
-                          <div className="p-2 rounded-xl bg-white border border-black/5 shadow-2xs">
-                            <div className="w-7 h-7 mx-auto rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-1">
-                              <CutePiggyIcon className="w-4 h-4" />
-                            </div>
-                            <span className="text-[9px] font-extrabold text-slate-800 block">Tabungan</span>
+                          <div className="p-2 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
+                            <CutePiggyIcon className="w-4 h-4 mx-auto text-amber-600 mb-0.5" />
+                            <span className="text-[9px] font-bold text-slate-700 block">Celengan</span>
                           </div>
-                          <div className="p-2 rounded-xl bg-white border border-black/5 shadow-2xs">
-                            <div className="w-7 h-7 mx-auto rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-1">
-                              <ChartPieIcon className="w-4 h-4" />
-                            </div>
-                            <span className="text-[9px] font-extrabold text-slate-800 block">Analisis</span>
+                          <div className="p-2 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
+                            <ChartPieIcon className="w-4 h-4 mx-auto text-blue-600 mb-0.5" />
+                            <span className="text-[9px] font-bold text-slate-700 block">Analisis</span>
                           </div>
                         </div>
 
-                        {/* Recent Transactions List */}
+                        {/* Mutasi Terkini */}
                         <div className="space-y-1.5">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
-                            Transaksi Terbaru
-                          </span>
-                          <div className="p-2.5 rounded-xl bg-white border border-black/5 shadow-2xs flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                                <ArrowTrendingUpIcon className="w-3.5 h-3.5" />
-                              </div>
-                              <div>
-                                <div className="font-bold text-slate-900 text-[10px]">Penjualan Produk</div>
-                                <div className="text-[8px] text-slate-400">Kas Masuk • 14:20</div>
-                              </div>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Mutasi Terakhir</span>
+                          <div className="p-2 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-between">
+                            <div>
+                              <div className="font-bold text-slate-800 text-[10px]">Penjualan Barang</div>
+                              <div className="text-[8px] text-slate-400">Kas Masuk • 10:30</div>
                             </div>
-                            <span className="text-emerald-600 font-black text-[10px]">+1.250.000</span>
+                            <span className="text-emerald-600 font-extrabold text-[10px]">+850.000</span>
                           </div>
-
-                          <div className="p-2.5 rounded-xl bg-white border border-black/5 shadow-2xs flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-                                <ArrowTrendingDownIcon className="w-3.5 h-3.5" />
-                              </div>
-                              <div>
-                                <div className="font-bold text-slate-900 text-[10px]">Belanja Stok Usaha</div>
-                                <div className="text-[8px] text-slate-400">Kas Keluar • Kemarin</div>
-                              </div>
+                          <div className="p-2 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-between">
+                            <div>
+                              <div className="font-bold text-slate-800 text-[10px]">Biaya Operasional</div>
+                              <div className="text-[8px] text-slate-400">Kas Keluar • Kemarin</div>
                             </div>
-                            <span className="text-rose-600 font-black text-[10px]">-450.000</span>
+                            <span className="text-rose-600 font-extrabold text-[10px]">-250.000</span>
                           </div>
                         </div>
-                      </div>
+                      </>
                     )}
 
                     {activeScreen === 'voice' && (
-                      <div className="p-4 rounded-2xl bg-white border border-black/5 text-center space-y-3 shadow-ios-sm animate-fade-in">
-                        <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/15 text-rose-600 flex items-center justify-center animate-bounce">
-                          <MicrophoneIcon className="w-7 h-7" />
+                      <div className="p-4 rounded-2xl bg-white border border-slate-200 text-center space-y-3">
+                        <div className="w-12 h-12 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center animate-pulse">
+                          <MicrophoneIcon className="w-6 h-6" />
                         </div>
                         <div>
-                          <h4 className="font-extrabold text-xs text-slate-900">Mendengarkan Suara Anda...</h4>
-                          <p className="text-[10px] text-emerald-600 font-bold mt-1 bg-emerald-50 p-1.5 rounded-lg border border-emerald-200">
-                            "Makan siang 35 ribu"
-                          </p>
+                          <h4 className="font-bold text-xs text-slate-900">Mendengarkan Suara...</h4>
+                          <p className="text-[10px] text-slate-400 mt-1">"Beli bensin 25 ribu"</p>
                         </div>
-                        <div className="p-3 rounded-xl bg-[#F2F2F7] text-slate-700 text-[10px] font-semibold text-left space-y-1">
-                          <div className="flex justify-between"><span>Tipe:</span> <strong className="text-rose-600 font-bold">Kas Keluar</strong></div>
-                          <div className="flex justify-between"><span>Nominal:</span> <strong className="text-slate-900 font-bold">Rp 35.000</strong></div>
-                          <div className="flex justify-between"><span>Kategori:</span> <strong className="text-slate-900 font-bold">Makanan</strong></div>
-                        </div>
-                        <div className="text-[9px] text-slate-400 font-medium">
-                          Otomatis diparsing oleh Native Google Voice Speech Recognizer
+                        <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-800 text-[10px] font-semibold text-left">
+                          ✓ Otomatis terdeteksi: <strong>Kas Keluar</strong><br />
+                          ✓ Nominal: <strong>Rp 25.000</strong><br />
+                          ✓ Kategori: <strong>Transportasi</strong>
                         </div>
                       </div>
                     )}
 
                     {activeScreen === 'savings' && (
-                      <div className="space-y-2 animate-fade-in">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
-                          Tabungan &amp; Celengan Impian
-                        </span>
-                        
-                        <div className="p-3 rounded-2xl bg-white border border-amber-200/80 shadow-2xs space-y-2">
+                      <div className="space-y-2">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Target Celengan</span>
+                        <div className="p-3 rounded-2xl bg-white border border-amber-200 space-y-2">
                           <div className="flex justify-between items-center text-[10px]">
-                            <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                              <TrophyIcon className="w-3.5 h-3.5 text-amber-500" />
-                              <span>Beli Motor Baru</span>
-                            </span>
-                            <span className="font-mono font-black text-amber-600">80%</span>
+                            <span className="font-bold text-slate-800">🎯 Beli Laptop Baru</span>
+                            <span className="font-mono font-bold text-amber-600">75%</span>
                           </div>
-                          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                            <div className="bg-amber-500 h-2 rounded-full w-4/5"></div>
+                          <div className="w-full bg-slate-100 rounded-full h-2">
+                            <div className="bg-amber-500 h-2 rounded-full w-3/4"></div>
                           </div>
-                          <div className="flex justify-between text-[8px] text-slate-500 font-semibold">
-                            <span>Terkumpul: 16.000.000</span>
-                            <span>Target: 20.000.000</span>
+                          <div className="flex justify-between text-[9px] text-slate-400">
+                            <span>Terkumpul: 11.250.000</span>
+                            <span>Target: 15.000.000</span>
                           </div>
                         </div>
 
-                        <div className="p-3 rounded-2xl bg-white border border-emerald-200/80 shadow-2xs space-y-2">
+                        <div className="p-3 rounded-2xl bg-white border border-slate-200 space-y-2">
                           <div className="flex justify-between items-center text-[10px]">
-                            <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                              <CutePiggyIcon className="w-3.5 h-3.5 text-emerald-500" />
-                              <span>Dana Darurat</span>
-                            </span>
-                            <span className="font-mono font-black text-emerald-600">65%</span>
+                            <span className="font-bold text-slate-800">🏖️ Liburan Akhir Tahun</span>
+                            <span className="font-mono font-bold text-emerald-600">40%</span>
                           </div>
-                          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                            <div className="bg-emerald-500 h-2 rounded-full w-[65%]"></div>
-                          </div>
-                          <div className="flex justify-between text-[8px] text-slate-500 font-semibold">
-                            <span>Terkumpul: 6.500.000</span>
-                            <span>Target: 10.000.000</span>
+                          <div className="w-full bg-slate-100 rounded-full h-2">
+                            <div className="bg-emerald-500 h-2 rounded-full w-2/5"></div>
                           </div>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Bottom Navigation Bar */}
-                  <div className="p-2.5 bg-white/95 backdrop-blur-md border-t border-black/[0.06] flex justify-around items-center text-[9px] font-bold text-slate-400">
-                    <span className="text-emerald-600 flex flex-col items-center gap-0.5">
-                      <WalletIcon className="w-3.5 h-3.5" />
-                      <span>Kas</span>
-                    </span>
-                    <span className="flex flex-col items-center gap-0.5">
-                      <CutePiggyIcon className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Celengan</span>
-                    </span>
-                    <span className="flex flex-col items-center gap-0.5">
-                      <ChartPieIcon className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Analisis</span>
-                    </span>
+                  {/* Bottom Navigation of iPhone App */}
+                  <div className="p-2 bg-white border-t border-slate-100 flex justify-around items-center text-[9px] font-bold text-slate-400">
+                    <span className="text-emerald-600">● Kas</span>
+                    <span>● Celengan</span>
+                    <span>● Analisis</span>
                   </div>
 
-                  {/* Home Bar */}
-                  <div className="pb-1.5 pt-0.5 flex justify-center bg-white">
+                  {/* iPhone Home Indicator Line */}
+                  <div className="pb-1 pt-1 flex justify-center bg-white">
                     <div className="w-24 h-1 bg-slate-900 rounded-full"></div>
                   </div>
 
@@ -491,22 +407,20 @@ export default function KaskuLandingDownloadPage() {
         </div>
       </section>
 
-      {/* 3. CLOUD SYNC & REALTIME API ENDPOINT STATUS */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full z-10">
-        <div className="p-5 rounded-[24px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0">
-              <ArrowPathIcon className="w-5 h-5 animate-spin" style={{ animationDuration: '6s' }} />
-            </div>
+      {/* 3. CLEAN STATS & STATUS BAR */}
+      <section className="max-w-6xl mx-auto px-5 sm:px-8 w-full">
+        <div className="p-5 rounded-[24px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
             <div>
-              <div className="text-xs font-black text-slate-900 flex items-center gap-2">
-                <span>Cloud Version API Status:</span>
-                <span className="text-emerald-700 bg-emerald-500/15 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono text-[10px] font-bold">
-                  SINKRON &amp; TERVERIFIKASI
+              <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                <span>Status Server APK OTA:</span>
+                <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-mono text-[11px]">
+                  ONLINE &amp; SINKRON
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                APK Android KasKu memeriksa pembaruan otomatis via endpoint resmi: <code className="text-emerald-700 font-bold font-mono bg-slate-100 px-1.5 py-0.5 rounded">/api/version</code>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Aplikasi di HP terhubung otomatis ke endpoint pembaruan: <code className="text-slate-600 font-mono">/api/version</code>
               </p>
             </div>
           </div>
@@ -514,172 +428,146 @@ export default function KaskuLandingDownloadPage() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={copyOtaUrl}
-              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition active:scale-95 flex items-center justify-center gap-1.5"
+              className="flex-1 sm:flex-initial px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition active:scale-95 flex items-center justify-center gap-1.5"
             >
               {copiedLink ? (
                 <>
-                  <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
-                  <span>URL Tersalin!</span>
+                  <CheckCircleIcon className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Endpoint Tersalin!</span>
                 </>
               ) : (
                 <>
-                  <RocketIcon className="w-4 h-4 text-slate-600" />
-                  <span>Salin Endpoint OTA</span>
+                  <RocketIcon className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Salin URL OTA</span>
                 </>
               )}
             </button>
 
             <button
               onClick={() => setShowSyncModal(true)}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition active:scale-95 shadow-2xs"
+              className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs transition active:scale-95"
             >
-              Cek Rincian
+              Info Koneksi
             </button>
           </div>
         </div>
       </section>
 
-      {/* 4. FITUR-FITUR LENGKAP KASKU DENGAN IKON RESMI APK */}
-      <section id="features" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full space-y-10 z-10">
-        
-        {/* Header Section */}
+      {/* 4. FITUR-FITUR UTAMA APK (CLEAN GRID) */}
+      <section id="features" className="max-w-6xl mx-auto px-5 sm:px-8 py-16 w-full space-y-10 relative z-10">
         <div className="text-center max-w-2xl mx-auto space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 font-mono text-[11px] font-extrabold uppercase tracking-wider border border-emerald-500/20">
-            <SparklesIcon className="w-3.5 h-3.5" />
-            <span>Fitur Komprehensif</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight font-display">
-            Pengalaman Finansial Tanpa Ribet
+          <span className="text-xs font-bold uppercase tracking-widest text-emerald-600">
+            Fitur Unggulan
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Fitur Lengkap KasKu di Android
           </h2>
-          <p className="text-sm text-slate-500 font-medium">
-            Semua fitur dirancang khusus untuk kemudahan dan kecepatan pencatatan harian Anda di Android.
+          <p className="text-xs sm:text-sm text-slate-500">
+            Bekerja 100% tanpa batas, cepat, dan data tersimpan aman di perangkat pengguna.
           </p>
         </div>
 
-        {/* 6 Grid Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          
-          {/* Feature 1: Voice AI */}
-          <div className="p-6 rounded-[28px] bg-white/95 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios transition-all duration-200 group space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <MicrophoneIcon className="w-6 h-6" />
+          <div className="p-6 rounded-[28px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios hover:-translate-y-1 transition-all duration-300 space-y-3 group">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <MicrophoneIcon className="w-5 h-5" />
             </div>
-            <h3 className="font-black text-base text-slate-900 font-display">
-              Voice AI Recognition
-            </h3>
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Cukup ucapkan transaksi seperti <em>"Beli bensin 25 ribu"</em>, asisten native langsung mendeteksi jenis kas, nominal, dan kategorinya secara otomatis.
+            <h3 className="font-extrabold text-sm text-slate-900">Pencatatan Suara AI</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Catat kas masuk atau keluar langsung dengan berbicara tanpa perlu mengetik manual.
             </p>
           </div>
 
-          {/* Feature 2: Celengan Impian */}
-          <div className="p-6 rounded-[28px] bg-white/95 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios transition-all duration-200 group space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <CutePiggyIcon className="w-6 h-6" />
+          <div className="p-6 rounded-[28px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios hover:-translate-y-1 transition-all duration-300 space-y-3 group">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <CutePiggyIcon className="w-5 h-5" />
             </div>
-            <h3 className="font-black text-base text-slate-900 font-display">
-              Celengan Impian Bertarget
-            </h3>
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Kumpulkan uang untuk liburan, beli gadget, atau modal usaha dengan progress bar interaktif dan hitungan persentase pencapaian.
+            <h3 className="font-extrabold text-sm text-slate-900">Target Tabungan Celengan</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Buat target impian dengan persentase kemajuan dan visualisasi celengan digital.
             </p>
           </div>
 
-          {/* Feature 3: Visual Analisis */}
-          <div className="p-6 rounded-[28px] bg-white/95 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios transition-all duration-200 group space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/15 text-blue-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <ChartPieIcon className="w-6 h-6" />
+          <div className="p-6 rounded-[28px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios hover:-translate-y-1 transition-all duration-300 space-y-3 group">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <ChartPieIcon className="w-5 h-5" />
             </div>
-            <h3 className="font-black text-base text-slate-900 font-display">
-              Grafik &amp; Analisis Finansial
-            </h3>
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Pantau rasio pengeluaran vs pemasukan dan temukan pos pengeluaran terbesar dengan visual diagram yang jernih dan informatif.
+            <h3 className="font-extrabold text-sm text-slate-900">Visual Analisis Grafik</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Diagram perbandingan pemasukan vs pengeluaran serta kategori pengeluaran terbesar.
             </p>
           </div>
 
-          {/* Feature 4: Kategori Bebas */}
-          <div className="p-6 rounded-[28px] bg-white/95 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios transition-all duration-200 group space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-purple-500/15 text-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <TagIcon className="w-6 h-6" />
+          <div className="p-6 rounded-[28px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios hover:-translate-y-1 transition-all duration-300 space-y-3 group">
+            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+              <TagIcon className="w-5 h-5" />
             </div>
-            <h3 className="font-black text-base text-slate-900 font-display">
-              Kategori Fleksibel
-            </h3>
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Bebas menambahkan, mengubah, atau menghapus kategori transaksi sesuai kebutuhan operasional usaha atau kebutuhan rumah tangga Anda.
+            <h3 className="font-extrabold text-sm text-slate-900">Kategori Kas Bebas</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Tambahkan kategori usaha atau pribadi tanpa batasan untuk laporan yang rapi.
             </p>
           </div>
 
-          {/* Feature 5: Export CSV */}
-          <div className="p-6 rounded-[28px] bg-white/95 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios transition-all duration-200 group space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-teal-500/15 text-teal-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <TableCellsIcon className="w-6 h-6" />
+          <div className="p-6 rounded-[28px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios hover:-translate-y-1 transition-all duration-300 space-y-3 group">
+            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+              <ArrowDownTrayIcon className="w-5 h-5" />
             </div>
-            <h3 className="font-black text-base text-slate-900 font-display">
-              Ekspor Laporan CSV/Excel
-            </h3>
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Unduh seluruh riwayat transaksi pembukuan kas ke format spreadsheet untuk pembukuan akuntansi dan arsip pelaporan pajak.
+            <h3 className="font-extrabold text-sm text-slate-900">Ekspor File CSV</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Rekap laporan kas harian/bulanan dapat diunduh ke format Excel &amp; Spreadsheet.
             </p>
           </div>
 
-          {/* Feature 6: Smart Force Update */}
-          <div className="p-6 rounded-[28px] bg-white/95 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios transition-all duration-200 group space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <ArrowPathIcon className="w-6 h-6" />
+          <div className="p-6 rounded-[28px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios hover:-translate-y-1 transition-all duration-300 space-y-3 group">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+              <ArrowPathIcon className="w-5 h-5" />
             </div>
-            <h3 className="font-black text-base text-slate-900 font-display">
-              Force Update &amp; Cloud OTA
-            </h3>
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Dukungan rilis wajib (blocking) dan rilis opsional dengan proteksi tombol native Android agar perangkat pengguna selalu terlindungi versi terkini.
+            <h3 className="font-extrabold text-sm text-slate-900">Pembaruan Otomatis (OTA)</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Aplikasi di HP otomatis memberi tahu saat versi baru dirilis di portal ini.
             </p>
           </div>
-
         </div>
       </section>
 
-      {/* 5. DOWNLOAD RELEASES & VERSION HISTORY */}
-      <section id="releases" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 w-full space-y-6 z-10">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-black/[0.06] pb-4">
+      {/* 5. DOWNLOAD RELEASES (NEW & OLD) */}
+      <section id="releases" className="max-w-6xl mx-auto px-5 sm:px-8 pb-16 w-full space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 pb-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 font-mono text-[10px] font-extrabold uppercase tracking-wider border border-emerald-500/20 mb-1">
-              <span>Arsip Binari Resmi</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-display">
-              Daftar Rilis APK KasKu
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">Arsip Binari</span>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Pilihan Versi APK KasKu
             </h2>
-            <p className="text-xs text-slate-500 font-medium">
-              Unduh versi APK terbaru atau pilih riwayat versi yang kompatibel dengan perangkat Anda.
+            <p className="text-xs text-slate-500 mt-0.5">
+              Pilih versi baru atau arsip versi terdahulu sesuai perangkat Anda.
             </p>
           </div>
 
-          {/* Segmented Filter Control */}
-          <div className="flex items-center p-1 rounded-2xl bg-white/90 backdrop-blur-xl border border-black/5 shadow-2xs text-xs font-bold text-slate-600 self-start sm:self-auto">
+          {/* Filter Tab */}
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 text-xs font-semibold text-slate-600">
             <button
               onClick={() => setVersionFilter('all')}
-              className={`px-3.5 py-1.5 rounded-xl transition ${versionFilter === "all" ? "bg-slate-900 text-white shadow-2xs font-black" : "hover:text-slate-900"}`}
+              className={`px-3 py-1.5 rounded-lg transition ${versionFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'hover:text-slate-900'}`}
             >
               Semua
             </button>
             <button
               onClick={() => setVersionFilter('new')}
-              className={`px-3.5 py-1.5 rounded-xl transition ${versionFilter === "new" ? "bg-emerald-600 text-white shadow-2xs font-black" : "hover:text-slate-900"}`}
+              className={`px-3 py-1.5 rounded-lg transition ${versionFilter === 'new' ? 'bg-white text-emerald-700 shadow-2xs font-bold' : 'hover:text-slate-900'}`}
             >
-              Terbaru
+              Versi Baru
             </button>
             <button
               onClick={() => setVersionFilter('old')}
-              className={`px-3.5 py-1.5 rounded-xl transition ${versionFilter === "old" ? "bg-slate-900 text-white shadow-2xs font-black" : "hover:text-slate-900"}`}
+              className={`px-3 py-1.5 rounded-lg transition ${versionFilter === 'old' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'hover:text-slate-900'}`}
             >
-              Arsip Lama
+              Versi Lama
             </button>
           </div>
         </div>
 
-        {/* Release Cards List */}
-        <div className="space-y-3.5">
+        {/* Release Cards */}
+        <div className="space-y-3">
           {data?.releases
             ?.filter(rel => {
               if (versionFilter === 'new') return rel.isLatest
@@ -689,38 +577,42 @@ export default function KaskuLandingDownloadPage() {
             .map(release => (
               <div
                 key={release.version}
-                className={`p-5 sm:p-6 rounded-[24px] border transition-all duration-200 ${release.isLatest ? "bg-white/95 border-emerald-500/40 shadow-ios ring-1 ring-emerald-500/20" : "bg-white/80 border-black/[0.06] hover:bg-white hover:border-black/10 shadow-2xs"}`}
+                className={`p-5 sm:p-6 rounded-2xl border transition-all ${
+                  release.isLatest
+                    ? 'bg-emerald-50/50 border-emerald-200/80 shadow-xs'
+                    : 'bg-white border-slate-200/80 hover:border-slate-300'
+                }`}
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2.5">
-                      <span className="font-mono font-black text-xl text-slate-900">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-black text-lg text-slate-900">
                         KasKu v{release.version}
                       </span>
                       {release.isLatest ? (
-                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider shadow-2xs">
-                          Rilis Terbaru
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider">
+                          Terbaru
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider border border-black/5">
-                          Arsip
+                        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider">
+                          Versi Lama
                         </span>
                       )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 font-medium">
-                      <span>Ukuran: <strong className="text-slate-700 font-bold">{release.fileSize}</strong></span>
+                      <span>Ukuran: <strong>{release.fileSize}</strong></span>
                       <span>•</span>
-                      <span>Tanggal: <strong className="text-slate-700 font-bold">{release.releaseDate}</strong></span>
+                      <span>Tanggal: <strong>{release.releaseDate}</strong></span>
                       <span>•</span>
-                      <span>Target: <strong className="text-slate-700 font-bold">{release.minAndroid}</strong></span>
+                      <span>Minimal: <strong>{release.minAndroid}</strong></span>
                     </div>
 
                     {release.highlights && release.highlights.length > 0 && (
-                      <ul className="pt-1.5 space-y-1">
+                      <ul className="pt-2 space-y-1">
                         {release.highlights.map((h, i) => (
-                          <li key={i} className="text-xs text-slate-600 font-medium flex items-center gap-2">
-                            <CheckCircleIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <li key={i} className="text-xs text-slate-600 flex items-center gap-1.5">
+                            <CheckCircleIcon className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                             <span>{h}</span>
                           </li>
                         ))}
@@ -732,7 +624,11 @@ export default function KaskuLandingDownloadPage() {
                     <a
                       href={release.downloadUrl}
                       download
-                      className={`w-full sm:w-auto px-6 py-3.5 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-ios-sm ${release.isLatest ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
+                      className={`w-full sm:w-auto px-5 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 ${
+                        release.isLatest
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
+                          : 'bg-slate-800 hover:bg-slate-900 text-white'
+                      }`}
                     >
                       <ArrowDownTrayIcon className="w-4 h-4" />
                       <span>Download APK</span>
@@ -746,41 +642,36 @@ export default function KaskuLandingDownloadPage() {
 
       {/* 6. MODAL SYNC & PANDUAN */}
       {showSyncModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-md bg-white rounded-[28px] p-6 shadow-ios-float space-y-4 border border-white/60 animate-slide-up">
-            <div className="flex items-center justify-between pb-2 border-b border-black/[0.06]">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center">
-                  <ArrowPathIcon className="w-4 h-4" />
-                </div>
-                <h3 className="font-black text-sm text-slate-900 font-display">Koneksi Otomatis APK</h3>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-xl space-y-4 border border-slate-100">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 className="font-extrabold text-sm text-slate-900">Koneksi Otomatis APK</h3>
               <button
                 onClick={() => setShowSyncModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs font-bold transition active:scale-90"
+                className="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs font-bold"
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+            <p className="text-xs text-slate-600 leading-relaxed">
               Aplikasi KasKu APK di Android terhubung dengan portal web ini melalui endpoint update otomatis. Jika rilis baru diunggah ke server web ini, APK di HP pengguna akan menampilkan jendela pembaruan secara instan.
             </p>
 
-            <div className="p-3.5 rounded-2xl bg-[#F2F2F7] border border-black/5 space-y-1.5">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Endpoint URL Resmi:
+                Endpoint URL:
               </span>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   readOnly
                   value={typeof window !== 'undefined' ? `${window.location.origin}/api/version` : '/api/version'}
-                  className="w-full text-xs font-mono bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 select-all font-bold"
+                  className="w-full text-xs font-mono bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 select-all"
                 />
                 <button
                   onClick={copyOtaUrl}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shrink-0 active:scale-95 shadow-2xs"
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shrink-0 active:scale-95"
                 >
                   {copiedLink ? 'Disalin' : 'Salin'}
                 </button>
@@ -789,7 +680,7 @@ export default function KaskuLandingDownloadPage() {
 
             <button
               onClick={() => setShowSyncModal(false)}
-              className="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs transition active:scale-95"
+              className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition"
             >
               Tutup
             </button>
@@ -803,25 +694,9 @@ export default function KaskuLandingDownloadPage() {
         onClose={() => setShowSupportModal(false)}
       />
 
-      {/* 7. MINIMALIST FOOTER DENGAN IKON BRAND */}
-      <footer className="border-t border-black/[0.06] bg-white/90 backdrop-blur-xl py-8 text-center text-xs text-slate-400 z-10">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-md overflow-hidden bg-slate-950 flex items-center justify-center">
-              {APP_LOGO_BASE64 ? (
-                <img src={APP_LOGO_BASE64} alt="Logo" className="w-full h-full object-cover" />
-              ) : (
-                <KasKuBrandLogo className="w-full h-full" />
-              )}
-            </div>
-            <span className="font-black text-slate-800">KasKu Indonesia</span>
-            <span>&bull;</span>
-            <span>Aplikasi Manajemen Kas &amp; Tabungan Impian</span>
-          </div>
-          <p className="text-[11px] font-medium">
-            &copy; 2026 KasKu. Dikembangkan untuk efisiensi finansial harian Anda.
-          </p>
-        </div>
+      {/* 7. MINIMALIST FOOTER */}
+      <footer className="border-t border-slate-100 bg-white py-8 text-center text-xs text-slate-400">
+        <p>© 2026 KasKu — Portal Resmi Download &amp; Update APK Android.</p>
       </footer>
 
     </div>
