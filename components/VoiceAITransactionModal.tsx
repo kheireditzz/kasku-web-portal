@@ -6,6 +6,7 @@ import {
   SparklesIcon,
   CheckCircleIcon
 } from './Icons'
+import { formatThousands } from './currencyUtils'
 
 interface VoiceAITransactionModalProps {
   isOpen: boolean
@@ -663,12 +664,16 @@ export default function VoiceAITransactionModal({
 
             <div className="grid grid-cols-2 gap-2">
               <input
-                type="number"
-                min="1"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9.]*"
                 required
                 placeholder="Nominal (Rp)"
-                value={detectedAmount}
-                onChange={(e) => setDetectedAmount(e.target.value ? Number(e.target.value) : '')}
+                value={formatThousands(detectedAmount)}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, '')
+                  setDetectedAmount(raw ? Number(raw) : '')
+                }}
                 className="w-full px-3 py-2 rounded-xl kas-input text-xs font-mono font-bold"
               />
 

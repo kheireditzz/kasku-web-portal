@@ -17,6 +17,7 @@ import {
   CalendarIcon,
   XMarkIcon
 } from './Icons'
+import { formatThousands, parseThousands } from './currencyUtils'
 
 export interface SavingHistoryItem {
   id: string
@@ -144,8 +145,8 @@ export default function SavingsSection({
 
   const handleAddGoal = (e: React.FormEvent) => {
     e.preventDefault()
-    const target = parseFloat(targetAmount)
-    const initial = parseFloat(initialAmount) || 0
+    const target = parseThousands(targetAmount) || parseFloat(targetAmount)
+    const initial = parseThousands(initialAmount) || parseFloat(initialAmount) || 0
 
     if (!goalTitle.trim() || isNaN(target) || target <= 0) {
       showToast('Masukkan judul dan target tabungan yang valid!')
@@ -201,8 +202,8 @@ export default function SavingsSection({
     e.preventDefault()
     if (!editModalGoal) return
 
-    const parsedTarget = parseFloat(editTargetAmount)
-    const parsedCurrent = parseFloat(editCurrentAmount)
+    const parsedTarget = parseThousands(editTargetAmount) || parseFloat(editTargetAmount)
+    const parsedCurrent = parseThousands(editCurrentAmount) || parseFloat(editCurrentAmount)
 
     if (!editTitle.trim() || isNaN(parsedTarget) || parsedTarget <= 0) {
       showToast('Nama tabungan dan target dana harus diisi dengan benar!')
@@ -237,7 +238,7 @@ export default function SavingsSection({
   const handleDeposit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!depositModalGoal) return
-    const rawVal = parseFloat(depositAmount)
+    const rawVal = parseThousands(depositAmount) || parseFloat(depositAmount)
     if (isNaN(rawVal) || rawVal <= 0) {
       showToast('Masukkan nominal yang valid')
       return
@@ -448,12 +449,16 @@ export default function SavingsSection({
                 <div className="relative">
                   <span className="absolute left-3.5 top-2.5 text-slate-400 font-mono font-bold text-xs">Rp</span>
                   <input
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9.]*"
                     required
-                    placeholder="10000000"
-                    value={targetAmount}
-                    onChange={(e) => setTargetAmount(e.target.value)}
+                    placeholder="10.000.000"
+                    value={formatThousands(targetAmount)}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, '')
+                      setTargetAmount(raw)
+                    }}
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl kas-input text-xs font-mono font-semibold"
                   />
                 </div>
@@ -463,11 +468,15 @@ export default function SavingsSection({
                 <div className="space-y-1.5">
                   <label className="text-slate-700 font-semibold block">Saldo Awal</label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9.]*"
                     placeholder="0"
-                    value={initialAmount}
-                    onChange={(e) => setInitialAmount(e.target.value)}
+                    value={formatThousands(initialAmount)}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, '')
+                      setInitialAmount(raw)
+                    }}
                     className="w-full px-3 py-2 rounded-xl kas-input text-xs font-mono"
                   />
                 </div>
@@ -758,11 +767,15 @@ export default function SavingsSection({
                   <div className="relative">
                     <span className="absolute left-3.5 top-2.5 text-slate-400 font-mono font-bold text-xs">Rp</span>
                     <input
-                      type="number"
-                      min="1"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9.]*"
                       required
-                      value={editTargetAmount}
-                      onChange={(e) => setEditTargetAmount(e.target.value)}
+                      value={formatThousands(editTargetAmount)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, '')
+                        setEditTargetAmount(raw)
+                      }}
                       className="w-full pl-10 pr-3.5 py-2.5 rounded-xl kas-input text-xs font-mono font-semibold"
                     />
                   </div>
@@ -773,11 +786,15 @@ export default function SavingsSection({
                   <div className="relative">
                     <span className="absolute left-3.5 top-2.5 text-amber-500 font-mono font-bold text-xs">Rp</span>
                     <input
-                      type="number"
-                      min="0"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9.]*"
                       required
-                      value={editCurrentAmount}
-                      onChange={(e) => setEditCurrentAmount(e.target.value)}
+                      value={formatThousands(editCurrentAmount)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, '')
+                        setEditCurrentAmount(raw)
+                      }}
                       className="w-full pl-10 pr-3.5 py-2.5 rounded-xl kas-input text-xs font-mono font-semibold text-amber-700"
                     />
                   </div>
@@ -942,12 +959,16 @@ export default function SavingsSection({
                 <div className="relative">
                   <span className="absolute left-3.5 top-2.5 text-slate-400 font-mono font-bold text-xs">Rp</span>
                   <input
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9.]*"
                     required
-                    placeholder="50000"
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
+                    placeholder="50.000"
+                    value={formatThousands(depositAmount)}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, '')
+                      setDepositAmount(raw)
+                    }}
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl kas-input text-xs font-mono font-semibold"
                     autoFocus
                   />

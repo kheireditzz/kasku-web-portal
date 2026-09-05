@@ -7,6 +7,7 @@ import {
   MinusCircleIcon,
   BanknotesIcon
 } from './Icons'
+import { formatThousands } from './currencyUtils'
 
 interface AddTransactionModalProps {
   isOpen: boolean
@@ -260,16 +261,24 @@ export default function AddTransactionModal({
             <div className="relative">
               <span className="absolute left-3 top-2 text-slate-400 font-mono font-bold text-xs">Rp</span>
               <input
-                type="number"
-                min="1"
-                step="any"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9.]*"
                 required
                 placeholder="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                value={formatThousands(amount)}
+                onChange={(e) => {
+                  const rawDigits = e.target.value.replace(/\D/g, '')
+                  setAmount(rawDigits)
+                }}
                 className="w-full pl-9 pr-3 py-2 rounded-xl kas-input text-xs font-mono font-semibold"
               />
             </div>
+            {amount && Number(amount) > 0 && (
+              <p className="text-[10px] text-slate-400 font-mono pl-1">
+                Terbaca: Rp {formatThousands(amount)}
+              </p>
+            )}
           </div>
 
           {/* Kategori & Tanggal */}

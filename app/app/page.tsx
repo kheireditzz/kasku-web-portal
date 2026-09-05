@@ -35,6 +35,7 @@ import {
   PencilSquareIcon
 } from '@/components/Icons'
 import { APP_LOGO_BASE64 } from '@/components/appLogoBase64'
+import { formatThousands, parseThousands } from '@/components/currencyUtils'
 
 export interface Transaction {
   id: string
@@ -423,7 +424,7 @@ export default function KaskuApp() {
   // Handle Add or Edit Transaction
   const handleAddTransaction = (e: React.FormEvent) => {
     if (e && e.preventDefault) e.preventDefault()
-    const cleanAmount = parseFloat(amount)
+    const cleanAmount = parseThousands(amount) || parseFloat(amount)
     if (!title.trim() || isNaN(cleanAmount) || cleanAmount <= 0) {
       showToast('Mohon masukkan nominal dan keterangan yang valid!')
       return
@@ -1236,16 +1237,24 @@ export default function KaskuApp() {
                       <div className="relative">
                         <span className="absolute left-3.5 top-2.5 text-slate-400 font-mono font-bold text-xs">Rp</span>
                         <input
-                          type="number"
-                          min="1"
-                          step="any"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9.]*"
                           required
                           placeholder="0"
-                          value={amount}
-                          onChange={(e) => setAmount(e.target.value)}
+                          value={formatThousands(amount)}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/\D/g, '')
+                            setAmount(raw)
+                          }}
                           className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl kas-input text-xs font-mono font-extrabold text-slate-900"
                         />
                       </div>
+                      {amount && Number(amount) > 0 && (
+                        <p className="text-[10px] text-slate-400 font-mono pl-1">
+                          Terbaca: Rp {formatThousands(amount)}
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
