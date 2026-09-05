@@ -127,6 +127,8 @@ function buildDashboard(info: any) {
   const lockButtonText = force ? '🔓 Matikan Kunci Update' : '🔒 Kunci Seluruh Versi Lama'
   const lockCallback = force ? 'cmd_force_off' : 'cmd_force_on'
 
+  const broadcastStatus = info?.broadcast?.active ? `📢 <b>Notif HP Aktif:</b> "${info?.broadcast?.title || '-'}"` : '📢 <b>Notif HP:</b> Siaga (Tidak Ada Broadcast)'
+
   const text =
     '┏━━━━━━━━━━━━━━━━━━━━━┓\n' +
     '   💎 <b>KASKU CLOUD COMMANDER</b>\n' +
@@ -136,9 +138,11 @@ function buildDashboard(info: any) {
     `  ├ 🏷️ <b>Versi Rilis:</b> <code>v${latest}</code>\n` +
     `  ├ 🛡️ <b>Minimal Versi:</b> <code>v${minReq}</code>\n` +
     `  ├ ⚙️ <b>Kebijakan:</b> ${statusBadge}\n` +
+    `  ├ 🔔 <b>Notif Status Bar:</b> 🟢 <b>AKTIF</b>\n` +
     `  └ 🌐 <b>Portal Unduh:</b> <a href="${url}">${url}</a>\n\n` +
     '📝 <b>CATATAN RILIS TERBARU:</b>\n' +
     `  └ <i>« ${notes} »</i>\n\n` +
+    `${broadcastStatus}\n\n` +
     '⚡ <i>Sentuh tombol di bawah untuk mengontrol server secara instan:</i>'
 
   const keyboard = {
@@ -149,6 +153,10 @@ function buildDashboard(info: any) {
       ],
       [
         { text: lockButtonText, callback_data: lockCallback }
+      ],
+      [
+        { text: '📢 Kirim Notifikasi HP', callback_data: 'cmd_prompt_notif' },
+        { text: '🔕 Matikan Notif HP', callback_data: 'cmd_clear_notif' }
       ],
       [
         { text: '⏮️ Reset v1.1.95', callback_data: 'cmd_set_95' },
@@ -351,6 +359,40 @@ export async function POST(req: Request) {
         await editMsg(chatId, msgId, '⏳ <b>Mempersiapkan uji coba v1.1.96...</b>')
         await sendChatAction(chatId, 'typing')
         await executeVersionChange(chatId, '1.1.96', true, 'Pembaruan sistem wajib KasKu v1.1.96. Versi ini wajib diunduh untuk dapat melanjutkan penggunaan aplikasi.', msgId)
+      } else if (data === 'cmd_prompt_notif') {
+        await answerCallback(cqId, 'Ketik /notif [judul] | [pesan]')
+        await sendMsg(
+          chatId,
+          '📢 <b>CARA MENGIRIM NOTIFIKASI KE STATUS BAR HP:</b>\n' +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            'Kirim pesan dengan format:\n' +
+            '<code>/notif [Judul] | [Isi Pesan Notifikasi]</code>\n\n' +
+            '<b>Contoh 1:</b>\n' +
+            '<code>/notif KasKu Promo Spesial | Jangan lupa catat pengeluaran belanja mingguanmu hari ini!</code>\n\n' +
+            '<b>Contoh 2:</b>\n' +
+            '<code>/notif Pengumuman Penting | Server KasKu telah ditingkatkan ke versi terbaru.</code>\n' +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            '<i>Notifikasi akan langsung masuk di bilah atas HP semua pengguna!</i>'
+        )
+      } else if (data === 'cmd_clear_notif') {
+        await answerCallback(cqId, '🔕 Menghapus notifikasi broadcast...')
+        await editMsg(chatId, msgId, '⏳ <b>Sedang menonaktifkan broadcast di cloud...</b>')
+        await sendChatAction(chatId, 'typing')
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          fileInfo.data.broadcast = {
+            id: 'clear-' + Date.now(),
+            active: false,
+            title: '',
+            message: '',
+            updatedAt: new Date().toISOString()
+          }
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, 'Vercel Bot: Clear Broadcast Notif')
+          await editMsg(chatId, msgId, '🔕 <b>NOTIFIKASI BROADCAST HP TELAH DIMATIKAN!</b>')
+        }
+        const fresh = await getGithubVersion()
+        const { text, keyboard } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, text, keyboard)
       }
 
       return NextResponse.json({ ok: true })
@@ -381,9 +423,68 @@ export async function POST(req: Request) {
           '• <code>/lock</code> - Mengunci versi lama (Wajib Update ON)\n' +
           '• <code>/unlock</code> - Membuka kunci (Update Opsional)\n' +
           '• <code>/notes [teks]</code> - Mengubah isi catatan rilis\n' +
+          '• <code>/notif [Judul] | [Pesan]</code> - <b>Kirim notifikasi ke atas bar HP!</b>\n' +
+          '• <code>/clearnotif</code> - Menghapus/menonaktifkan notifikasi broadcast\n' +
           '━━━━━━━━━━━━━━━━━━━━━\n' +
           '💡 <i>Anda juga dapat menekan tombol menu langsung di dasbor interaktif!</i>'
         await sendMsg(chatId, helpText)
+      } else if (text.startsWith('/notif ')) {
+        const payload = text.replace('/notif ', '').trim()
+        const parts = payload.split('|')
+        const notifTitle = (parts[0] || 'Pengumuman KasKu').trim()
+        const notifMessage = (parts[1] || (parts[0] ? '' : 'Pemberitahuan dari developer KasKu')).trim()
+
+        const loadMsg = await sendMsg(chatId, `⏳ <b>[1/2] Menyebarkan notifikasi ke cloud...</b>\n<i>Judul: "${notifTitle}"</i>`)
+        const loadMsgId = loadMsg?.result?.message_id
+        await sendChatAction(chatId, 'typing')
+
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          const broadcastId = `b-${Date.now()}`
+          fileInfo.data.broadcast = {
+            id: broadcastId,
+            active: true,
+            title: notifTitle,
+            message: notifMessage || notifTitle,
+            updatedAt: new Date().toISOString()
+          }
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Broadcast Notif "${notifTitle}"`)
+          if (loadMsgId) {
+            await editMsg(
+              chatId,
+              loadMsgId,
+              '🔔 <b>[2/2] NOTIFIKASI BERHASIL DIKIRIM KE HP!</b>\n' +
+                '━━━━━━━━━━━━━━━━━━━━━\n' +
+                `• <b>Judul:</b> ${notifTitle}\n` +
+                `• <b>Pesan:</b> ${notifMessage || '-'}\n` +
+                '━━━━━━━━━━━━━━━━━━━━━\n' +
+                '📱 <i>Notifikasi akan otomatis muncul di bilah atas HP (Status Bar) pengguna.</i>'
+            )
+          }
+        }
+        const fresh = await getGithubVersion()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, t, k)
+      } else if (text === '/clearnotif') {
+        const loadMsg = await sendMsg(chatId, '⏳ <b>Menghapus notifikasi broadcast...</b>')
+        const loadMsgId = loadMsg?.result?.message_id
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          fileInfo.data.broadcast = {
+            id: 'clear-' + Date.now(),
+            active: false,
+            title: '',
+            message: '',
+            updatedAt: new Date().toISOString()
+          }
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, 'Vercel Bot: Clear Broadcast Notif')
+          if (loadMsgId) {
+            await editMsg(chatId, loadMsgId, '🔕 <b>Notifikasi broadcast HP dinonaktifkan.</b>')
+          }
+        }
+        const fresh = await getGithubVersion()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, t, k)
       } else if (text === '/lock') {
         const loadMsg = await sendMsg(chatId, '⏳ <b>Sedang mengunci aplikasi di GitHub & Vercel...</b>')
         const loadMsgId = loadMsg?.result?.message_id

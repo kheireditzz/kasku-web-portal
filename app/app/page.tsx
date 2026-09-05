@@ -262,6 +262,27 @@ export default function KaskuApp() {
                 } catch (e) {}
               }
 
+              // Tampilkan Notifikasi Bar Sistem HP (Status Bar Notification) jika versi belum pernah dinotifikasikan
+              try {
+                const lastNotifiedVer = localStorage.getItem('kasku_last_notified_ver')
+                if (lastNotifiedVer !== latestVer) {
+                  const notifTitle = isBlocking ? '⚠️ Pembaruan Wajib KasKu' : '✨ KasKu Versi Baru Tersedia'
+                  const notifBody = `KasKu v${latestVer} telah rilis. ${data.releaseNotes || 'Perbarui sekarang untuk menikmati fitur terbaru.'}`
+                  
+                  // 1. Notifikasi Status Bar HP Native Android (Bridge)
+                  if (typeof window !== 'undefined' && (window as any).AndroidApp?.showNativeNotification) {
+                    (window as any).AndroidApp.showNativeNotification(notifTitle, notifBody, `ver-${latestVer}`)
+                  } 
+                  // 2. Web Notification API (Jika diakses via browser HP)
+                  else if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                    new Notification(notifTitle, { body: notifBody, icon: '/app-logo.png' })
+                  }
+                  localStorage.setItem('kasku_last_notified_ver', latestVer)
+                }
+              } catch (notifErr) {
+                console.warn('Gagal memunculkan notifikasi status bar', notifErr)
+              }
+
               setUpdateInfo(newUpdatePayload)
               break // Berhasil mendapatkan update info, hentikan loop
             } else {
@@ -273,10 +294,44 @@ export default function KaskuApp() {
               break
             }
           }
+
+          // Cek Push Broadcast Notifikasi Khusus dari Admin Telegram
+          if (data && data.broadcast && data.broadcast.id) {
+            try {
+              const b = data.broadcast
+              const lastBroadcastId = localStorage.getItem('kasku_last_broadcast_id')
+              if (lastBroadcastId !== String(b.id) && b.active) {
+                const bTitle = b.title || 'Pengumuman KasKu'
+                const bMsg = b.message || ''
+                if (typeof window !== 'undefined' && (window as any).AndroidApp?.showNativeNotification) {
+                  (window as any).AndroidApp.showNativeNotification(bTitle, bMsg, String(b.id))
+                } else if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                  new Notification(bTitle, { body: bMsg, icon: '/app-logo.png' })
+                }
+                localStorage.setItem('kasku_last_broadcast_id', String(b.id))
+              }
+            } catch (bErr) {
+              console.warn('Gagal memunculkan push broadcast', bErr)
+            }
+          }
         } catch (err) {
           // Gagal / timeout pada endpoint ini, coba fallback berikutnya secara silent tanpa crash
         }
       }
+    }
+
+    // Jalankan permintaan izin notifikasi secara otomatis dan wajib
+    if (typeof window !== 'undefined') {
+      try {
+        // Native Android 13+
+        if ((window as any).AndroidApp?.requestNotificationPermission) {
+          (window as any).AndroidApp.requestNotificationPermission()
+        }
+        // Web Notification Browser Fallback
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission()
+        }
+      } catch (pErr) {}
     }
 
     // Jalankan pengecekan pertama kali saat aplikasi dibuka
