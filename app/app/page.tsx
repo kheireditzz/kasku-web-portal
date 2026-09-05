@@ -158,7 +158,7 @@ export default function KaskuApp() {
 
     // Cek Pembaruan Aplikasi secara otomatis (OTA Update Checker: Blocking vs Opsional)
     const checkAppUpdate = async () => {
-      // Lewati pengecekan HANYA jika sedang di local dev server (localhost / 127.0.0.1)
+      // Lewati pengecekan HANYA jika sedang di local dev server browser biasa (localhost / 127.0.0.1)
       if (typeof window !== 'undefined') {
         const h = window.location.hostname
         if (h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0') {
@@ -166,12 +166,11 @@ export default function KaskuApp() {
         }
       }
 
-      // Endpoint remote utama dan fallback jika offline / gagal
+      // Endpoint remote utama dan fallback
       const endpoints = [
         'https://kasku.kheireditz.my.id/api/version',
         'https://kasku.kheireditz.my.id/version.json',
-        `/api/version?t=${Date.now()}`,
-        `/version.json?t=${Date.now()}`
+        'https://raw.githubusercontent.com/kheireditzz/kasku-web-portal/main/public/version.json'
       ]
 
       // Helper function pembanding semver (v1 > v2 => 1, v1 < v2 => -1, sama => 0)
@@ -190,68 +189,87 @@ export default function KaskuApp() {
 
       for (const endpoint of endpoints) {
         try {
-          const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 3500)
-          const res = await fetch(`${endpoint}${endpoint.includes('?') ? '&' : '?'}t=${Date.now()}`, {
-            signal: controller.signal,
-            cache: 'no-store'
-          })
-          clearTimeout(timeoutId)
+          let data: any = null
+          const targetWithTime = `${endpoint}${endpoint.includes('?') ? '&' : '?'}t=${Date.now()}`
 
-          if (res.ok) {
-            const data = await res.json()
-            if (data && data.latestVersion) {
-              const latestVer = String(data.latestVersion).trim()
-              const minReqVer = String(data.minRequiredVersion || data.latestVersion).trim()
+          // 1. Coba Native Bridge Android jika tersedia (100% bypass CORS & WebView file:// restriction)
+          if (typeof window !== 'undefined' && (window as any).AndroidApp?.fetchUrlNative) {
+            try {
+              const raw = (window as any).AndroidApp.fetchUrlNative(targetWithTime)
+              if (raw && typeof raw === 'string' && raw.trim().startsWith('{')) {
+                data = JSON.parse(raw.trim())
+              }
+            } catch (nativeErr) {
+              console.warn('Native fetch fallback failed, falling back to fetch', nativeErr)
+            }
+          }
 
-              // Evaluasi apakah versi sekarang lebih kecil dari versi rilis terbaru
-              const hasNewerVersion = semverCompare(latestVer, APP_CURRENT_VERSION) > 0
+          // 2. Fetch standar via browser / webview
+          if (!data) {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 4000)
+            const res = await fetch(targetWithTime, {
+              signal: controller.signal,
+              cache: 'no-store'
+            })
+            clearTimeout(timeoutId)
 
-              if (hasNewerVersion) {
-                // Mode blocking JIKA versi terpasang lebih kecil dari minRequiredVersion
-                // Atau jika data.forceUpdate secara eksplisit bernilai true
-                const isBlocking = Boolean(
-                  semverCompare(minReqVer, APP_CURRENT_VERSION) > 0 || data.forceUpdate === true
-                )
+            if (res.ok) {
+              data = await res.json()
+            }
+          }
 
-                let targetUrl = data.updateUrl || 'https://kasku.kheireditz.my.id/'
-                if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
-                  targetUrl = `https://kasku.kheireditz.my.id${targetUrl.startsWith('/') ? '' : '/'}${targetUrl}`
-                }
+          if (data && data.latestVersion) {
+            const latestVer = String(data.latestVersion).trim()
+            const minReqVer = String(data.minRequiredVersion || data.latestVersion).trim()
 
-                const newUpdatePayload: UpdateInfo = {
-                  isOutdated: true,
-                  currentVersion: APP_CURRENT_VERSION,
-                  latestVersion: latestVer,
-                  forceUpdate: isBlocking,
-                  releaseNotes: data.releaseNotes || (
-                    isBlocking
-                      ? 'Pembaruan sistem wajib untuk menjaga keamanan dan kestabilan data transaksi Anda.'
-                      : 'Pembaruan fitur baru dan perbaikan bug tersedia.'
-                  ),
-                  updateUrl: targetUrl
-                }
+            // Evaluasi apakah versi sekarang lebih kecil dari versi rilis terbaru
+            const hasNewerVersion = semverCompare(latestVer, APP_CURRENT_VERSION) > 0
 
-                if (isBlocking) {
-                  try {
-                    localStorage.setItem('kasku_cached_force_update_v1', JSON.stringify(newUpdatePayload))
-                  } catch (e) {}
-                } else {
-                  try {
-                    localStorage.removeItem('kasku_cached_force_update_v1')
-                  } catch (e) {}
-                }
+            if (hasNewerVersion) {
+              // Mode blocking JIKA versi terpasang lebih kecil dari minRequiredVersion
+              // Atau jika data.forceUpdate secara eksplisit bernilai true
+              const isBlocking = Boolean(
+                semverCompare(minReqVer, APP_CURRENT_VERSION) > 0 || data.forceUpdate === true
+              )
 
-                setUpdateInfo(newUpdatePayload)
-                break // Berhasil mendapatkan update info, hentikan loop
+              let targetUrl = data.updateUrl || 'https://kasku.kheireditz.my.id/'
+              if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+                targetUrl = `https://kasku.kheireditz.my.id${targetUrl.startsWith('/') ? '' : '/'}${targetUrl}`
+              }
+
+              const newUpdatePayload: UpdateInfo = {
+                isOutdated: true,
+                currentVersion: APP_CURRENT_VERSION,
+                latestVersion: latestVer,
+                forceUpdate: isBlocking,
+                releaseNotes: data.releaseNotes || (
+                  isBlocking
+                    ? 'Pembaruan sistem wajib untuk menjaga keamanan dan kestabilan data transaksi Anda.'
+                    : 'Pembaruan fitur baru dan perbaikan bug tersedia.'
+                ),
+                updateUrl: targetUrl
+              }
+
+              if (isBlocking) {
+                try {
+                  localStorage.setItem('kasku_cached_force_update_v1', JSON.stringify(newUpdatePayload))
+                } catch (e) {}
               } else {
-                // Versi sudah paling baru, bersihkan cache blocking update jika ada
                 try {
                   localStorage.removeItem('kasku_cached_force_update_v1')
                 } catch (e) {}
-                setUpdateInfo(null)
-                break
               }
+
+              setUpdateInfo(newUpdatePayload)
+              break // Berhasil mendapatkan update info, hentikan loop
+            } else {
+              // Versi sudah paling baru, bersihkan cache blocking update jika ada
+              try {
+                localStorage.removeItem('kasku_cached_force_update_v1')
+              } catch (e) {}
+              setUpdateInfo(null)
+              break
             }
           }
         } catch (err) {
@@ -263,10 +281,10 @@ export default function KaskuApp() {
     // Jalankan pengecekan pertama kali saat aplikasi dibuka
     checkAppUpdate()
 
-    // 1. Polling Otomatis Tiap 10 Detik: User yang sedang berada DI DALAM aplikasi langsung terkunci/diberitahu begitu admin menaikkan versi
+    // 1. Polling Otomatis Tiap 5 Detik: User yang sedang berada DI DALAM aplikasi langsung terkunci/diberitahu begitu admin menaikkan versi
     const updatePollingInterval = setInterval(() => {
       checkAppUpdate()
-    }, 10000)
+    }, 5000)
 
     // 2. Event VisibilityChange & Window Focus: Saat user membuka kunci layar atau beralih dari aplikasi lain kembali ke KasKu
     const handleVisibilityOrFocus = () => {
