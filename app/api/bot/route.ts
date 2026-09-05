@@ -26,6 +26,13 @@ async function callTelegram(method: string, payload?: any) {
   }
 }
 
+async function sendChatAction(chatId: number | string, action: string = 'typing') {
+  return await callTelegram('sendChatAction', {
+    chat_id: chatId,
+    action
+  })
+}
+
 async function sendMsg(chatId: number | string, text: string, replyMarkup?: any) {
   return await callTelegram('sendMessage', {
     chat_id: chatId,
@@ -157,12 +164,53 @@ function buildDashboard(info: any) {
   return { text, keyboard }
 }
 
-async function executeVersionChange(chatId: number | string, targetVer: string, isForce = true, customNotes?: string) {
+async function executeVersionChange(
+  chatId: number | string,
+  targetVer: string,
+  isForce = true,
+  customNotes?: string,
+  loadingMsgId?: number
+) {
+  let progressMsgId = loadingMsgId
+
+  // Jika belum ada pesan loading, buat pesan loading baru
+  if (!progressMsgId) {
+    const res = await sendMsg(
+      chatId,
+      '⚙️ <b>[1/3] Membaca konfigurasi server GitHub...</b>\n<i>Mohon tunggu sebentar...</i>'
+    )
+    progressMsgId = res?.result?.message_id
+  } else {
+    await editMsg(
+      chatId,
+      progressMsgId,
+      '⚙️ <b>[1/3] Membaca konfigurasi server GitHub...</b>\n<i>Mohon tunggu sebentar...</i>'
+    )
+  }
+
+  await sendChatAction(chatId, 'typing')
+
   const fileInfo = await getGithubVersion()
   if (!fileInfo) {
-    await sendMsg(chatId, '❌ <b>Gagal membaca data dari GitHub.</b>')
+    const errMsg = '❌ <b>Gagal membaca data dari GitHub. Silakan coba sesaat lagi.</b>'
+    if (progressMsgId) {
+      await editMsg(chatId, progressMsgId, errMsg)
+    } else {
+      await sendMsg(chatId, errMsg)
+    }
     return
   }
+
+  // Update step 2 loading
+  if (progressMsgId) {
+    await editMsg(
+      chatId,
+      progressMsgId,
+      `🔄 <b>[2/3] Menerapkan versi v${targetVer} ke GitHub & Vercel CDN...</b>\n` +
+      `<i>Status: ${isForce ? '🔒 Kunci Update (Wajib)' : '🔓 Update Bebas (Opsional)'}</i>`
+    )
+  }
+  await sendChatAction(chatId, 'upload_document')
 
   const oldVer = fileInfo.data.latestVersion || '1.1.95'
   fileInfo.data.latestVersion = targetVer
@@ -192,20 +240,31 @@ async function executeVersionChange(chatId: number | string, targetVer: string, 
   fileInfo.data.releases = [newRel, ...filteredReleases]
 
   const ok = await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Set version v${targetVer}`)
+  
   if (ok) {
     const statusText = isForce ? '🔴 <b>Wajib Update (Terkunci)</b>' : '🟢 <b>Opsional (Bebas)</b>'
-    await sendMsg(
-      chatId,
-      '✅ <b>PERUBAHAN VERSI BERHASIL DISINKRONKAN</b>\n' +
-        '━━━━━━━━━━━━━━━━━━━━━\n' +
-        `• <b>Versi Sebelumnya:</b> <code>v${oldVer}</code>\n` +
-        `• <b>Versi Aktif Baru:</b> <code>v${targetVer}</code>\n` +
-        `• <b>Status Aplikasi:</b> ${statusText}\n` +
-        '━━━━━━━━━━━━━━━━━━━━━\n' +
-        '📡 <i>Server Vercel & GitHub telah diperbarui secara instan.</i>'
-    )
+    const successText =
+      '✅ <b>[3/3] BERHASIL DISINKRONKAN KE CLOUD!</b>\n' +
+      '━━━━━━━━━━━━━━━━━━━━━\n' +
+      `• <b>Versi Sebelumnya:</b> <code>v${oldVer}</code>\n` +
+      `• <b>Versi Aktif Baru:</b> <code>v${targetVer}</code>\n` +
+      `• <b>Status Aplikasi:</b> ${statusText}\n` +
+      '━━━━━━━━━━━━━━━━━━━━━\n' +
+      '📡 <i>Server Vercel & GitHub telah diperbarui secara instan.</i>\n' +
+      '⚡ <i>Aplikasi pengguna akan otomatis merespon dalam hitungan detik.</i>'
+
+    if (progressMsgId) {
+      await editMsg(chatId, progressMsgId, successText)
+    } else {
+      await sendMsg(chatId, successText)
+    }
   } else {
-    await sendMsg(chatId, '❌ <b>Gagal memperbarui ke GitHub.</b>')
+    const failText = '❌ <b>Gagal memperbarui versi ke GitHub. Token kedaluwarsa atau rate limit tercapai.</b>'
+    if (progressMsgId) {
+      await editMsg(chatId, progressMsgId, failText)
+    } else {
+      await sendMsg(chatId, failText)
+    }
   }
 
   const fresh = await getGithubVersion()
@@ -233,54 +292,65 @@ export async function POST(req: Request) {
       }
 
       if (data === 'cmd_refresh') {
-        await answerCallback(cqId, 'Data diperbarui!')
+        await answerCallback(cqId, '🔄 Menyegarkan data...')
+        await sendChatAction(chatId, 'typing')
         const info = await getGithubVersion()
         const { text, keyboard } = buildDashboard(info?.data)
         await editMsg(chatId, msgId, text, keyboard)
       } else if (data === 'cmd_force_on') {
-        await answerCallback(cqId, 'Mengunci aplikasi...')
-        await editMsg(chatId, msgId, '⏳ <b>Sedang mengunci aplikasi di GitHub & Vercel...</b>')
+        await answerCallback(cqId, '🔒 Sedang memproses penguncian...')
+        await editMsg(chatId, msgId, '⏳ <b>[1/2] Menghubungi GitHub untuk mengunci aplikasi...</b>')
+        await sendChatAction(chatId, 'typing')
         const fileInfo = await getGithubVersion()
         if (fileInfo) {
           fileInfo.data.forceUpdate = true
           fileInfo.data.minRequiredVersion = fileInfo.data.latestVersion || '1.1.95'
           await updateGithubVersion(fileInfo.data, fileInfo.sha, 'Vercel Bot: Force Update ON')
-          await sendMsg(chatId, `🔒 <b>APLIKASI BERHASIL DIKUNCI!</b>\nSemua versi di bawah <code>v${fileInfo.data.latestVersion}</code> wajib update.`)
+          await editMsg(chatId, msgId, `🔒 <b>[2/2] APLIKASI BERHASIL DIKUNCI!</b>\nSemua versi di bawah <code>v${fileInfo.data.latestVersion}</code> wajib update.`)
         }
         const fresh = await getGithubVersion()
         const { text, keyboard } = buildDashboard(fresh?.data)
         await sendMsg(chatId, text, keyboard)
       } else if (data === 'cmd_force_off') {
-        await answerCallback(cqId, 'Membuka kunci...')
-        await editMsg(chatId, msgId, '⏳ <b>Sedang membuka kunci di GitHub & Vercel...</b>')
+        await answerCallback(cqId, '🔓 Sedang membuka kunci...')
+        await editMsg(chatId, msgId, '⏳ <b>[1/2] Menghubungi GitHub untuk membuka kunci aplikasi...</b>')
+        await sendChatAction(chatId, 'typing')
         const fileInfo = await getGithubVersion()
         if (fileInfo) {
           fileInfo.data.forceUpdate = false
           fileInfo.data.minRequiredVersion = '1.1.30'
           await updateGithubVersion(fileInfo.data, fileInfo.sha, 'Vercel Bot: Force Update OFF')
-          await sendMsg(chatId, '🔓 <b>KUNCI APLIKASI TELAH DIBUKA!</b>\nPengguna bebas menggunakan aplikasi secara normal.')
+          await editMsg(chatId, msgId, '🔓 <b>[2/2] KUNCI APLIKASI TELAH DIBUKA!</b>\nPengguna bebas menggunakan aplikasi secara normal.')
         }
         const fresh = await getGithubVersion()
         const { text, keyboard } = buildDashboard(fresh?.data)
         await sendMsg(chatId, text, keyboard)
       } else if (data === 'cmd_up_one') {
-        await answerCallback(cqId, 'Menaikkan versi...')
+        await answerCallback(cqId, '🔼 Memproses kenaikan versi (+1)...')
+        await editMsg(chatId, msgId, '⏳ <b>Menghitung versi berikutnya...</b>')
+        await sendChatAction(chatId, 'typing')
         const info = await getGithubVersion()
         const cur = info?.data?.latestVersion || '1.1.95'
         const nxt = changeVersionNumber(cur, +1)
-        await executeVersionChange(chatId, nxt, true)
+        await executeVersionChange(chatId, nxt, true, undefined, msgId)
       } else if (data === 'cmd_down_one') {
-        await answerCallback(cqId, 'Menurunkan versi...')
+        await answerCallback(cqId, '🔽 Memproses penurunan versi (-1)...')
+        await editMsg(chatId, msgId, '⏳ <b>Menghitung versi sebelumnya...</b>')
+        await sendChatAction(chatId, 'typing')
         const info = await getGithubVersion()
         const cur = info?.data?.latestVersion || '1.1.95'
         const prv = changeVersionNumber(cur, -1)
-        await executeVersionChange(chatId, prv, false)
+        await executeVersionChange(chatId, prv, false, undefined, msgId)
       } else if (data === 'cmd_set_95') {
-        await answerCallback(cqId, 'Memulihkan ke v1.1.95...')
-        await executeVersionChange(chatId, '1.1.95', false, 'Pembaruan KasKu v1.1.95 menghadirkan peningkatan antarmuka modern Apple iOS FinTech, optimasi performa AI Voice, dan pembaruan sistem kas.')
+        await answerCallback(cqId, '⏮️ Memulihkan ke v1.1.95...')
+        await editMsg(chatId, msgId, '⏳ <b>Mempersiapkan reset ke v1.1.95...</b>')
+        await sendChatAction(chatId, 'typing')
+        await executeVersionChange(chatId, '1.1.95', false, 'Pembaruan KasKu v1.1.95 menghadirkan peningkatan antarmuka modern Apple iOS FinTech, optimasi performa AI Voice, dan pembaruan sistem kas.', msgId)
       } else if (data === 'cmd_set_96') {
-        await answerCallback(cqId, 'Memasang v1.1.96...')
-        await executeVersionChange(chatId, '1.1.96', true, 'Pembaruan sistem wajib KasKu v1.1.96. Versi ini wajib diunduh untuk dapat melanjutkan penggunaan aplikasi.')
+        await answerCallback(cqId, '🧪 Mengaktifkan uji coba v1.1.96...')
+        await editMsg(chatId, msgId, '⏳ <b>Mempersiapkan uji coba v1.1.96...</b>')
+        await sendChatAction(chatId, 'typing')
+        await executeVersionChange(chatId, '1.1.96', true, 'Pembaruan sistem wajib KasKu v1.1.96. Versi ini wajib diunduh untuk dapat melanjutkan penggunaan aplikasi.', msgId)
       }
 
       return NextResponse.json({ ok: true })
@@ -297,38 +367,49 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true })
       }
 
+      // Kirim typing action seketika agar Telegram menampilkan "typing..." di status bar
+      await sendChatAction(chatId, 'typing')
+
       if (text === '/help') {
         const helpText =
           '📖 <b>PANDUAN PERINTAH KASKU COMMANDER:</b>\n' +
           '━━━━━━━━━━━━━━━━━━━━━\n' +
           '• <code>/start</code> - Menampilkan dasbor kontrol utama\n' +
           '• <code>/status</code> - Menampilkan status versi & server saat ini\n' +
-          '• <code>/up 1.1.98</code> - Menaikkan ke nomor versi tertentu\n' +
-          '• <code>/down 1.1.95</code> - Menurunkan ke nomor versi tertentu\n' +
+          '• <code>/up 1.1.98</code> - Menaikkan ke nomor versi tertentu (Wajib Update)\n' +
+          '• <code>/down 1.1.95</code> - Menurunkan ke nomor versi tertentu (Opsional)\n' +
           '• <code>/lock</code> - Mengunci versi lama (Wajib Update ON)\n' +
           '• <code>/unlock</code> - Membuka kunci (Update Opsional)\n' +
           '• <code>/notes [teks]</code> - Mengubah isi catatan rilis\n' +
           '━━━━━━━━━━━━━━━━━━━━━\n' +
-          '💡 <i>Anda juga dapat menekan tombol menu langsung di dasbor!</i>'
+          '💡 <i>Anda juga dapat menekan tombol menu langsung di dasbor interaktif!</i>'
         await sendMsg(chatId, helpText)
       } else if (text === '/lock') {
+        const loadMsg = await sendMsg(chatId, '⏳ <b>Sedang mengunci aplikasi di GitHub & Vercel...</b>')
+        const loadMsgId = loadMsg?.result?.message_id
         const fileInfo = await getGithubVersion()
         if (fileInfo) {
           fileInfo.data.forceUpdate = true
           fileInfo.data.minRequiredVersion = fileInfo.data.latestVersion || '1.1.95'
           await updateGithubVersion(fileInfo.data, fileInfo.sha, 'Vercel Bot: Lock ON')
-          await sendMsg(chatId, '🔒 <b>APLIKASI BERHASIL DIKUNCI!</b>')
+          if (loadMsgId) {
+            await editMsg(chatId, loadMsgId, '🔒 <b>APLIKASI BERHASIL DIKUNCI!</b>\nSemua versi di bawah <code>v' + fileInfo.data.latestVersion + '</code> wajib update.')
+          }
         }
         const fresh = await getGithubVersion()
         const { text: t, keyboard: k } = buildDashboard(fresh?.data)
         await sendMsg(chatId, t, k)
       } else if (text === '/unlock') {
+        const loadMsg = await sendMsg(chatId, '⏳ <b>Sedang membuka kunci aplikasi di GitHub & Vercel...</b>')
+        const loadMsgId = loadMsg?.result?.message_id
         const fileInfo = await getGithubVersion()
         if (fileInfo) {
           fileInfo.data.forceUpdate = false
           fileInfo.data.minRequiredVersion = '1.1.30'
           await updateGithubVersion(fileInfo.data, fileInfo.sha, 'Vercel Bot: Unlock')
-          await sendMsg(chatId, '🔓 <b>KUNCI APLIKASI DIBUKA!</b>')
+          if (loadMsgId) {
+            await editMsg(chatId, loadMsgId, '🔓 <b>KUNCI APLIKASI TELAH DIBUKA!</b>\nPengguna bebas memakai aplikasi.')
+          }
         }
         const fresh = await getGithubVersion()
         const { text: t, keyboard: k } = buildDashboard(fresh?.data)
@@ -338,25 +419,39 @@ export async function POST(req: Request) {
         const newVer = cmdParts[1] ? cmdParts[1].replace('v', '').trim() : ''
         if (newVer) {
           const isF = text.startsWith('/up ')
-          await executeVersionChange(chatId, newVer, isF)
+          const loadMsg = await sendMsg(chatId, `⏳ <b>Sedang memproses ${isF ? 'kenaikan' : 'penurunan'} versi ke v${newVer}...</b>`)
+          const loadMsgId = loadMsg?.result?.message_id
+          await executeVersionChange(chatId, newVer, isF, undefined, loadMsgId)
+        } else {
+          await sendMsg(chatId, '⚠️ Format salah. Contoh penggunaan: <code>/up 1.1.98</code> atau <code>/down 1.1.95</code>')
         }
       } else if (text.startsWith('/notes ')) {
         const newNotes = text.replace('/notes ', '').trim()
         if (newNotes) {
+          const loadMsg = await sendMsg(chatId, '⏳ <b>Sedang menyimpan catatan rilis baru ke GitHub...</b>')
+          const loadMsgId = loadMsg?.result?.message_id
           const fileInfo = await getGithubVersion()
           if (fileInfo) {
             fileInfo.data.releaseNotes = newNotes
             await updateGithubVersion(fileInfo.data, fileInfo.sha, 'Vercel Bot: Update Release Notes')
-            await sendMsg(chatId, `✅ <b>Catatan rilis diubah:</b>\n<i>« ${newNotes} »</i>`)
+            if (loadMsgId) {
+              await editMsg(chatId, loadMsgId, `✅ <b>Catatan rilis berhasil diperbarui:</b>\n<i>« ${newNotes} »</i>`)
+            }
           }
           const fresh = await getGithubVersion()
           const { text: t, keyboard: k } = buildDashboard(fresh?.data)
           await sendMsg(chatId, t, k)
         }
       } else {
+        const loadMsg = await sendMsg(chatId, '🔄 <b>Memuat dasbor kontrol...</b>')
+        const loadMsgId = loadMsg?.result?.message_id
         const info = await getGithubVersion()
         const { text: dashText, keyboard: kb } = buildDashboard(info?.data)
-        await sendMsg(chatId, dashText, kb)
+        if (loadMsgId) {
+          await editMsg(chatId, loadMsgId, dashText, kb)
+        } else {
+          await sendMsg(chatId, dashText, kb)
+        }
       }
 
       return NextResponse.json({ ok: true })
