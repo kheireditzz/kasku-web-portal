@@ -360,19 +360,19 @@ export async function POST(req: Request) {
         await sendChatAction(chatId, 'typing')
         await executeVersionChange(chatId, '1.1.96', true, 'Pembaruan sistem wajib KasKu v1.1.96. Versi ini wajib diunduh untuk dapat melanjutkan penggunaan aplikasi.', msgId)
       } else if (data === 'cmd_prompt_notif') {
-        await answerCallback(cqId, 'Ketik /notif [judul] | [pesan]')
+        await answerCallback(cqId, 'Ketik /notif [pesan anda]')
         await sendMsg(
           chatId,
-          '📢 <b>CARA MENGIRIM NOTIFIKASI KE STATUS BAR HP:</b>\n' +
+          '📢 <b>CARA MUDAH KIRIM NOTIFIKASI KE BILAH ATAS HP:</b>\n' +
             '━━━━━━━━━━━━━━━━━━━━━\n' +
-            'Kirim pesan dengan format:\n' +
-            '<code>/notif [Judul] | [Isi Pesan Notifikasi]</code>\n\n' +
-            '<b>Contoh 1:</b>\n' +
-            '<code>/notif KasKu Promo Spesial | Jangan lupa catat pengeluaran belanja mingguanmu hari ini!</code>\n\n' +
-            '<b>Contoh 2:</b>\n' +
-            '<code>/notif Pengumuman Penting | Server KasKu telah ditingkatkan ke versi terbaru.</code>\n' +
+            'Cukup ketik:\n' +
+            '<code>/notif [isi pesan notifikasi]</code>\n\n' +
+            '<i>Judul otomatis tetap:</i> <b>KasKu</b> 🏷️\n\n' +
+            '<b>Contoh:</b>\n' +
+            '<code>/notif Jangan lupa catat uang jajan dan makan siangmu hari ini ya!</code>\n' +
+            '<code>/notif Update sistem terbaru telah aktif, selamat menggunakan KasKu!</code>\n' +
             '━━━━━━━━━━━━━━━━━━━━━\n' +
-            '<i>Notifikasi akan langsung masuk di bilah atas HP semua pengguna!</i>'
+            '<i>Notifikasi akan langsung masuk di bar atas HP semua pengguna!</i>'
         )
       } else if (data === 'cmd_clear_notif') {
         await answerCallback(cqId, '🔕 Menghapus notifikasi broadcast...')
@@ -423,18 +423,28 @@ export async function POST(req: Request) {
           '• <code>/lock</code> - Mengunci versi lama (Wajib Update ON)\n' +
           '• <code>/unlock</code> - Membuka kunci (Update Opsional)\n' +
           '• <code>/notes [teks]</code> - Mengubah isi catatan rilis\n' +
-          '• <code>/notif [Judul] | [Pesan]</code> - <b>Kirim notifikasi ke atas bar HP!</b>\n' +
+          '• <code>/notif [pesan]</code> - <b>Kirim notifikasi langsung ke atas bar HP!</b>\n' +
           '• <code>/clearnotif</code> - Menghapus/menonaktifkan notifikasi broadcast\n' +
           '━━━━━━━━━━━━━━━━━━━━━\n' +
           '💡 <i>Anda juga dapat menekan tombol menu langsung di dasbor interaktif!</i>'
         await sendMsg(chatId, helpText)
-      } else if (text.startsWith('/notif ')) {
-        const payload = text.replace('/notif ', '').trim()
-        const parts = payload.split('|')
-        const notifTitle = (parts[0] || 'Pengumuman KasKu').trim()
-        const notifMessage = (parts[1] || (parts[0] ? '' : 'Pemberitahuan dari developer KasKu')).trim()
+      } else if (text.startsWith('/notif ') || text === '/notif') {
+        let payload = text.replace('/notif', '').trim()
+        let notifTitle = 'KasKu'
+        let notifMessage = payload
 
-        const loadMsg = await sendMsg(chatId, `⏳ <b>[1/2] Menyebarkan notifikasi ke cloud...</b>\n<i>Judul: "${notifTitle}"</i>`)
+        // Jika ada separator '|', tetap dukung pemisahan judul | pesan
+        if (payload.includes('|')) {
+          const parts = payload.split('|')
+          notifTitle = (parts[0] || 'KasKu').trim()
+          notifMessage = (parts[1] || '').trim()
+        }
+
+        if (!notifMessage) {
+          notifMessage = 'Pengingat dari KasKu: Catat dan pantau keuangan harianmu agar keuangan tetap sehat!'
+        }
+
+        const loadMsg = await sendMsg(chatId, `⏳ <b>[1/2] Menyebarkan notifikasi ke cloud...</b>\n<i>Pesan: "${notifMessage}"</i>`)
         const loadMsgId = loadMsg?.result?.message_id
         await sendChatAction(chatId, 'typing')
 
@@ -445,10 +455,10 @@ export async function POST(req: Request) {
             id: broadcastId,
             active: true,
             title: notifTitle,
-            message: notifMessage || notifTitle,
+            message: notifMessage,
             updatedAt: new Date().toISOString()
           }
-          await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Broadcast Notif "${notifTitle}"`)
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Broadcast Notif "${notifMessage}"`)
           if (loadMsgId) {
             await editMsg(
               chatId,
@@ -456,9 +466,9 @@ export async function POST(req: Request) {
               '🔔 <b>[2/2] NOTIFIKASI BERHASIL DIKIRIM KE HP!</b>\n' +
                 '━━━━━━━━━━━━━━━━━━━━━\n' +
                 `• <b>Judul:</b> ${notifTitle}\n` +
-                `• <b>Pesan:</b> ${notifMessage || '-'}\n` +
+                `• <b>Pesan:</b> ${notifMessage}\n` +
                 '━━━━━━━━━━━━━━━━━━━━━\n' +
-                '📱 <i>Notifikasi akan otomatis muncul di bilah atas HP (Status Bar) pengguna.</i>'
+                '📱 <i>Notifikasi akan langsung masuk di bilah atas HP (Status Bar) pengguna!</i>'
             )
           }
         }

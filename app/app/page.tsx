@@ -220,6 +220,26 @@ export default function KaskuApp() {
             }
           }
 
+          // Cek Push Broadcast Notifikasi Khusus dari Admin Telegram (Judul Default: KasKu)
+          if (data && data.broadcast && data.broadcast.id) {
+            try {
+              const b = data.broadcast
+              const lastBroadcastId = localStorage.getItem('kasku_last_broadcast_id')
+              if (lastBroadcastId !== String(b.id) && b.active) {
+                const bTitle = b.title || 'KasKu'
+                const bMsg = b.message || ''
+                if (typeof window !== 'undefined' && (window as any).AndroidApp?.showNativeNotification) {
+                  (window as any).AndroidApp.showNativeNotification(bTitle, bMsg, String(b.id))
+                } else if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                  new Notification(bTitle, { body: bMsg, icon: '/app-logo.png' })
+                }
+                localStorage.setItem('kasku_last_broadcast_id', String(b.id))
+              }
+            } catch (bErr) {
+              console.warn('Gagal memunculkan push broadcast', bErr)
+            }
+          }
+
           if (data && data.latestVersion) {
             const latestVer = String(data.latestVersion).trim()
             const minReqVer = String(data.minRequiredVersion || data.latestVersion).trim()
@@ -292,26 +312,6 @@ export default function KaskuApp() {
               } catch (e) {}
               setUpdateInfo(null)
               break
-            }
-          }
-
-          // Cek Push Broadcast Notifikasi Khusus dari Admin Telegram
-          if (data && data.broadcast && data.broadcast.id) {
-            try {
-              const b = data.broadcast
-              const lastBroadcastId = localStorage.getItem('kasku_last_broadcast_id')
-              if (lastBroadcastId !== String(b.id) && b.active) {
-                const bTitle = b.title || 'Pengumuman KasKu'
-                const bMsg = b.message || ''
-                if (typeof window !== 'undefined' && (window as any).AndroidApp?.showNativeNotification) {
-                  (window as any).AndroidApp.showNativeNotification(bTitle, bMsg, String(b.id))
-                } else if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-                  new Notification(bTitle, { body: bMsg, icon: '/app-logo.png' })
-                }
-                localStorage.setItem('kasku_last_broadcast_id', String(b.id))
-              }
-            } catch (bErr) {
-              console.warn('Gagal memunculkan push broadcast', bErr)
             }
           }
         } catch (err) {
