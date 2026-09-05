@@ -260,7 +260,23 @@ export default function KaskuApp() {
       }
     }
 
+    // Jalankan pengecekan pertama kali saat aplikasi dibuka
     checkAppUpdate()
+
+    // 1. Polling Otomatis Tiap 10 Detik: User yang sedang berada DI DALAM aplikasi langsung terkunci/diberitahu begitu admin menaikkan versi
+    const updatePollingInterval = setInterval(() => {
+      checkAppUpdate()
+    }, 10000)
+
+    // 2. Event VisibilityChange & Window Focus: Saat user membuka kunci layar atau beralih dari aplikasi lain kembali ke KasKu
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        checkAppUpdate()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus)
+    window.addEventListener('focus', handleVisibilityOrFocus)
 
     // Proteksi: Larang salin teks, unduh gambar lewat klik kanan/long press, dan drag gambar
     const handleContextMenu = (e: MouseEvent) => {
@@ -288,6 +304,9 @@ export default function KaskuApp() {
     document.addEventListener('dragstart', handleDragStart)
 
     return () => {
+      clearInterval(updatePollingInterval)
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus)
+      window.removeEventListener('focus', handleVisibilityOrFocus)
       document.removeEventListener('contextmenu', handleContextMenu)
       document.removeEventListener('copy', handleCopy)
       document.removeEventListener('dragstart', handleDragStart)
