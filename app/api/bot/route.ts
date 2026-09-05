@@ -127,7 +127,11 @@ function buildDashboard(info: any) {
   const lockButtonText = force ? '🔓 Matikan Kunci Update' : '🔒 Kunci Seluruh Versi Lama'
   const lockCallback = force ? 'cmd_force_off' : 'cmd_force_on'
 
-  const broadcastStatus = info?.broadcast?.active ? `📢 <b>Notif HP Aktif:</b> "${info?.broadcast?.title || '-'}"` : '📢 <b>Notif HP:</b> Siaga (Tidak Ada Broadcast)'
+  const broadcastStatus = info?.broadcast?.active 
+    ? `📢 <b>Notif HP Aktif:</b> "${info?.broadcast?.message || info?.broadcast?.title || '-'}"` 
+    : '📢 <b>Notif HP:</b> Siaga (Tidak Ada Broadcast)'
+
+  const savedNotif = info?.savedNotification || 'Jangan Lupa Catat Laporan Keuangan Yaa'
 
   const text =
     '┏━━━━━━━━━━━━━━━━━━━━━┓\n' +
@@ -142,11 +146,15 @@ function buildDashboard(info: any) {
     `  └ 🌐 <b>Portal Unduh:</b> <a href="${url}">${url}</a>\n\n` +
     '📝 <b>CATATAN RILIS TERBARU:</b>\n' +
     `  └ <i>« ${notes} »</i>\n\n` +
-    `${broadcastStatus}\n\n` +
+    `${broadcastStatus}\n` +
+    `📌 <b>Template Notif Tersimpan:</b>\n  └ <i>« ${savedNotif} »</i>\n\n` +
     '⚡ <i>Sentuh tombol di bawah untuk mengontrol server secara instan:</i>'
 
   const keyboard = {
     inline_keyboard: [
+      [
+        { text: '⚡ Notif Cepat: Catat Laporan Keuangan', callback_data: 'cmd_quick_notif' }
+      ],
       [
         { text: '🔼 Naikkan (+1)', callback_data: 'cmd_up_one' },
         { text: '🔽 Turunkan (-1)', callback_data: 'cmd_down_one' }
@@ -157,6 +165,10 @@ function buildDashboard(info: any) {
       [
         { text: '📢 Kirim Notifikasi HP', callback_data: 'cmd_prompt_notif' },
         { text: '🔕 Matikan Notif HP', callback_data: 'cmd_clear_notif' }
+      ],
+      [
+        { text: '⚙️ Set Template Notif', callback_data: 'cmd_prompt_setnotif' },
+        { text: '🚀 Kirim Notif Tersimpan', callback_data: 'cmd_send_saved_notif' }
       ],
       [
         { text: '⏮️ Reset v1.1.95', callback_data: 'cmd_set_95' },
@@ -374,6 +386,78 @@ export async function POST(req: Request) {
             '━━━━━━━━━━━━━━━━━━━━━\n' +
             '<i>Notifikasi akan langsung masuk di bar atas HP semua pengguna!</i>'
         )
+      } else if (data === 'cmd_quick_notif') {
+        const quickMsg = 'Jangan Lupa Catat Laporan Keuangan Yaa'
+        await answerCallback(cqId, '⚡ Mengirim Notif Cepat...')
+        await editMsg(chatId, msgId, `⏳ <b>[1/2] Menyebarkan Notif Cepat ke HP...</b>\n<i>Pesan: "${quickMsg}"</i>`)
+        await sendChatAction(chatId, 'typing')
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          const broadcastId = `b-${Date.now()}`
+          fileInfo.data.broadcast = {
+            id: broadcastId,
+            active: true,
+            title: 'KasKu',
+            message: quickMsg,
+            updatedAt: new Date().toISOString()
+          }
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Quick Notif "${quickMsg}"`)
+          await editMsg(
+            chatId,
+            msgId,
+            '🔔 <b>[2/2] NOTIFIKASI CEPAT BERHASIL TERKIRIM!</b>\n' +
+              '━━━━━━━━━━━━━━━━━━━━━\n' +
+              '• <b>Judul:</b> KasKu\n' +
+              `• <b>Pesan:</b> ${quickMsg}\n` +
+              '━━━━━━━━━━━━━━━━━━━━━\n' +
+              '📱 <i>Pengguna akan langsung menerima notifikasi di bilah atas HP!</i>'
+          )
+        }
+        const fresh = await getGithubVersion()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, t, k)
+      } else if (data === 'cmd_send_saved_notif') {
+        await answerCallback(cqId, '🚀 Mengirim notifikasi tersimpan...')
+        await editMsg(chatId, msgId, '⏳ <b>[1/2] Mengambil template notifikasi tersimpan...</b>')
+        await sendChatAction(chatId, 'typing')
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          const targetMsg = fileInfo.data.savedNotification || 'Jangan Lupa Catat Laporan Keuangan Yaa'
+          const broadcastId = `b-${Date.now()}`
+          fileInfo.data.broadcast = {
+            id: broadcastId,
+            active: true,
+            title: 'KasKu',
+            message: targetMsg,
+            updatedAt: new Date().toISOString()
+          }
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Send Saved Notif "${targetMsg}"`)
+          await editMsg(
+            chatId,
+            msgId,
+            '🔔 <b>[2/2] NOTIFIKASI TERSIMPAN BERHASIL DIKIRIM!</b>\n' +
+              '━━━━━━━━━━━━━━━━━━━━━\n' +
+              '• <b>Judul:</b> KasKu\n' +
+              `• <b>Pesan:</b> ${targetMsg}\n` +
+              '━━━━━━━━━━━━━━━━━━━━━\n' +
+              '📱 <i>Notifikasi langsung masuk di status bar HP pengguna.</i>'
+          )
+        }
+        const fresh = await getGithubVersion()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, t, k)
+      } else if (data === 'cmd_prompt_setnotif') {
+        await answerCallback(cqId, 'Ketik /setnotif [isi pesan]')
+        await sendMsg(
+          chatId,
+          '⚙️ <b>CARA SIMPAN TEMPLATE NOTIFIKASI:</b>\n' +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            'Ketik pesan perintah:\n' +
+            '<code>/setnotif [isi pesan yang ingin disimpan]</code>\n\n' +
+            '<b>Contoh:</b>\n' +
+            '<code>/setnotif Jangan Lupa Catat Laporan Keuangan Yaa</code>\n\n' +
+            '<i>Setelah disimpan, Anda cukup menekan tombol "🚀 Kirim Notif Tersimpan" kapan saja untuk membroadcast ulang tanpa perlu mengetik lagi!</i>'
+        )
       } else if (data === 'cmd_clear_notif') {
         await answerCallback(cqId, '🔕 Menghapus notifikasi broadcast...')
         await editMsg(chatId, msgId, '⏳ <b>Sedang menonaktifkan broadcast di cloud...</b>')
@@ -424,10 +508,36 @@ export async function POST(req: Request) {
           '• <code>/unlock</code> - Membuka kunci (Update Opsional)\n' +
           '• <code>/notes [teks]</code> - Mengubah isi catatan rilis\n' +
           '• <code>/notif [pesan]</code> - <b>Kirim notifikasi langsung ke atas bar HP!</b>\n' +
+          '• <code>/setnotif [pesan]</code> - <b>Simpan template pesan notifikasi</b>\n' +
           '• <code>/clearnotif</code> - Menghapus/menonaktifkan notifikasi broadcast\n' +
           '━━━━━━━━━━━━━━━━━━━━━\n' +
           '💡 <i>Anda juga dapat menekan tombol menu langsung di dasbor interaktif!</i>'
         await sendMsg(chatId, helpText)
+      } else if (text.startsWith('/setnotif ') || text === '/setnotif') {
+        const newTemplate = text.replace('/setnotif', '').trim() || 'Jangan Lupa Catat Laporan Keuangan Yaa'
+        const loadMsg = await sendMsg(chatId, `⏳ <b>Menyimpan template notifikasi ke cloud...</b>\n<i>« ${newTemplate} »</i>`)
+        const loadMsgId = loadMsg?.result?.message_id
+        await sendChatAction(chatId, 'typing')
+
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          fileInfo.data.savedNotification = newTemplate
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Save Notification Template "${newTemplate}"`)
+          if (loadMsgId) {
+            await editMsg(
+              chatId,
+              loadMsgId,
+              '💾 <b>TEMPLATE NOTIFIKASI BERHASIL DISIMPAN!</b>\n' +
+                '━━━━━━━━━━━━━━━━━━━━━\n' +
+                `• <b>Isi Notif:</b> ${newTemplate}\n` +
+                '━━━━━━━━━━━━━━━━━━━━━\n' +
+                '💡 <i>Sekarang Anda bisa kirim kapan saja cukup dengan menekan tombol "🚀 Kirim Notif Tersimpan" di dasbor!</i>'
+            )
+          }
+        }
+        const fresh = await getGithubVersion()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, t, k)
       } else if (text.startsWith('/notif ') || text === '/notif') {
         let payload = text.replace('/notif', '').trim()
         let notifTitle = 'KasKu'

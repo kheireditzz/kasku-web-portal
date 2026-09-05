@@ -8,9 +8,10 @@
     "id": "b-1788647702170",
     "active": true,
     "title": "KasKu",
-    "message": "Jangan Lupa Isi Laporan Keuangan Ya",
-    "updatedAt": "2026-09-05T22:35:02.170Z"
+    "message": "Jangan Lupa Catat Laporan Keuangan Yaa",
+    "updatedAt": "2026-09-05T22:45:00.000Z"
   },
+  "savedNotification": "Jangan Lupa Catat Laporan Keuangan Yaa",
   "releases": [
     {
       "version": "1.1.95",
