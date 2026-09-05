@@ -123,58 +123,64 @@ function buildDashboard(info: any) {
   const notes = info?.releaseNotes || '-'
   const url = info?.updateUrl || 'https://kasku.kheireditz.my.id/'
 
-  const statusBadge = force ? '🔴 <b>TERKUNCI (Wajib Update)</b>' : '🟢 <b>AKTIF (Bebas / Opsional)</b>'
-  const lockButtonText = force ? '🔓 Matikan Kunci Update' : '🔒 Kunci Seluruh Versi Lama'
+  const statusBadge = force ? '🔴 <b>Wajib Update (Terkunci)</b>' : '🟢 <b>Opsional (Bebas)</b>'
+  const lockButtonText = force ? '🔓 Buka Kunci Aplikasi' : '🔒 Kunci Aplikasi (Paksa Update)'
   const lockCallback = force ? 'cmd_force_off' : 'cmd_force_on'
 
+  const broadcastMsg = info?.broadcast?.message || info?.broadcast?.title || '-'
   const broadcastStatus = info?.broadcast?.active 
-    ? `📢 <b>Notif HP Aktif:</b> "${info?.broadcast?.message || info?.broadcast?.title || '-'}"` 
-    : '📢 <b>Notif HP:</b> Siaga (Tidak Ada Broadcast)'
+    ? `🔔 <b>BROADCAST HP SAAT INI:</b>\n   └ 🟢 <i>« ${broadcastMsg} »</i>` 
+    : '🔔 <b>BROADCAST HP SAAT INI:</b>\n   └ ⚪ <i>Tidak ada broadcast aktif</i>'
 
   const savedNotif = info?.savedNotification || 'Jangan Lupa Catat Laporan Keuangan Yaa'
 
   const schedules: any[] = Array.isArray(info?.dailySchedules) ? info.dailySchedules : [
-    { id: 'sched_07', time: '07:00', label: 'Pagi (07:00)', message: 'Selamat Pagii', enabled: true },
-    { id: 'sched_13', time: '13:00', label: 'Siang (13:00)', message: 'Jangan Lupa Isi Laporan Keuangan ya', enabled: true },
-    { id: 'sched_21', time: '21:00', label: 'Malam (21:00)', message: 'Jangan Lupa Isi Laporan Keuangan Ya', enabled: true },
-    { id: 'sched_00', time: '00:00', label: 'Tengah Malam (00:00)', message: 'Selamat Tidur', enabled: true }
+    { id: 'sched_07', time: '07:00', label: 'Pagi', message: 'Selamat Pagii', enabled: true },
+    { id: 'sched_13', time: '13:00', label: 'Siang', message: 'Jangan Lupa Isi Laporan Keuangan ya', enabled: true },
+    { id: 'sched_21', time: '21:00', label: 'Malam', message: 'Jangan Lupa Isi Laporan Keuangan Ya', enabled: true },
+    { id: 'sched_00', time: '00:00', label: 'Tengah Malam', message: 'Selamat Tidur', enabled: true }
   ]
 
-  let schedSummary = '⏰ <b>JADWAL PENGINGAT OTOMATIS 4-WAKTU:</b>\n'
+  let schedSummary = '⏰ <b>PENGINGAT OTOMATIS 4-WAKTU (HARIAN):</b>\n'
   schedules.forEach(s => {
-    const badge = s.enabled ? '🟢 ON' : '🔴 OFF'
-    schedSummary += `  ├ ${badge} <b>${s.time}</b>: « <i>${s.message}</i> »\n`
+    const icon = s.enabled ? '🟢' : '⚪'
+    const statusText = s.enabled ? '<b>ON</b>' : '<i>OFF</i>'
+    schedSummary += `   • ${icon} <code>${s.time}</code> [${statusText}] : « <i>${s.message}</i> »\n`
   })
 
   const text =
-    '┏━━━━━━━━━━━━━━━━━━━━━┓\n' +
-    '   💎 <b>KASKU CLOUD COMMANDER</b>\n' +
-    '   <i>Serverless Control Center 24/7</i>\n' +
-    '┗━━━━━━━━━━━━━━━━━━━━━┛\n\n' +
-    '📊 <b>STATUS DISTRIBUSI APK & WEB:</b>\n' +
-    `  ├ 🏷️ <b>Versi Rilis:</b> <code>v${latest}</code>\n` +
-    `  ├ 🛡️ <b>Minimal Versi:</b> <code>v${minReq}</code>\n` +
-    `  ├ ⚙️ <b>Kebijakan:</b> ${statusBadge}\n` +
-    `  ├ 🔔 <b>Notif Status Bar:</b> 🟢 <b>AKTIF</b>\n` +
-    `  └ 🌐 <b>Portal Unduh:</b> <a href="${url}">${url}</a>\n\n` +
-    '📝 <b>CATATAN RILIS TERBARU:</b>\n' +
-    `  └ <i>« ${notes} »</i>\n\n` +
+    '╔════════════════════════════╗\n' +
+    '   💎 <b>KASKU CLOUD COMMAND CENTER</b>\n' +
+    '   <i>Realtime Serverless APK & Web Console</i>\n' +
+    '╚════════════════════════════╝\n\n' +
+    '📱 <b>INFORMASI DISTRIBUSI & SISTEM:</b>\n' +
+    `   • 🏷️ <b>Versi Aktif:</b> <code>v${latest}</code> (Min: <code>v${minReq}</code>)\n` +
+    `   • 🛡️ <b>Kebijakan:</b> ${statusBadge}\n` +
+    `   • 🔔 <b>Status Bar HP:</b> 🟢 <b>Tersambung Realtime</b>\n` +
+    `   • 🌐 <b>Portal Web:</b> <a href="${url}">${url}</a>\n\n` +
+    '📝 <b>CATATAN RILIS TERAKHIR:</b>\n' +
+    `   └ <i>« ${notes} »</i>\n\n` +
+    '────────────────────────────\n' +
     `${broadcastStatus}\n\n` +
     `${schedSummary}\n` +
-    `📌 <b>Template Notif Tersimpan:</b>\n  └ <i>« ${savedNotif} »</i>\n\n` +
-    '⚡ <i>Sentuh tombol di bawah untuk menyalakan/mematikan jadwal atau broadcast:</i>'
+    '📌 <b>TEMPLATE NOTIFIKASI TERSIMPAN:</b>\n' +
+    `   └ <i>« ${savedNotif} »</i>\n` +
+    '────────────────────────────\n' +
+    '👇 <b>PILIH AKSI KONTROL CEPAT DI BAWAH:</b>'
 
-  // Tombol Toggle masing-masing jadwal (ON/OFF)
-  const schedBtn07 = schedules.find(s => s.id === 'sched_07')?.enabled ? '🟢 07:00 Pagi (ON)' : '🔴 07:00 Pagi (OFF)'
-  const schedBtn13 = schedules.find(s => s.id === 'sched_13')?.enabled ? '🟢 13:00 Siang (ON)' : '🔴 13:00 Siang (OFF)'
-  const schedBtn21 = schedules.find(s => s.id === 'sched_21')?.enabled ? '🟢 21:00 Malam (ON)' : '🔴 21:00 Malam (OFF)'
-  const schedBtn00 = schedules.find(s => s.id === 'sched_00')?.enabled ? '🟢 00:00 Tidur (ON)' : '🔴 00:00 Tidur (OFF)'
+  // Tombol Toggle 4 Jadwal Harian yang rapi dan elegan
+  const schedBtn07 = (schedules.find(s => s.id === 'sched_07')?.enabled ? '🟢' : '⚪') + ' 07:00 Pagi'
+  const schedBtn13 = (schedules.find(s => s.id === 'sched_13')?.enabled ? '🟢' : '⚪') + ' 13:00 Siang'
+  const schedBtn21 = (schedules.find(s => s.id === 'sched_21')?.enabled ? '🟢' : '⚪') + ' 21:00 Malam'
+  const schedBtn00 = (schedules.find(s => s.id === 'sched_00')?.enabled ? '🟢' : '⚪') + ' 00:00 Tidur'
 
   const keyboard = {
     inline_keyboard: [
+      // Section 1: Quick Action
       [
-        { text: '⚡ Notif Cepat: Catat Laporan Keuangan', callback_data: 'cmd_quick_notif' }
+        { text: '⚡ Kirim Notif Cepat Sekarang', callback_data: 'cmd_quick_notif' }
       ],
+      // Section 2: Toggle 4 Jadwal Harian
       [
         { text: schedBtn07, callback_data: 'cmd_toggle_sched_07' },
         { text: schedBtn13, callback_data: 'cmd_toggle_sched_13' }
@@ -183,28 +189,33 @@ function buildDashboard(info: any) {
         { text: schedBtn21, callback_data: 'cmd_toggle_sched_21' },
         { text: schedBtn00, callback_data: 'cmd_toggle_sched_00' }
       ],
+      // Section 3: Broadcast Control
       [
-        { text: '📢 Kirim Notifikasi HP', callback_data: 'cmd_prompt_notif' },
-        { text: '🔕 Matikan Notif HP', callback_data: 'cmd_clear_notif' }
+        { text: '📢 Notif Kustom', callback_data: 'cmd_prompt_notif' },
+        { text: '🔕 Matikan Notif', callback_data: 'cmd_clear_notif' }
       ],
+      // Section 4: Template & Send
+      [
+        { text: '⚙️ Set Template', callback_data: 'cmd_prompt_setnotif' },
+        { text: '🚀 Kirim Template', callback_data: 'cmd_send_saved_notif' }
+      ],
+      // Section 5: App Version & Security
       [
         { text: lockButtonText, callback_data: lockCallback }
       ],
       [
-        { text: '⚙️ Set Template Notif', callback_data: 'cmd_prompt_setnotif' },
-        { text: '🚀 Kirim Notif Tersimpan', callback_data: 'cmd_send_saved_notif' }
+        { text: '🔼 Naik Versi (+1)', callback_data: 'cmd_up_one' },
+        { text: '🔽 Turun Versi (-1)', callback_data: 'cmd_down_one' }
       ],
-      [
-        { text: '🔼 Naikkan (+1)', callback_data: 'cmd_up_one' },
-        { text: '🔽 Turunkan (-1)', callback_data: 'cmd_down_one' }
-      ],
+      // Section 6: Maintenance & Quick Testing
       [
         { text: '⏮️ Reset v1.1.95', callback_data: 'cmd_set_95' },
-        { text: '🧪 Test v1.1.96', callback_data: 'cmd_set_96' }
+        { text: '🧪 Uji v1.1.96', callback_data: 'cmd_set_96' }
       ],
+      // Section 7: Utilities
       [
-        { text: '🔄 Refresh', callback_data: 'cmd_refresh' },
-        { text: '🌐 Buka Portal Web', url: 'https://kasku.kheireditz.my.id/' }
+        { text: '🔄 Muat Ulang (Refresh)', callback_data: 'cmd_refresh' },
+        { text: '🌐 Buka Portal KasKu', url: 'https://kasku.kheireditz.my.id/' }
       ]
     ]
   }
@@ -648,20 +659,30 @@ export async function POST(req: Request) {
 
       if (text === '/help') {
         const helpText =
-          '📖 <b>PANDUAN PERINTAH KASKU COMMANDER:</b>\n' +
-          '━━━━━━━━━━━━━━━━━━━━━\n' +
-          '• <code>/start</code> - Menampilkan dasbor kontrol utama (dengan tombol ON/OFF jadwal 4-waktu)\n' +
-          '• <code>/status</code> - Menampilkan status versi & server saat ini\n' +
-          '• <code>/notif [pesan]</code> - <b>Kirim notifikasi instan langsung ke HP!</b>\n' +
-          '• <code>/stopjadwal 07</code> - <b>Matikan jadwal jam 07:00 Pagi</b>\n' +
-          '• <code>/stopjadwal 13</code> - <b>Matikan jadwal jam 13:00 Siang</b>\n' +
-          '• <code>/stopjadwal 21</code> - <b>Matikan jadwal jam 21:00 Malam</b>\n' +
-          '• <code>/stopjadwal 00</code> - <b>Matikan jadwal jam 00:00 Tengah Malam</b>\n' +
-          '• <code>/startjadwal 07</code> - <b>Nyalakan kembali jadwal jam 07:00</b>\n' +
-          '• <code>/setnotif [pesan]</code> - <b>Simpan template pesan notifikasi</b>\n' +
-          '• <code>/clearnotif</code> - Menghapus/menonaktifkan notifikasi broadcast\n' +
-          '━━━━━━━━━━━━━━━━━━━━━\n' +
-          '💡 <i>Anda cukup menekan tombol ON / OFF langsung di dasbor Telegram!</i>'
+          '╔════════════════════════════╗\n' +
+          '   📖 <b>PANDUAN LENGKAP KASKU BOT</b>\n' +
+          '╚════════════════════════════╝\n\n' +
+          '⚡ <b>KONTROL UTAMA & DASBOR:</b>\n' +
+          '   • <code>/start</code> - Menampilkan dasbor visual lengkap\n' +
+          '   • <code>/status</code> - Ringkasan status server & versi\n\n' +
+          '📢 <b>KIRIM & SET NOTIFIKASI HP:</b>\n' +
+          '   • <code>/notif [pesan]</code> - Broadcast instan ke bilah status bar HP\n' +
+          '   • <code>/setnotif [pesan]</code> - Simpan teks template notifikasi\n' +
+          '   • <code>/clearnotif</code> - Matikan notifikasi broadcast aktif\n\n' +
+          '⏰ <b>PENGATURAN 4-JADWAL HARIAN:</b>\n' +
+          '   • <code>/stopjadwal 07</code> - Matikan jadwal 07:00 Pagi\n' +
+          '   • <code>/stopjadwal 13</code> - Matikan jadwal 13:00 Siang\n' +
+          '   • <code>/stopjadwal 21</code> - Matikan jadwal 21:00 Malam\n' +
+          '   • <code>/stopjadwal 00</code> - Matikan jadwal 00:00 Tengah Malam\n' +
+          '   • <code>/startjadwal [07/13/21/00]</code> - Nyalakan jadwal\n\n' +
+          '🛡️ <b>MANAJEMEN RILIS & KEAMANAN:</b>\n' +
+          '   • <code>/lock</code> - Wajib update ke versi terbaru\n' +
+          '   • <code>/unlock</code> - Buka kunci (Update bebas/opsional)\n' +
+          '   • <code>/up [versi]</code> - Naikkan versi aplikasi\n' +
+          '   • <code>/down [versi]</code> - Turunkan versi aplikasi\n' +
+          '   • <code>/notes [teks]</code> - Ubah catatan rilis resmi\n' +
+          '────────────────────────────\n' +
+          '💡 <i>Tips: Seluruh perintah di atas juga dapat Anda akses hanya dengan menekan tombol pada dasbor!</i>'
         await sendMsg(chatId, helpText)
       } else if (text.startsWith('/stopjadwal ') || text.startsWith('/startjadwal ')) {
         const isEnable = text.startsWith('/startjadwal ')
