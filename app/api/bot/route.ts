@@ -141,11 +141,6 @@ function buildDashboard(info: any) {
     { id: 'sched_00', time: '00:00', label: 'Tengah Malam', message: 'Selamat Tidur', enabled: true }
   ]
 
-  const devices: any[] = Array.isArray(info?.registeredDevices) ? info.registeredDevices : []
-  const devicesCount = devices.length
-  const bannedDevicesCount = devices.filter((d: any) => Boolean(d.banned)).length
-  const activeDevicesCount = devicesCount - bannedDevicesCount
-
   let schedSummary = '⏰ <b>PENGINGAT OTOMATIS 4-WAKTU (HARIAN):</b>\n'
   schedules.forEach(s => {
     const icon = s.enabled ? '🟢' : '⚪'
@@ -169,9 +164,7 @@ function buildDashboard(info: any) {
     `${broadcastStatus}\n\n` +
     `${schedSummary}\n` +
     '📌 <b>TEMPLATE NOTIFIKASI TERSIMPAN:</b>\n' +
-    `   └ <i>« ${savedNotif} »</i>\n\n` +
-    `📱 <b>PERANGKAT TERHUBUNG (${devicesCount} HP):</b>\n` +
-    `   └ 🟢 Aktif: <b>${activeDevicesCount} HP</b> | 🔴 Diblokir: <b>${bannedDevicesCount} HP</b>\n` +
+    `   └ <i>« ${savedNotif} »</i>\n` +
     '────────────────────────────\n' +
     '👇 <b>PILIH AKSI KONTROL CEPAT DI BAWAH:</b>'
 
@@ -196,21 +189,17 @@ function buildDashboard(info: any) {
         { text: schedBtn21, callback_data: 'cmd_toggle_sched_21' },
         { text: schedBtn00, callback_data: 'cmd_toggle_sched_00' }
       ],
-      // Section 3: Device Management
-      [
-        { text: `📱 Kelola Perangkat (${devicesCount} HP)`, callback_data: 'cmd_list_devices' }
-      ],
-      // Section 4: Broadcast Control
+      // Section 3: Broadcast Control
       [
         { text: '📢 Notif Kustom', callback_data: 'cmd_prompt_notif' },
         { text: '🔕 Matikan Notif', callback_data: 'cmd_clear_notif' }
       ],
-      // Section 5: Template & Send
+      // Section 4: Template & Send
       [
         { text: '⚙️ Set Template', callback_data: 'cmd_prompt_setnotif' },
         { text: '🚀 Kirim Template', callback_data: 'cmd_send_saved_notif' }
       ],
-      // Section 6: App Version & Security
+      // Section 5: App Version & Security
       [
         { text: lockButtonText, callback_data: lockCallback }
       ],
@@ -218,12 +207,12 @@ function buildDashboard(info: any) {
         { text: '🔼 Naik Versi (+1)', callback_data: 'cmd_up_one' },
         { text: '🔽 Turun Versi (-1)', callback_data: 'cmd_down_one' }
       ],
-      // Section 7: Maintenance & Quick Testing
+      // Section 6: Maintenance & Quick Testing
       [
         { text: '⏮️ Reset v1.1.95', callback_data: 'cmd_set_95' },
         { text: '🧪 Uji v1.1.96', callback_data: 'cmd_set_96' }
       ],
-      // Section 8: Utilities
+      // Section 7: Utilities
       [
         { text: '🔄 Muat Ulang (Refresh)', callback_data: 'cmd_refresh' },
         { text: '🌐 Buka Portal KasKu', url: 'https://kasku.kheireditz.my.id/' }
@@ -649,40 +638,6 @@ export async function POST(req: Request) {
         const fresh = await getGithubVersion()
         const { text, keyboard } = buildDashboard(fresh?.data)
         await sendMsg(chatId, text, keyboard)
-      } else if (data === 'cmd_list_devices') {
-        await answerCallback(cqId, '📱 Membaca data perangkat terpasang...')
-        await sendChatAction(chatId, 'typing')
-        const fileInfo = await getGithubVersion()
-        const devices: any[] = Array.isArray(fileInfo?.data?.registeredDevices) ? fileInfo?.data?.registeredDevices : []
-        
-        if (devices.length === 0) {
-          await sendMsg(
-            chatId,
-            '📱 <b>DAFTAR PERANGKAT TERPASANG (0 HP):</b>\n' +
-            '━━━━━━━━━━━━━━━━━━━━━\n' +
-            '<i>Belum ada perangkat yang terdeteksi membuka aplikasi. Buka aplikasi KasKu di HP untuk mendaftarkan perangkat secara otomatis.</i>'
-          )
-        } else {
-          let listText = `📱 <b>DAFTAR HP TERPASANG (${devices.length} PERANGKAT):</b>\n━━━━━━━━━━━━━━━━━━━━━\n\n`
-          devices.forEach((d: any, idx: number) => {
-            const statusBadge = d.banned ? '🔴 <b>DIBLOKIR (BANNED)</b>' : '🟢 <b>AKTIF</b>'
-            const lastSeenFormatted = d.lastSeen ? new Date(d.lastSeen).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB' : '-'
-            listText += `<b>#${idx + 1} ${d.brand || 'HP'} ${d.model || ''}</b>\n`
-            listText += `• Status: ${statusBadge}\n`
-            listText += `• OS: <code>${d.osVersion || '-'}</code>\n`
-            listText += `• Versi APK: <code>v${d.appVersion || '-'}</code>\n`
-            listText += `• Terakhir Aktif: <i>${lastSeenFormatted}</i>\n`
-            listText += `• ID Perangkat: <code>${d.deviceId}</code>\n`
-            if (d.banned) {
-              listText += `👉 Buka Blokir: <code>/unban ${d.deviceId}</code>\n\n`
-            } else {
-              listText += `👉 Blokir HP ini: <code>/ban ${d.deviceId}</code>\n\n`
-            }
-          })
-          listText += '━━━━━━━━━━━━━━━━━━━━━\n'
-          listText += '🛡️ <i>Perangkat yang diblokir (/ban) tidak akan bisa membuka dan menggunakan aplikasi KasKu lagi sampai dibuka (/unban).</i>'
-          await sendMsg(chatId, listText)
-        }
       }
 
       return NextResponse.json({ ok: true })
@@ -720,11 +675,6 @@ export async function POST(req: Request) {
           '   • <code>/stopjadwal 21</code> - Matikan jadwal 21:00 Malam\n' +
           '   • <code>/stopjadwal 00</code> - Matikan jadwal 00:00 Tengah Malam\n' +
           '   • <code>/startjadwal [07/13/21/00]</code> - Nyalakan jadwal\n\n' +
-          '📱 <b>MONITORING HP & BLACKLIST:</b>\n' +
-          '   • <code>/devices</code> - Pantau semua HP yang menginstall APK\n' +
-          '   • <code>/ban [ID]</code> - Blokir HP tertentu (Blacklist)\n' +
-          '   • <code>/unban [ID]</code> - Buka blokir HP tertentu\n' +
-          '   • <code>/cleardevices</code> - Bersihkan riwayat data perangkat\n\n' +
           '🛡️ <b>MANAJEMEN RILIS & KEAMANAN:</b>\n' +
           '   • <code>/lock</code> - Wajib update ke versi terbaru\n' +
           '   • <code>/unlock</code> - Buka kunci (Update bebas/opsional)\n' +
@@ -1023,168 +973,6 @@ export async function POST(req: Request) {
           const { text: t, keyboard: k } = buildDashboard(fresh?.data)
           await sendMsg(chatId, t, k)
         }
-      } else if (text === '/devices') {
-        const loadMsg = await sendMsg(chatId, '⏳ <b>Mengambil daftar perangkat terpasang dari database...</b>')
-        const loadMsgId = loadMsg?.result?.message_id
-        await sendChatAction(chatId, 'typing')
-
-        const fileInfo = await getGithubVersion()
-        const devices: any[] = Array.isArray(fileInfo?.data?.registeredDevices) ? fileInfo?.data?.registeredDevices : []
-
-        if (devices.length === 0) {
-          const emptyMsg =
-            '📱 <b>DAFTAR PERANGKAT TERPASANG (0 HP):</b>\n' +
-            '━━━━━━━━━━━━━━━━━━━━━\n' +
-            '<i>Belum ada perangkat yang terdeteksi membuka aplikasi. Buka aplikasi KasKu di HP untuk mendaftarkan perangkat secara otomatis ke sistem.</i>'
-          if (loadMsgId) {
-            await editMsg(chatId, loadMsgId, emptyMsg)
-          } else {
-            await sendMsg(chatId, emptyMsg)
-          }
-        } else {
-          let listText = `📱 <b>DAFTAR HP TERPASANG (${devices.length} PERANGKAT):</b>\n━━━━━━━━━━━━━━━━━━━━━\n\n`
-          devices.forEach((d: any, idx: number) => {
-            const statusBadge = d.banned ? '🔴 <b>DIBLOKIR (BANNED)</b>' : '🟢 <b>AKTIF</b>'
-            const lastSeenFormatted = d.lastSeen ? new Date(d.lastSeen).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB' : '-'
-            listText += `<b>#${idx + 1} ${d.brand || 'HP'} ${d.model || ''}</b>\n`
-            listText += `• Status: ${statusBadge}\n`
-            listText += `• OS: <code>${d.osVersion || '-'}</code>\n`
-            listText += `• Versi APK: <code>v${d.appVersion || '-'}</code>\n`
-            listText += `• Terakhir Aktif: <i>${lastSeenFormatted}</i>\n`
-            listText += `• ID Perangkat: <code>${d.deviceId}</code>\n`
-            if (d.banned) {
-              listText += `👉 Buka Blokir: <code>/unban ${d.deviceId}</code>\n\n`
-            } else {
-              listText += `👉 Blokir HP ini: <code>/ban ${d.deviceId}</code>\n\n`
-            }
-          })
-          listText += '━━━━━━━━━━━━━━━━━━━━━\n'
-          listText += '🛡️ <i>Perangkat yang diblokir (/ban) tidak akan bisa membuka dan menggunakan aplikasi KasKu lagi sampai dibuka (/unban).</i>'
-          if (loadMsgId) {
-            await editMsg(chatId, loadMsgId, listText)
-          } else {
-            await sendMsg(chatId, listText)
-          }
-        }
-      } else if (text.startsWith('/ban ') || text === '/ban') {
-        const targetId = text.replace('/ban', '').trim()
-        if (!targetId) {
-          await sendMsg(chatId, '⚠️ <b>Format salah!</b>\nContoh: <code>/ban [ID Perangkat]</code>\n<i>Gunakan /devices untuk menyalin ID perangkat.</i>')
-        } else {
-          const loadMsg = await sendMsg(chatId, `⏳ <b>Memblokir perangkat <code>${targetId}</code> di cloud...</b>`)
-          const loadMsgId = loadMsg?.result?.message_id
-          await sendChatAction(chatId, 'typing')
-
-          const fileInfo = await getGithubVersion()
-          if (fileInfo) {
-            if (!Array.isArray(fileInfo.data.registeredDevices)) {
-              fileInfo.data.registeredDevices = []
-            }
-
-            let found = false
-            let devName = ''
-            fileInfo.data.registeredDevices = fileInfo.data.registeredDevices.map((d: any) => {
-              if (d.deviceId === targetId) {
-                found = true
-                devName = `${d.brand} ${d.model}`
-                return { ...d, banned: true }
-              }
-              return d
-            })
-
-            if (!found) {
-              // Tambah ke daftar blacklist meski belum pernah buka
-              fileInfo.data.registeredDevices.push({
-                deviceId: targetId,
-                brand: 'Unknown',
-                model: 'Manual Ban',
-                osVersion: '-',
-                appVersion: '-',
-                registeredAt: new Date().toISOString(),
-                lastSeen: new Date().toISOString(),
-                banned: true
-              })
-              devName = 'Perangkat'
-            }
-
-            await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Ban Device ${targetId}`)
-            if (loadMsgId) {
-              await editMsg(
-                chatId,
-                loadMsgId,
-                `🚫 <b>PERANGKAT BERHASIL DIBLOKIR (BANNED)!</b>\n` +
-                  `━━━━━━━━━━━━━━━━━━━━━\n` +
-                  `• <b>Perangkat:</b> ${devName}\n` +
-                  `• <b>Device ID:</b> <code>${targetId}</code>\n` +
-                  `• <b>Status:</b> 🔴 <b>DIBLOKIR</b>\n` +
-                  `━━━━━━━━━━━━━━━━━━━━━\n` +
-                  `📱 <i>Aplikasi di HP ini akan langsung terkunci seketika dan tidak dapat dipakai lagi!</i>`
-              )
-            }
-          }
-          const fresh = await getGithubVersion()
-          const { text: t, keyboard: k } = buildDashboard(fresh?.data)
-          await sendMsg(chatId, t, k)
-        }
-      } else if (text.startsWith('/unban ') || text === '/unban') {
-        const targetId = text.replace('/unban', '').trim()
-        if (!targetId) {
-          await sendMsg(chatId, '⚠️ <b>Format salah!</b>\nContoh: <code>/unban [ID Perangkat]</code>\n<i>Gunakan /devices untuk melihat ID perangkat.</i>')
-        } else {
-          const loadMsg = await sendMsg(chatId, `⏳ <b>Membuka blokir perangkat <code>${targetId}</code> di cloud...</b>`)
-          const loadMsgId = loadMsg?.result?.message_id
-          await sendChatAction(chatId, 'typing')
-
-          const fileInfo = await getGithubVersion()
-          if (fileInfo) {
-            if (!Array.isArray(fileInfo.data.registeredDevices)) {
-              fileInfo.data.registeredDevices = []
-            }
-
-            let devName = ''
-            fileInfo.data.registeredDevices = fileInfo.data.registeredDevices.map((d: any) => {
-              if (d.deviceId === targetId) {
-                devName = `${d.brand} ${d.model}`
-                return { ...d, banned: false }
-              }
-              return d
-            })
-
-            await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Unban Device ${targetId}`)
-            if (loadMsgId) {
-              await editMsg(
-                chatId,
-                loadMsgId,
-                `✅ <b>BLOKIR PERANGKAT BERHASIL DIBUKA!</b>\n` +
-                  `━━━━━━━━━━━━━━━━━━━━━\n` +
-                  `• <b>Perangkat:</b> ${devName || 'Perangkat'}\n` +
-                  `• <b>Device ID:</b> <code>${targetId}</code>\n` +
-                  `• <b>Status:</b> 🟢 <b>AKTIF KEMBALI</b>\n` +
-                  `━━━━━━━━━━━━━━━━━━━━━\n` +
-                  `📱 <i>Pengguna sekarang dapat membuka dan menggunakan aplikasi KasKu kembali.</i>`
-              )
-            }
-          }
-          const fresh = await getGithubVersion()
-          const { text: t, keyboard: k } = buildDashboard(fresh?.data)
-          await sendMsg(chatId, t, k)
-        }
-      } else if (text === '/cleardevices') {
-        const loadMsg = await sendMsg(chatId, '⏳ <b>Membersihkan daftar riwayat perangkat...</b>')
-        const loadMsgId = loadMsg?.result?.message_id
-        await sendChatAction(chatId, 'typing')
-
-        const fileInfo = await getGithubVersion()
-        if (fileInfo) {
-          fileInfo.data.registeredDevices = []
-          await updateGithubVersion(fileInfo.data, fileInfo.sha, 'Vercel Bot: Clear Registered Devices')
-          if (loadMsgId) {
-            await editMsg(chatId, loadMsgId, '🧹 <b>Daftar riwayat perangkat telah dibersihkan!</b>')
-          }
-        }
-        const fresh = await getGithubVersion()
-        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
-        await sendMsg(chatId, t, k)
       } else {
         const loadMsg = await sendMsg(chatId, '🔄 <b>Memuat dasbor kontrol...</b>')
         const loadMsgId = loadMsg?.result?.message_id
