@@ -1,7 +1,7 @@
 {
   "latestVersion": "1.1.95",
-  "minRequiredVersion": "1.1.95",
-  "forceUpdate": true,
+  "minRequiredVersion": "1.1.30",
+  "forceUpdate": false,
   "releaseNotes": "Update performa dan tampilan mewah iOS KasKu",
   "updateUrl": "https://kasku.kheireditz.my.id/",
   "releases": [
