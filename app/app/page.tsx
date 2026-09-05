@@ -240,29 +240,32 @@ export default function KaskuApp() {
             }
           }
 
-          // Cek Penjadwalan Notifikasi Jam Tertentu (Scheduled Daily Alarm)
-          if (data && data.scheduledNotification) {
+          // Cek Penjadwalan Multi-Jadwal Harian (Daily Scheduled Alarms)
+          if (data && Array.isArray(data.dailySchedules)) {
             try {
-              const s = data.scheduledNotification
-              const lastScheduleConfig = localStorage.getItem('kasku_last_schedule_config')
-              const currentScheduleConfig = JSON.stringify(s)
+              const currentScheduleConfig = JSON.stringify(data.dailySchedules)
+              const lastScheduleConfig = localStorage.getItem('kasku_last_multi_schedules')
 
               if (lastScheduleConfig !== currentScheduleConfig) {
-                if (s.active && typeof s.hour === 'number' && typeof s.minute === 'number') {
-                  const sTitle = s.title || 'KasKu'
-                  const sMsg = s.message || 'Jangan Lupa Catat Laporan Keuangan Yaa'
-                  if (typeof window !== 'undefined' && (window as any).AndroidApp?.scheduleDailyNotification) {
-                    (window as any).AndroidApp.scheduleDailyNotification(s.hour, s.minute, sTitle, sMsg, 'daily_kasku_reminder')
+                data.dailySchedules.forEach((item: any) => {
+                  if (item && item.id) {
+                    if (item.enabled && typeof item.hour === 'number' && typeof item.minute === 'number') {
+                      const sTitle = item.title || 'KasKu'
+                      const sMsg = item.message || 'Jangan Lupa Catat Laporan Keuangan Yaa'
+                      if (typeof window !== 'undefined' && (window as any).AndroidApp?.scheduleDailyNotification) {
+                        (window as any).AndroidApp.scheduleDailyNotification(item.hour, item.minute, sTitle, sMsg, String(item.id))
+                      }
+                    } else if (!item.enabled) {
+                      if (typeof window !== 'undefined' && (window as any).AndroidApp?.cancelScheduledNotification) {
+                        (window as any).AndroidApp.cancelScheduledNotification(String(item.id))
+                      }
+                    }
                   }
-                } else if (!s.active) {
-                  if (typeof window !== 'undefined' && (window as any).AndroidApp?.cancelScheduledNotification) {
-                    (window as any).AndroidApp.cancelScheduledNotification('daily_kasku_reminder')
-                  }
-                }
-                localStorage.setItem('kasku_last_schedule_config', currentScheduleConfig)
+                })
+                localStorage.setItem('kasku_last_multi_schedules', currentScheduleConfig)
               }
             } catch (sErr) {
-              console.warn('Gagal memproses jadwal notifikasi harian', sErr)
+              console.warn('Gagal memproses multi-jadwal notifikasi harian', sErr)
             }
           }
 

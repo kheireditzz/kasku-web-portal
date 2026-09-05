@@ -133,11 +133,18 @@ function buildDashboard(info: any) {
 
   const savedNotif = info?.savedNotification || 'Jangan Lupa Catat Laporan Keuangan Yaa'
 
-  const sched = info?.scheduledNotification
-  const schedTime = (sched && sched.time) ? sched.time : (typeof sched?.hour === 'number' ? `${String(sched.hour).padStart(2, '0')}:${String(sched.minute || 0).padStart(2, '0')}` : '20:00')
-  const schedStatus = sched?.active 
-    ? `⏰ <b>Jadwal Pengingat Harian:</b> 🟢 <b>AKTIF (${schedTime} WIB)</b>\n  └ <i>« ${sched?.message || savedNotif} »</i>` 
-    : '⏰ <b>Jadwal Pengingat Harian:</b> ⚪ <b>NONAKTIF</b>'
+  const schedules: any[] = Array.isArray(info?.dailySchedules) ? info.dailySchedules : [
+    { id: 'sched_07', time: '07:00', label: 'Pagi (07:00)', message: 'Selamat Pagii', enabled: true },
+    { id: 'sched_13', time: '13:00', label: 'Siang (13:00)', message: 'Jangan Lupa Isi Laporan Keuangan ya', enabled: true },
+    { id: 'sched_21', time: '21:00', label: 'Malam (21:00)', message: 'Jangan Lupa Isi Laporan Keuangan Ya', enabled: true },
+    { id: 'sched_00', time: '00:00', label: 'Tengah Malam (00:00)', message: 'Selamat Tidur', enabled: true }
+  ]
+
+  let schedSummary = '⏰ <b>JADWAL PENGINGAT OTOMATIS 4-WAKTU:</b>\n'
+  schedules.forEach(s => {
+    const badge = s.enabled ? '🟢 ON' : '🔴 OFF'
+    schedSummary += `  ├ ${badge} <b>${s.time}</b>: « <i>${s.message}</i> »\n`
+  })
 
   const text =
     '┏━━━━━━━━━━━━━━━━━━━━━┓\n' +
@@ -152,10 +159,16 @@ function buildDashboard(info: any) {
     `  └ 🌐 <b>Portal Unduh:</b> <a href="${url}">${url}</a>\n\n` +
     '📝 <b>CATATAN RILIS TERBARU:</b>\n' +
     `  └ <i>« ${notes} »</i>\n\n` +
-    `${broadcastStatus}\n` +
-    `${schedStatus}\n` +
+    `${broadcastStatus}\n\n` +
+    `${schedSummary}\n` +
     `📌 <b>Template Notif Tersimpan:</b>\n  └ <i>« ${savedNotif} »</i>\n\n` +
-    '⚡ <i>Sentuh tombol di bawah untuk mengontrol server secara instan:</i>'
+    '⚡ <i>Sentuh tombol di bawah untuk menyalakan/mematikan jadwal atau broadcast:</i>'
+
+  // Tombol Toggle masing-masing jadwal (ON/OFF)
+  const schedBtn07 = schedules.find(s => s.id === 'sched_07')?.enabled ? '🟢 07:00 Pagi (ON)' : '🔴 07:00 Pagi (OFF)'
+  const schedBtn13 = schedules.find(s => s.id === 'sched_13')?.enabled ? '🟢 13:00 Siang (ON)' : '🔴 13:00 Siang (OFF)'
+  const schedBtn21 = schedules.find(s => s.id === 'sched_21')?.enabled ? '🟢 21:00 Malam (ON)' : '🔴 21:00 Malam (OFF)'
+  const schedBtn00 = schedules.find(s => s.id === 'sched_00')?.enabled ? '🟢 00:00 Tidur (ON)' : '🔴 00:00 Tidur (OFF)'
 
   const keyboard = {
     inline_keyboard: [
@@ -163,27 +176,27 @@ function buildDashboard(info: any) {
         { text: '⚡ Notif Cepat: Catat Laporan Keuangan', callback_data: 'cmd_quick_notif' }
       ],
       [
-        { text: '⏰ Set Jam 20:00 (Malam)', callback_data: 'cmd_set_jadwal_20' },
-        { text: '⏰ Set Jam 13:00 (Siang)', callback_data: 'cmd_set_jadwal_13' }
+        { text: schedBtn07, callback_data: 'cmd_toggle_sched_07' },
+        { text: schedBtn13, callback_data: 'cmd_toggle_sched_13' }
       ],
       [
-        { text: '⏰ Panduan Jam Bebas', callback_data: 'cmd_prompt_jadwal' },
-        { text: '🔕 Matikan Jadwal Jam', callback_data: 'cmd_clear_jadwal' }
-      ],
-      [
-        { text: '🔼 Naikkan (+1)', callback_data: 'cmd_up_one' },
-        { text: '🔽 Turunkan (-1)', callback_data: 'cmd_down_one' }
-      ],
-      [
-        { text: lockButtonText, callback_data: lockCallback }
+        { text: schedBtn21, callback_data: 'cmd_toggle_sched_21' },
+        { text: schedBtn00, callback_data: 'cmd_toggle_sched_00' }
       ],
       [
         { text: '📢 Kirim Notifikasi HP', callback_data: 'cmd_prompt_notif' },
         { text: '🔕 Matikan Notif HP', callback_data: 'cmd_clear_notif' }
       ],
       [
+        { text: lockButtonText, callback_data: lockCallback }
+      ],
+      [
         { text: '⚙️ Set Template Notif', callback_data: 'cmd_prompt_setnotif' },
         { text: '🚀 Kirim Notif Tersimpan', callback_data: 'cmd_send_saved_notif' }
+      ],
+      [
+        { text: '🔼 Naikkan (+1)', callback_data: 'cmd_up_one' },
+        { text: '🔽 Turunkan (-1)', callback_data: 'cmd_down_one' }
       ],
       [
         { text: '⏮️ Reset v1.1.95', callback_data: 'cmd_set_95' },
@@ -473,6 +486,54 @@ export async function POST(req: Request) {
             '<code>/setnotif Jangan Lupa Catat Laporan Keuangan Yaa</code>\n\n' +
             '<i>Setelah disimpan, Anda cukup menekan tombol "🚀 Kirim Notif Tersimpan" kapan saja untuk membroadcast ulang tanpa perlu mengetik lagi!</i>'
         )
+      } else if (
+        data === 'cmd_toggle_sched_07' ||
+        data === 'cmd_toggle_sched_13' ||
+        data === 'cmd_toggle_sched_21' ||
+        data === 'cmd_toggle_sched_00'
+      ) {
+        const targetId = data.replace('cmd_toggle_', '')
+        await answerCallback(cqId, '⚙️ Mengubah status jadwal...')
+        await editMsg(chatId, msgId, '⏳ <b>Menyinkronkan status jadwal ke cloud...</b>')
+        await sendChatAction(chatId, 'typing')
+
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          if (!Array.isArray(fileInfo.data.dailySchedules)) {
+            fileInfo.data.dailySchedules = [
+              { id: 'sched_07', time: '07:00', hour: 7, minute: 0, label: 'Pagi (07:00)', message: 'Selamat Pagii', enabled: true },
+              { id: 'sched_13', time: '13:00', hour: 13, minute: 0, label: 'Siang (13:00)', message: 'Jangan Lupa Isi Laporan Keuangan ya', enabled: true },
+              { id: 'sched_21', time: '21:00', hour: 21, minute: 0, label: 'Malam (21:00)', message: 'Jangan Lupa Isi Laporan Keuangan Ya', enabled: true },
+              { id: 'sched_00', time: '00:00', hour: 0, minute: 0, label: 'Tengah Malam (00:00)', message: 'Selamat Tidur', enabled: true }
+            ]
+          }
+
+          let changedLabel = ''
+          let newState = false
+          fileInfo.data.dailySchedules = fileInfo.data.dailySchedules.map((s: any) => {
+            if (s.id === targetId) {
+              newState = !s.enabled
+              changedLabel = `${s.time} (${s.message})`
+              return { ...s, enabled: newState }
+            }
+            return s
+          })
+
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Toggle ${targetId} to ${newState ? 'ON' : 'OFF'}`)
+          await editMsg(
+            chatId,
+            msgId,
+            `⏰ <b>STATUS JADWAL BERHASIL DIUBAH!</b>\n` +
+              `━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• <b>Jadwal:</b> ${changedLabel}\n` +
+              `• <b>Status Sekarang:</b> ${newState ? '🟢 <b>ON (Aktif)</b>' : '🔴 <b>OFF (Nonaktif)</b>'}\n` +
+              `━━━━━━━━━━━━━━━━━━━━━\n` +
+              `📱 <i>Perubahan langsung tersinkronisasi ke sistem alarm seluruh pengguna!</i>`
+          )
+        }
+        const fresh = await getGithubVersion()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, t, k)
       } else if (data === 'cmd_set_jadwal_20' || data === 'cmd_set_jadwal_13') {
         const hour = data === 'cmd_set_jadwal_20' ? 20 : 13
         const minute = 0
@@ -589,21 +650,73 @@ export async function POST(req: Request) {
         const helpText =
           '📖 <b>PANDUAN PERINTAH KASKU COMMANDER:</b>\n' +
           '━━━━━━━━━━━━━━━━━━━━━\n' +
-          '• <code>/start</code> - Menampilkan dasbor kontrol utama\n' +
+          '• <code>/start</code> - Menampilkan dasbor kontrol utama (dengan tombol ON/OFF jadwal 4-waktu)\n' +
           '• <code>/status</code> - Menampilkan status versi & server saat ini\n' +
-          '• <code>/up 1.1.98</code> - Menaikkan ke nomor versi tertentu (Wajib Update)\n' +
-          '• <code>/down 1.1.95</code> - Menurunkan ke nomor versi tertentu (Opsional)\n' +
-          '• <code>/lock</code> - Mengunci versi lama (Wajib Update ON)\n' +
-          '• <code>/unlock</code> - Membuka kunci (Update Opsional)\n' +
-          '• <code>/notes [teks]</code> - Mengubah isi catatan rilis\n' +
           '• <code>/notif [pesan]</code> - <b>Kirim notifikasi instan langsung ke HP!</b>\n' +
-          '• <code>/jadwal [jam] [pesan]</code> - <b>Set jadwal notifikasi harian otomatis</b>\n' +
-          '• <code>/clearjadwal</code> - Menonaktifkan jadwal alarm harian\n' +
+          '• <code>/stopjadwal 07</code> - <b>Matikan jadwal jam 07:00 Pagi</b>\n' +
+          '• <code>/stopjadwal 13</code> - <b>Matikan jadwal jam 13:00 Siang</b>\n' +
+          '• <code>/stopjadwal 21</code> - <b>Matikan jadwal jam 21:00 Malam</b>\n' +
+          '• <code>/stopjadwal 00</code> - <b>Matikan jadwal jam 00:00 Tengah Malam</b>\n' +
+          '• <code>/startjadwal 07</code> - <b>Nyalakan kembali jadwal jam 07:00</b>\n' +
           '• <code>/setnotif [pesan]</code> - <b>Simpan template pesan notifikasi</b>\n' +
           '• <code>/clearnotif</code> - Menghapus/menonaktifkan notifikasi broadcast\n' +
           '━━━━━━━━━━━━━━━━━━━━━\n' +
-          '💡 <i>Anda juga dapat menekan tombol menu langsung di dasbor interaktif!</i>'
+          '💡 <i>Anda cukup menekan tombol ON / OFF langsung di dasbor Telegram!</i>'
         await sendMsg(chatId, helpText)
+      } else if (text.startsWith('/stopjadwal ') || text.startsWith('/startjadwal ')) {
+        const isEnable = text.startsWith('/startjadwal ')
+        const arg = text.replace(isEnable ? '/startjadwal ' : '/stopjadwal ', '').trim()
+        const targetId = arg.includes(':') ? `sched_${arg.split(':')[0]}` : (arg.length <= 2 ? `sched_${arg.padStart(2, '0')}` : arg)
+
+        const loadMsg = await sendMsg(chatId, `⏳ <b>Menyetel status jadwal ${arg} ke ${isEnable ? 'AKTIF' : 'NONAKTIF'}...</b>`)
+        const loadMsgId = loadMsg?.result?.message_id
+        await sendChatAction(chatId, 'typing')
+
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          if (!Array.isArray(fileInfo.data.dailySchedules)) {
+            fileInfo.data.dailySchedules = [
+              { id: 'sched_07', time: '07:00', hour: 7, minute: 0, label: 'Pagi (07:00)', message: 'Selamat Pagii', enabled: true },
+              { id: 'sched_13', time: '13:00', hour: 13, minute: 0, label: 'Siang (13:00)', message: 'Jangan Lupa Isi Laporan Keuangan ya', enabled: true },
+              { id: 'sched_21', time: '21:00', hour: 21, minute: 0, label: 'Malam (21:00)', message: 'Jangan Lupa Isi Laporan Keuangan Ya', enabled: true },
+              { id: 'sched_00', time: '00:00', hour: 0, minute: 0, label: 'Tengah Malam (00:00)', message: 'Selamat Tidur', enabled: true }
+            ]
+          }
+
+          let found = false
+          let schedName = ''
+          fileInfo.data.dailySchedules = fileInfo.data.dailySchedules.map((s: any) => {
+            if (s.id === targetId || s.time.startsWith(arg)) {
+              found = true
+              schedName = `${s.time} (${s.message})`
+              return { ...s, enabled: isEnable }
+            }
+            return s
+          })
+
+          if (found) {
+            await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Set ${targetId} to ${isEnable}`)
+            if (loadMsgId) {
+              await editMsg(
+                chatId,
+                loadMsgId,
+                `⏰ <b>STATUS JADWAL BERHASIL DIUBAH!</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `• <b>Jadwal:</b> ${schedName}\n` +
+                  `• <b>Status:</b> ${isEnable ? '🟢 <b>ON (Aktif)</b>' : '🔴 <b>OFF (Nonaktif)</b>'}\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `📱 <i>Perubahan langsung tersinkronisasi ke seluruh pengguna!</i>`
+              )
+            }
+          } else {
+            if (loadMsgId) {
+              await editMsg(chatId, loadMsgId, `⚠️ Jadwal "${arg}" tidak ditemukan. Pilihan: <code>07</code>, <code>13</code>, <code>21</code>, <code>00</code>.`)
+            }
+          }
+        }
+        const fresh = await getGithubVersion()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, t, k)
       } else if (text.startsWith('/jadwal ') || text === '/jadwal') {
         const rawPayload = text.replace('/jadwal', '').trim()
         let hour = 20
