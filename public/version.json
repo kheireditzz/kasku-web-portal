@@ -5,11 +5,11 @@
   "releaseNotes": "Pembaruan KasKu v1.1.95 menghadirkan peningkatan antarmuka modern Apple iOS FinTech, optimasi performa AI Voice, dan pembaruan sistem kas.",
   "updateUrl": "https://kasku.kheireditz.my.id/",
   "broadcast": {
-    "id": "b-1788647339041",
+    "id": "b-1788647702170",
     "active": true,
-    "title": "Test",
-    "message": "Test",
-    "updatedAt": "2026-09-05T22:28:59.041Z"
+    "title": "KasKu",
+    "message": "Jangan Lupa Isi Laporan Keuangan Ya",
+    "updatedAt": "2026-09-05T22:35:02.170Z"
   },
   "releases": [
     {
