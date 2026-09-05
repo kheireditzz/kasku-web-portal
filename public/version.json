@@ -1,8 +1,8 @@
 {
-  "latestVersion": "1.1.95",
+  "latestVersion": "1.1.96",
   "minRequiredVersion": "1.1.30",
   "forceUpdate": false,
-  "releaseNotes": "Pembaruan KasKu v1.1.95: Fitur Force Update cerdas, peningkatan stabilitas AI Voice Input, perbaikan animasi, dan optimasi performa.",
+  "releaseNotes": "[TES KEDUA UPDATE] Pembaruan KasKu v1.1.96: Memverifikasi tampilan web dan notifikasi update.",
   "updateUrl": "https://kasku.kheireditz.my.id/",
   "releases": [
     {
