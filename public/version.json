@@ -1,8 +1,8 @@
 {
-  "latestVersion": "1.1.95",
+  "latestVersion": "1.1.96",
   "minRequiredVersion": "1.1.30",
   "forceUpdate": false,
-  "releaseNotes": "Pembaruan KasKu v1.1.95: Fitur Force Update cerdas, peningkatan stabilitas AI Voice Input, perbaikan animasi, dan optimasi performa.",
+  "releaseNotes": "[UJI COBA UPDATE] Pembaruan KasKu v1.1.96: Ini adalah tes notifikasi pembaruan aplikasi.",
   "updateUrl": "/download",
   "releases": [
     {
