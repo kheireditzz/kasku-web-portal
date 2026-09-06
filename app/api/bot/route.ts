@@ -165,6 +165,8 @@ function buildDashboard(info: any) {
   const schedBtn21 = (schedules.find(s => s.id === 'sched_21')?.enabled ? '🟢' : '⚪') + ' 21:00 Malam'
   const schedBtn00 = (schedules.find(s => s.id === 'sched_00')?.enabled ? '🟢' : '⚪') + ' 00:00 Tidur'
 
+  const nextVer = changeVersionNumber(latest, 1)
+
   const keyboard = {
     inline_keyboard: [
       // Section 1: Quick Action
@@ -198,14 +200,17 @@ function buildDashboard(info: any) {
         { text: '🔼 Naik Versi (+1)', callback_data: 'cmd_up_one' },
         { text: '🔽 Turun Versi (-1)', callback_data: 'cmd_down_one' }
       ],
-      // Section 6: Maintenance & Quick Testing
+      // Section 6: Maintenance & Quick Testing (Otomatis Sesuai Versi Aktif)
       [
-        { text: '⏮️ Reset v1.1.102', callback_data: 'cmd_set_102' },
-        { text: '🧪 Uji v1.1.103', callback_data: 'cmd_set_103' }
+        { text: `⏮️ Reset v${latest}`, callback_data: `cmd_reset_current` },
+        { text: `🧪 Uji v${nextVer}`, callback_data: `cmd_test_next` }
       ],
-      // Section 7: Utilities
+      // Section 7: Utilities & Cek Versi
       [
-        { text: '🔄 Muat Ulang (Refresh)', callback_data: 'cmd_refresh' },
+        { text: '🔍 Cek Versi Server', callback_data: 'cmd_check_version' },
+        { text: '🔄 Muat Ulang', callback_data: 'cmd_refresh' }
+      ],
+      [
         { text: '🌐 Buka Portal KasKu', url: 'https://kasku.kheireditz.my.id/' }
       ]
     ]
@@ -391,16 +396,42 @@ export async function POST(req: Request) {
         const cur = info?.data?.latestVersion || '1.1.95'
         const prv = changeVersionNumber(cur, -1)
         await executeVersionChange(chatId, prv, false, undefined, msgId)
-      } else if (data === 'cmd_set_102' || data === 'cmd_set_101' || data === 'cmd_set_95') {
-        await answerCallback(cqId, '⏮️ Reset ke v1.1.102...')
-        await editMsg(chatId, msgId, '⏳ <b>Reset ke v1.1.102...</b>')
+      } else if (data === 'cmd_reset_current' || data === 'cmd_set_102' || data === 'cmd_set_101' || data === 'cmd_set_95') {
+        const info = await getGithubVersion()
+        const cur = info?.data?.latestVersion || '1.1.102'
+        await answerCallback(cqId, `⏮️ Reset ke v${cur}...`)
+        await editMsg(chatId, msgId, `⏳ <b>Reset ke v${cur} (Opsional)...</b>`)
         await sendChatAction(chatId, 'typing')
-        await executeVersionChange(chatId, '1.1.102', false, 'Pembaruan resmi KasKu v1.1.102. Stabilitas notifikasi & performa.', msgId)
-      } else if (data === 'cmd_set_103' || data === 'cmd_set_96') {
-        await answerCallback(cqId, '🧪 Uji coba v1.1.103...')
-        await editMsg(chatId, msgId, '⏳ <b>Uji coba v1.1.103 (Wajib Update)...</b>')
+        await executeVersionChange(chatId, cur, false, `Pembaruan resmi KasKu v${cur}. Stabilitas notifikasi & performa.`, msgId)
+      } else if (data === 'cmd_test_next' || data === 'cmd_set_103' || data === 'cmd_set_96') {
+        const info = await getGithubVersion()
+        const cur = info?.data?.latestVersion || '1.1.102'
+        const nxt = changeVersionNumber(cur, 1)
+        await answerCallback(cqId, `🧪 Uji coba v${nxt}...`)
+        await editMsg(chatId, msgId, `⏳ <b>Uji coba v${nxt} (Wajib Update)...</b>`)
         await sendChatAction(chatId, 'typing')
-        await executeVersionChange(chatId, '1.1.103', true, 'Uji coba pembaruan KasKu v1.1.103. Wajib update.', msgId)
+        await executeVersionChange(chatId, nxt, true, `Uji coba pembaruan KasKu v${nxt}. Wajib update.`, msgId)
+      } else if (data === 'cmd_check_version') {
+        await answerCallback(cqId, '🔍 Memeriksa versi server...')
+        await sendChatAction(chatId, 'typing')
+        const info = await getGithubVersion()
+        const cur = info?.data?.latestVersion || '1.1.102'
+        const minV = info?.data?.minRequiredVersion || '1.1.30'
+        const force = info?.data?.forceUpdate ? '🔴 Wajib Update (Terkunci)' : '🟢 Opsional (Bebas)'
+        const notes = info?.data?.releaseNotes || '-'
+        const date = info?.data?.releases?.[0]?.releaseDate || '-'
+        await sendMsg(
+          chatId,
+          '🔍 <b>STATUS VERSI KASKU REALTIME SERVER</b>\n' +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            `• <b>Versi Terkini:</b> <code>v${cur}</code>\n` +
+            `• <b>Batas Min Versi:</b> <code>v${minV}</code>\n` +
+            `• <b>Status Kebijakan:</b> ${force}\n` +
+            `• <b>Tanggal Rilis:</b> <code>${date}</code>\n` +
+            `• <b>Catatan Rilis:</b> <i>« ${notes} »</i>\n` +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            '🌐 <i>Endpoint live: /api/version</i>'
+        )
       } else if (data === 'cmd_prompt_notif') {
         await answerCallback(cqId, 'Ketik /notif [pesan anda]')
         await sendMsg(
@@ -886,6 +917,26 @@ export async function POST(req: Request) {
         const fresh = await getGithubVersion()
         const { text: t, keyboard: k } = buildDashboard(fresh?.data)
         await sendMsg(chatId, t, k)
+      } else if (text === '/versi' || text === '/checkversion') {
+        await sendChatAction(chatId, 'typing')
+        const info = await getGithubVersion()
+        const cur = info?.data?.latestVersion || '1.1.102'
+        const minV = info?.data?.minRequiredVersion || '1.1.30'
+        const force = info?.data?.forceUpdate ? '🔴 Wajib Update (Terkunci)' : '🟢 Opsional (Bebas)'
+        const notes = info?.data?.releaseNotes || '-'
+        const date = info?.data?.releases?.[0]?.releaseDate || '-'
+        await sendMsg(
+          chatId,
+          '🔍 <b>STATUS VERSI KASKU REALTIME SERVER</b>\n' +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            `• <b>Versi Terkini:</b> <code>v${cur}</code>\n` +
+            `• <b>Batas Min Versi:</b> <code>v${minV}</code>\n` +
+            `• <b>Status Kebijakan:</b> ${force}\n` +
+            `• <b>Tanggal Rilis:</b> <code>${date}</code>\n` +
+            `• <b>Catatan Rilis:</b> <i>« ${notes} »</i>\n` +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            '🌐 <i>Endpoint live: /api/version</i>'
+        )
       } else if (text === '/clearnotif') {
         const loadMsg = await sendMsg(chatId, '⏳ <b>Menghapus notifikasi broadcast...</b>')
         const loadMsgId = loadMsg?.result?.message_id
