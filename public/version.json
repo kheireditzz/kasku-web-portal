@@ -20,7 +20,7 @@
       "minute": 0,
       "label": "Pagi (07:00)",
       "message": "Selamat Pagii",
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "sched_13",
