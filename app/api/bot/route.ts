@@ -1365,10 +1365,40 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const url = new URL(req.url)
+  const autoFix = url.searchParams.get('fix') === '1'
+
+  // Periksa webhook Telegram
+  let webhookStatus: any = null
+  let fixed = false
+  try {
+    const infoRes = await fetch(`${TELEGRAM_API}/getWebhookInfo`)
+    webhookStatus = await infoRes.json()
+
+    // Jika URL webhook kosong atau dipaksa fix (?fix=1), daftarkan ulang otomatis!
+    if (!webhookStatus?.result?.url || autoFix) {
+      const setRes = await fetch(`${TELEGRAM_API}/setWebhook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: 'https://kasku.kheireditz.my.id/api/bot',
+          drop_pending_updates: false
+        })
+      })
+      const setResult = await setRes.json()
+      fixed = setResult.ok
+      webhookStatus = { ...webhookStatus, re_registered: fixed }
+    }
+  } catch (e: any) {
+    webhookStatus = { error: e.message }
+  }
+
   return NextResponse.json({
     status: 'online',
     service: 'KasKu Telegram Serverless Webhook (Next.js TypeScript)',
-    bot: '@Kaskuubot'
+    bot: '@Kaskuubot',
+    webhook: webhookStatus,
+    auto_fixed: fixed
   })
 }

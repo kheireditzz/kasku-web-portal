@@ -1,20 +1,23 @@
-name: Auto Redeploy Vercel on Limit Reset
+name: Auto Redeploy & Keep-Alive Telegram Bot
 
 on:
   schedule:
-    # 00:05 UTC = 07:05 WIB (Sesaat setelah limit harian Vercel dan kuota cloud ter-reset)
-    - cron: '5 0 * * *'
-    # 12:05 UTC = 19:05 WIB (Siklus kedua untuk memastikan Vercel selalu sinkron)
-    - cron: '5 12 * * *'
-  workflow_dispatch: # Memungkinkan memicu redeploy kapan saja secara manual dari GitHub
+    # Berjalan setiap 6 jam untuk memastikan Webhook Telegram & Vercel selalu hidup & tak pernah hilang
+    - cron: '5 */6 * * *'
+  workflow_dispatch: # Memungkinkan memicu kapan saja secara manual dari GitHub
 
 permissions:
   contents: write
 
 jobs:
-  auto-redeploy:
+  keepalive-and-redeploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Ping Bot Webhook Self-Healing
+        run: |
+          echo "Memeriksa dan meregistrasi webhook Telegram secara otomatis..."
+          curl -s -f "https://kasku.kheireditz.my.id/api/bot?fix=1" || true
+
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
@@ -24,5 +27,5 @@ jobs:
         run: |
           git config user.name "KasKu AutoDeploy Bot"
           git config user.email "bot@kasku.kheireditz.my.id"
-          git commit --allow-empty -m "chore(cloud): auto-redeploy Vercel after daily limit reset [skip ci]"
-          git push origin main
+          git commit --allow-empty -m "chore(cloud): auto keepalive & redeploy [skip ci]"
+          git push origin main || true
