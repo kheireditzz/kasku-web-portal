@@ -287,7 +287,8 @@ function buildDashboard(info: any, limits?: { vercel?: { ok: boolean; status: nu
       ],
       // Section 7: Cloud Limits & Utilities
       [
-        { text: '📊 Cek Limit Vercel & GitHub', callback_data: 'cmd_check_limits' }
+        { text: '📊 Cek Limit Vercel & GitHub', callback_data: 'cmd_check_limits' },
+        { text: '🚀 Paksa Redeploy Vercel', callback_data: 'cmd_redeploy' }
       ],
       [
         { text: '🔍 Cek Versi Server', callback_data: 'cmd_check_version' },
@@ -527,6 +528,29 @@ export async function POST(req: Request) {
             '━━━━━━━━━━━━━━━━━━━━━\n' +
             '💡 <i>Jika Vercel limit/down, aplikasi Android otomatis membaca versi & notifikasi langsung dari GitHub CDN tanpa terputus!</i>'
         )
+      } else if (data === 'cmd_redeploy') {
+        await answerCallback(cqId, '🚀 Memicu redeploy Vercel...')
+        await editMsg(chatId, msgId, '⏳ <b>[1/2] Memicu webhook redeploy Vercel via GitHub...</b>')
+        await sendChatAction(chatId, 'typing')
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          fileInfo.data.lastSync = new Date().toISOString()
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, 'chore(cloud): manual trigger redeploy Vercel [redeploy]')
+          await editMsg(
+            chatId,
+            msgId,
+            '✅ <b>[2/2] SINYAL REDEPLOY BERHASIL DIKIRIM!</b>\n' +
+              '━━━━━━━━━━━━━━━━━━━━━\n' +
+              '🚀 <b>Status:</b> Vercel sedang memproses build & deploy otomatis.\n' +
+              '🌐 <b>Live:</b> <code>https://kasku.kheireditz.my.id/</code>\n' +
+              '━━━━━━━━━━━━━━━━━━━━━\n' +
+              '<i>Jika kuota harian Vercel telah reset, seluruh service kembali 100% online secara instan!</i>'
+          )
+        }
+        const fresh = await getGithubVersion()
+        const limits = await checkPlatformLimits()
+        const { text, keyboard } = buildDashboard(fresh?.data, limits)
+        await sendMsg(chatId, text, keyboard)
       } else if (data === 'cmd_check_version') {
         await answerCallback(cqId, '🔍 Memeriksa versi server...')
         await sendChatAction(chatId, 'typing')
@@ -1292,6 +1316,31 @@ export async function POST(req: Request) {
         } else {
           await sendMsg(chatId, statusMsg)
         }
+      } else if (text === '/redeploy' || text === '/deploy') {
+        const loadMsg = await sendMsg(chatId, '⏳ <b>[1/2] Memicu webhook redeploy Vercel via GitHub...</b>')
+        const loadMsgId = loadMsg?.result?.message_id
+        await sendChatAction(chatId, 'typing')
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          fileInfo.data.lastSync = new Date().toISOString()
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, 'chore(cloud): manual trigger redeploy Vercel [redeploy]')
+          if (loadMsgId) {
+            await editMsg(
+              chatId,
+              loadMsgId,
+              '✅ <b>[2/2] SINYAL REDEPLOY BERHASIL DIKIRIM KE VERCEL!</b>\n' +
+                '━━━━━━━━━━━━━━━━━━━━━\n' +
+                '🚀 <b>Status:</b> Vercel sedang memproses build otomatis.\n' +
+                '🌐 <b>Live:</b> <code>https://kasku.kheireditz.my.id/</code>\n' +
+                '━━━━━━━━━━━━━━━━━━━━━\n' +
+                '<i>Jika kuota limit 24 jam Vercel sudah reset, service langsung online 100%!</i>'
+            )
+          }
+        }
+        const fresh = await getGithubVersion()
+        const limits = await checkPlatformLimits()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data, limits)
+        await sendMsg(chatId, t, k)
       } else {
         const loadMsg = await sendMsg(chatId, '🔄 <b>Memuat dasbor kontrol...</b>')
         const loadMsgId = loadMsg?.result?.message_id

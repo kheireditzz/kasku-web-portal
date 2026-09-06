@@ -1,0 +1,28 @@
+name: Auto Redeploy Vercel on Limit Reset
+
+on:
+  schedule:
+    # 00:05 UTC = 07:05 WIB (Sesaat setelah limit harian Vercel dan kuota cloud ter-reset)
+    - cron: '5 0 * * *'
+    # 12:05 UTC = 19:05 WIB (Siklus kedua untuk memastikan Vercel selalu sinkron)
+    - cron: '5 12 * * *'
+  workflow_dispatch: # Memungkinkan memicu redeploy kapan saja secara manual dari GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  auto-redeploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger Automatic Vercel Redeploy
+        run: |
+          git config user.name "KasKu AutoDeploy Bot"
+          git config user.email "bot@kasku.kheireditz.my.id"
+          git commit --allow-empty -m "chore(cloud): auto-redeploy Vercel after daily limit reset [skip ci]"
+          git push origin main
