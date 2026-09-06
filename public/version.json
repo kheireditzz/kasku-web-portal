@@ -5,11 +5,11 @@
   "releaseNotes": "Pembaruan resmi KasKu v1.1.101. Migrasi ID Paket Resmi com.kheireditz.kasku dan penguatan notifikasi latar belakang.",
   "updateUrl": "https://kasku.kheireditz.my.id/",
   "broadcast": {
-    "id": "b-1788654379637",
+    "id": "b-1788654919008",
     "active": true,
     "title": "KasKu",
     "message": "test",
-    "updatedAt": "2026-09-06T00:26:19.637Z"
+    "updatedAt": "2026-09-06T00:35:19.008Z"
   },
   "savedNotification": "Jangan Lupa Catat Laporan Keuangan Yaa",
   "dailySchedules": [
