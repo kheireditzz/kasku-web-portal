@@ -200,8 +200,8 @@ function buildDashboard(info: any) {
       ],
       // Section 6: Maintenance & Quick Testing
       [
-        { text: '⏮️ Reset v1.1.101', callback_data: 'cmd_set_101' },
-        { text: '🧪 Uji v1.1.102', callback_data: 'cmd_set_102' }
+        { text: '⏮️ Reset v1.1.102', callback_data: 'cmd_set_102' },
+        { text: '🧪 Uji v1.1.103', callback_data: 'cmd_set_103' }
       ],
       // Section 7: Utilities
       [
@@ -391,16 +391,16 @@ export async function POST(req: Request) {
         const cur = info?.data?.latestVersion || '1.1.95'
         const prv = changeVersionNumber(cur, -1)
         await executeVersionChange(chatId, prv, false, undefined, msgId)
-      } else if (data === 'cmd_set_101' || data === 'cmd_set_95') {
-        await answerCallback(cqId, '⏮️ Reset ke v1.1.101...')
-        await editMsg(chatId, msgId, '⏳ <b>Reset ke v1.1.101...</b>')
+      } else if (data === 'cmd_set_102' || data === 'cmd_set_101' || data === 'cmd_set_95') {
+        await answerCallback(cqId, '⏮️ Reset ke v1.1.102...')
+        await editMsg(chatId, msgId, '⏳ <b>Reset ke v1.1.102...</b>')
         await sendChatAction(chatId, 'typing')
-        await executeVersionChange(chatId, '1.1.101', false, 'Pembaruan resmi KasKu v1.1.101. Stabilitas notifikasi & performa.', msgId)
-      } else if (data === 'cmd_set_102' || data === 'cmd_set_96') {
-        await answerCallback(cqId, '🧪 Uji coba v1.1.102...')
-        await editMsg(chatId, msgId, '⏳ <b>Uji coba v1.1.102 (Wajib Update)...</b>')
+        await executeVersionChange(chatId, '1.1.102', false, 'Pembaruan resmi KasKu v1.1.102. Stabilitas notifikasi & performa.', msgId)
+      } else if (data === 'cmd_set_103' || data === 'cmd_set_96') {
+        await answerCallback(cqId, '🧪 Uji coba v1.1.103...')
+        await editMsg(chatId, msgId, '⏳ <b>Uji coba v1.1.103 (Wajib Update)...</b>')
         await sendChatAction(chatId, 'typing')
-        await executeVersionChange(chatId, '1.1.102', true, 'Uji coba pembaruan KasKu v1.1.102. Wajib update.', msgId)
+        await executeVersionChange(chatId, '1.1.103', true, 'Uji coba pembaruan KasKu v1.1.103. Wajib update.', msgId)
       } else if (data === 'cmd_prompt_notif') {
         await answerCallback(cqId, 'Ketik /notif [pesan anda]')
         await sendMsg(
