@@ -106,6 +106,69 @@ async function updateGithubVersion(data: any, sha: string, commitMsg: string): P
   }
 }
 
+async function checkPlatformLimits(): Promise<{
+  vercel: { ok: boolean; status: number; text: string };
+  github: { ok: boolean; remaining: number; limit: number; used: number; resetMinutes: number };
+}> {
+  const result = {
+    vercel: { ok: true, status: 200, text: '🟢 Normal (Online)' },
+    github: { ok: true, remaining: 5000, limit: 5000, used: 0, resetMinutes: 60 }
+  }
+
+  // 1. Cek status Vercel API
+  try {
+    const vRes = await fetch('https://kasku.kheireditz.my.id/api/version', {
+      headers: { 'User-Agent': 'KasKu-Bot-Status' },
+      cache: 'no-store'
+    })
+    result.vercel.status = vRes.status
+    if (vRes.status === 200) {
+      result.vercel.ok = true
+      result.vercel.text = '🟢 Normal (Online)'
+    } else if (vRes.status === 429) {
+      result.vercel.ok = false
+      result.vercel.text = '🔴 Limit Tercapai (HTTP 429)'
+    } else {
+      result.vercel.ok = false
+      result.vercel.text = `⚠️ Gangguan (HTTP ${vRes.status})`
+    }
+  } catch (e: any) {
+    result.vercel.ok = false
+    result.vercel.text = '🔴 Tidak Terjangkau (Offline)'
+  }
+
+  // 2. Cek Kuota GitHub Rate Limit
+  try {
+    const gRes = await fetch('https://api.github.com/rate_limit', {
+      headers: {
+        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': 'KasKu-Bot-Status'
+      },
+      cache: 'no-store'
+    })
+    if (gRes.ok) {
+      const gData = await gRes.json()
+      const core = gData?.resources?.core
+      if (core) {
+        result.github.remaining = core.remaining ?? 5000
+        result.github.limit = core.limit ?? 5000
+        result.github.used = core.used ?? 0
+        const resetSec = (core.reset || 0) - Math.floor(Date.now() / 1000)
+        result.github.resetMinutes = Math.max(1, Math.round(resetSec / 60))
+        result.github.ok = result.github.remaining > 50
+      }
+    } else if (gRes.status === 403 || gRes.status === 429) {
+      result.github.ok = false
+      result.github.remaining = 0
+    }
+  } catch (e) {
+    // fallback default
+  }
+
+  return result
+}
+
 function changeVersionNumber(curVer: string, delta: number): string {
   const parts = curVer.split('.')
   if (parts.length === 3 && !isNaN(Number(parts[2]))) {
@@ -116,7 +179,7 @@ function changeVersionNumber(curVer: string, delta: number): string {
   return curVer
 }
 
-function buildDashboard(info: any) {
+function buildDashboard(info: any, limits?: { vercel?: { ok: boolean; status: number; text: string }; github?: { ok: boolean; remaining: number; limit: number; used: number; resetMinutes: number } }) {
   const latest = info?.latestVersion || '1.1.95'
   const minReq = info?.minRequiredVersion || '1.1.30'
   const force = Boolean(info?.forceUpdate)
@@ -148,11 +211,25 @@ function buildDashboard(info: any) {
     schedSummary += `   • ${icon} <code>${s.time}</code> [${statusText}] : « <i>${s.message}</i> »\n`
   })
 
+  // Format Status Platform & Limit
+  const vercelStatusText = limits?.vercel?.text || '🟢 Normal (Online)'
+  const ghRemaining = limits?.github?.remaining ?? 5000
+  const ghLimit = limits?.github?.limit ?? 5000
+  const ghBadge = limits?.github?.ok === false ? '🔴 Limit' : '🟢 Normal'
+  const ghText = `${ghBadge} (<code>${ghRemaining.toLocaleString()}/${ghLimit.toLocaleString()}</code> req)`
+
+  const platformHealth =
+    '🌐 <b>MONITOR LIMIT & SERVER CLOUD:</b>\n' +
+    `   • ⚡ <b>Vercel API:</b> ${vercelStatusText}\n` +
+    `   • 🐙 <b>GitHub API:</b> ${ghText}\n`
+
   const text =
     '💎 <b>KASKU COMMAND CENTER</b>\n' +
     '━━━━━━━━━━━━━━━━━━━━━\n' +
     `📱 <b>Versi:</b> <code>v${latest}</code> (${statusBadge})\n` +
     `📝 <i>« ${notes} »</i>\n` +
+    '━━━━━━━━━━━━━━━━━━━━━\n' +
+    `${platformHealth}` +
     '━━━━━━━━━━━━━━━━━━━━━\n' +
     `${broadcastStatus}\n\n` +
     `${schedSummary}\n` +
@@ -208,7 +285,10 @@ function buildDashboard(info: any) {
         { text: `⏮️ Reset v${latest}`, callback_data: `cmd_reset_current` },
         { text: `🧪 Uji v${nextVer}`, callback_data: `cmd_test_next` }
       ],
-      // Section 7: Utilities & Cek Versi
+      // Section 7: Cloud Limits & Utilities
+      [
+        { text: '📊 Cek Limit Vercel & GitHub', callback_data: 'cmd_check_limits' }
+      ],
       [
         { text: '🔍 Cek Versi Server', callback_data: 'cmd_check_version' },
         { text: '🔄 Muat Ulang', callback_data: 'cmd_refresh' }
@@ -350,10 +430,13 @@ export async function POST(req: Request) {
       }
 
       if (data === 'cmd_refresh') {
-        await answerCallback(cqId, '🔄 Menyegarkan data...')
+        await answerCallback(cqId, '🔄 Menyegarkan data & status limit...')
         await sendChatAction(chatId, 'typing')
-        const info = await getGithubVersion()
-        const { text, keyboard } = buildDashboard(info?.data)
+        const [info, limits] = await Promise.all([
+          getGithubVersion(),
+          checkPlatformLimits()
+        ])
+        const { text, keyboard } = buildDashboard(info?.data, limits)
         await editMsg(chatId, msgId, text, keyboard)
       } else if (data === 'cmd_force_on') {
         await answerCallback(cqId, '🔒 Sedang memproses penguncian...')
@@ -414,6 +497,36 @@ export async function POST(req: Request) {
         await editMsg(chatId, msgId, `⏳ <b>Uji coba v${nxt} (Wajib Update)...</b>`)
         await sendChatAction(chatId, 'typing')
         await executeVersionChange(chatId, nxt, true, `Uji coba pembaruan KasKu v${nxt}. Wajib update.`, msgId)
+      } else if (data === 'cmd_check_limits') {
+        await answerCallback(cqId, '📊 Memeriksa status limit cloud...')
+        await sendChatAction(chatId, 'typing')
+        const limits = await checkPlatformLimits()
+        const vercelOk = limits.vercel.ok
+        const vercelBadge = vercelOk ? '🟢 <b>NORMAL (Aktif)</b>' : '🔴 <b>LIMIT / GANGGUAN</b>'
+        const ghRemaining = limits.github.remaining
+        const ghLimit = limits.github.limit
+        const ghUsed = limits.github.used
+        const ghResetMin = limits.github.resetMinutes
+        const ghBadge = limits.github.ok ? '🟢 <b>AMAN (Normal)</b>' : '🔴 <b>LIMIT TERLAMPAUI</b>'
+
+        await sendMsg(
+          chatId,
+          '📊 <b>STATUS LIMIT CLOUD PLATFORM REALTIME</b>\n' +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            '⚡ <b>VERCEL CLOUD:</b>\n' +
+            `• <b>Status:</b> ${vercelBadge}\n` +
+            `• <b>Keterangan:</b> ${limits.vercel.text}\n` +
+            `• <b>HTTP Code:</b> <code>${limits.vercel.status}</code>\n` +
+            `• <b>Fungsi Bot & API:</b> ${vercelOk ? 'Lancar 100%' : 'Fallback otomatis ke GitHub Raw CDN'}\n` +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            '🐙 <b>GITHUB API (Core Rate Limit):</b>\n' +
+            `• <b>Status Kuota:</b> ${ghBadge}\n` +
+            `• <b>Sisa Kuota:</b> <code>${ghRemaining.toLocaleString()} / ${ghLimit.toLocaleString()}</code> req/jam\n` +
+            `• <b>Terpakai:</b> <code>${ghUsed}</code> req\n` +
+            `• <b>Reset Otomatis:</b> Dalam ~<code>${ghResetMin}</code> menit\n` +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            '💡 <i>Jika Vercel limit/down, aplikasi Android otomatis membaca versi & notifikasi langsung dari GitHub CDN tanpa terputus!</i>'
+        )
       } else if (data === 'cmd_check_version') {
         await answerCallback(cqId, '🔍 Memeriksa versi server...')
         await sendChatAction(chatId, 'typing')
@@ -1144,11 +1257,49 @@ export async function POST(req: Request) {
           const { text: t, keyboard: k } = buildDashboard(fresh?.data)
           await sendMsg(chatId, t, k)
         }
+      } else if (text === '/limit' || text === '/status' || text === '/limits') {
+        const loadMsg = await sendMsg(chatId, '⏳ <b>Memeriksa status limit platform real-time...</b>')
+        const loadMsgId = loadMsg?.result?.message_id
+        await sendChatAction(chatId, 'typing')
+        const limits = await checkPlatformLimits()
+        const vercelOk = limits.vercel.ok
+        const vercelBadge = vercelOk ? '🟢 <b>NORMAL (Aktif)</b>' : '🔴 <b>LIMIT / GANGGUAN</b>'
+        const ghRemaining = limits.github.remaining
+        const ghLimit = limits.github.limit
+        const ghUsed = limits.github.used
+        const ghResetMin = limits.github.resetMinutes
+        const ghBadge = limits.github.ok ? '🟢 <b>AMAN (Normal)</b>' : '🔴 <b>LIMIT TERLAMPAUI</b>'
+
+        const statusMsg =
+          '📊 <b>STATUS LIMIT CLOUD PLATFORM REALTIME</b>\n' +
+          '━━━━━━━━━━━━━━━━━━━━━\n' +
+          '⚡ <b>VERCEL CLOUD:</b>\n' +
+          `• <b>Status:</b> ${vercelBadge}\n` +
+          `• <b>Keterangan:</b> ${limits.vercel.text}\n` +
+          `• <b>HTTP Code:</b> <code>${limits.vercel.status}</code>\n` +
+          `• <b>Fungsi Bot & API:</b> ${vercelOk ? 'Lancar 100%' : 'Fallback otomatis ke GitHub Raw CDN'}\n` +
+          '━━━━━━━━━━━━━━━━━━━━━\n' +
+          '🐙 <b>GITHUB API (Core Rate Limit):</b>\n' +
+          `• <b>Status Kuota:</b> ${ghBadge}\n` +
+          `• <b>Sisa Kuota:</b> <code>${ghRemaining.toLocaleString()} / ${ghLimit.toLocaleString()}</code> req/jam\n` +
+          `• <b>Terpakai:</b> <code>${ghUsed}</code> req\n` +
+          `• <b>Reset Otomatis:</b> Dalam ~<code>${ghResetMin}</code> menit\n` +
+          '━━━━━━━━━━━━━━━━━━━━━\n' +
+          '💡 <i>Jika Vercel terkena limit harian/bulanan, bot dan aplikasi KasKu tetap bekerja normal via fallback GitHub CDN!</i>'
+
+        if (loadMsgId) {
+          await editMsg(chatId, loadMsgId, statusMsg)
+        } else {
+          await sendMsg(chatId, statusMsg)
+        }
       } else {
         const loadMsg = await sendMsg(chatId, '🔄 <b>Memuat dasbor kontrol...</b>')
         const loadMsgId = loadMsg?.result?.message_id
-        const info = await getGithubVersion()
-        const { text: dashText, keyboard: kb } = buildDashboard(info?.data)
+        const [info, limits] = await Promise.all([
+          getGithubVersion(),
+          checkPlatformLimits()
+        ])
+        const { text: dashText, keyboard: kb } = buildDashboard(info?.data, limits)
         if (loadMsgId) {
           await editMsg(chatId, loadMsgId, dashText, kb)
         } else {
