@@ -192,6 +192,9 @@ function buildDashboard(info: any) {
         { text: '⚙️ Set Template', callback_data: 'cmd_prompt_setnotif' },
         { text: '🚀 Kirim Template', callback_data: 'cmd_send_saved_notif' }
       ],
+      [
+        { text: '📦 Template Update APK', callback_data: 'cmd_tpl_update' }
+      ],
       // Section 5: App Version & Security
       [
         { text: lockButtonText, callback_data: lockCallback }
@@ -447,6 +450,34 @@ export async function POST(req: Request) {
             '━━━━━━━━━━━━━━━━━━━━━\n' +
             '<i>Notifikasi akan langsung masuk di bar atas HP semua pengguna!</i>'
         )
+      } else if (data === 'cmd_tpl_update') {
+        const info = await getGithubVersion()
+        const cur = info?.data?.latestVersion || '1.1.102'
+        const nextVer = changeVersionNumber(cur, 1)
+        await answerCallback(cqId, '📦 Template Notifikasi Update APK')
+        await sendMsg(
+          chatId,
+          '📦 <b>TEMPLATE CEPAT NOTIFIKASI UPDATE APK</b>\n' +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            'Gunakan perintah kilat di bawah ini untuk mengirim notifikasi update versi ke bilah status HP:\n\n' +
+            '<code>/notifupdate ' + cur + ' | ' + nextVer + ' | Peningkatan performa & UI | Fitur AI Voice makin cepat</code>\n\n' +
+            '<b>Atau format bebas:</b>\n' +
+            '<code>/notifupdate [versi_lama] | [versi_baru] | [fitur_1] | [fitur_2]</code>\n\n' +
+            '<b>Contoh hasil di notifikasi HP:</b>\n' +
+            '<i>« KasKu v' + nextVer + ' Siap Diunduh! Pembaruan dari v' + cur + ': Peningkatan performa & UI, Fitur AI Voice makin cepat. Buka aplikasi untuk update. »</i>\n' +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            '💡 <i>Salin teks di atas, ubah sesuai kebutuhan, lalu kirim ke bot!</i>',
+          {
+            inline_keyboard: [
+              [
+                {
+                  text: `⚡ Kirim Cepat Notif Update v${nextVer}`,
+                  callback_data: `cmd_send_fast_update_${nextVer}`
+                }
+              ]
+            ]
+          }
+        )
       } else if (data === 'cmd_quick_notif') {
         const quickMsg = 'Jangan Lupa Catat Laporan Keuangan Yaa'
         await answerCallback(cqId, '⚡ Mengirim Notif Cepat...')
@@ -502,6 +533,38 @@ export async function POST(req: Request) {
               `• <b>Pesan:</b> ${targetMsg}\n` +
               '━━━━━━━━━━━━━━━━━━━━━\n' +
               '📱 <i>Notifikasi langsung masuk di status bar HP pengguna.</i>'
+          )
+        }
+        const fresh = await getGithubVersion()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, t, k)
+      } else if (data.startsWith('cmd_send_fast_update_')) {
+        const targetV = data.replace('cmd_send_fast_update_', '')
+        await answerCallback(cqId, `📦 Menyebarkan notif rilis v${targetV}...`)
+        await editMsg(chatId, msgId, `⏳ <b>[1/2] Menyebarkan notifikasi rilis v${targetV} ke seluruh HP...</b>`)
+        await sendChatAction(chatId, 'typing')
+        const fileInfo = await getGithubVersion()
+        if (fileInfo) {
+          const curV = fileInfo.data.latestVersion || '1.1.102'
+          const updateMessage = `Pembaruan Resmi KasKu v${targetV}! Peningkatan performa & kestabilan data. Buka aplikasi untuk update.`
+          const broadcastId = `b-${Date.now()}`
+          fileInfo.data.broadcast = {
+            id: broadcastId,
+            active: true,
+            title: 'KasKu Update',
+            message: updateMessage,
+            updatedAt: new Date().toISOString()
+          }
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Fast Update Notif v${targetV}`)
+          await editMsg(
+            chatId,
+            msgId,
+            '🔔 <b>[2/2] NOTIFIKASI UPDATE APK BERHASIL DIKIRIM KE HP!</b>\n' +
+              '━━━━━━━━━━━━━━━━━━━━━\n' +
+              '• <b>Judul:</b> KasKu Update\n' +
+              `• <b>Pesan:</b> ${updateMessage}\n` +
+              '━━━━━━━━━━━━━━━━━━━━━\n' +
+              '📱 <i>Pengguna akan langsung menerima notifikasi update di status bar HP!</i>'
           )
         }
         const fresh = await getGithubVersion()
@@ -689,6 +752,7 @@ export async function POST(req: Request) {
           '   • <code>/status</code> - Ringkasan status server & versi\n\n' +
           '📢 <b>KIRIM & SET NOTIFIKASI HP:</b>\n' +
           '   • <code>/notif [pesan]</code> - Broadcast instan ke bilah status bar HP\n' +
+          '   • <code>/notifupdate [lama] | [baru] | [fitur1] | [fitur2]</code> - Template cepat notifikasi rilis\n' +
           '   • <code>/setnotif [pesan]</code> - Simpan teks template notifikasi\n' +
           '   • <code>/clearnotif</code> - Matikan notifikasi broadcast aktif\n\n' +
           '⏰ <b>PENGATURAN 4-JADWAL HARIAN:</b>\n' +
@@ -911,6 +975,71 @@ export async function POST(req: Request) {
                 `• <b>Pesan:</b> ${notifMessage}\n` +
                 '━━━━━━━━━━━━━━━━━━━━━\n' +
                 '📱 <i>Notifikasi akan langsung masuk di bilah atas HP (Status Bar) pengguna!</i>'
+            )
+          }
+        }
+        const fresh = await getGithubVersion()
+        const { text: t, keyboard: k } = buildDashboard(fresh?.data)
+        await sendMsg(chatId, t, k)
+      } else if (text.startsWith('/notifupdate ') || text === '/notifupdate') {
+        const rawPayload = text.replace('/notifupdate', '').trim()
+        const fileInfo = await getGithubVersion()
+        const curVer = fileInfo?.data?.latestVersion || '1.1.102'
+        const nextVer = changeVersionNumber(curVer, 1)
+
+        let fromVer = curVer
+        let toVer = nextVer
+        let p1 = 'Peningkatan performa'
+        let p2 = 'Kestabilan sistem'
+
+        if (rawPayload) {
+          const parts = rawPayload.split('|').map(s => s.trim()).filter(Boolean)
+          if (parts.length >= 4) {
+            fromVer = parts[0]
+            toVer = parts[1]
+            p1 = parts[2]
+            p2 = parts[3]
+          } else if (parts.length === 3) {
+            toVer = parts[0]
+            p1 = parts[1]
+            p2 = parts[2]
+          } else if (parts.length === 2) {
+            toVer = parts[0]
+            p1 = parts[1]
+            p2 = 'Optimalisasi sistem'
+          } else {
+            toVer = parts[0]
+          }
+        }
+
+        const formattedMsg = `Pembaruan Resmi KasKu v${toVer}! Dari v${fromVer}: ${p1} & ${p2}. Buka aplikasi untuk update.`
+        const loadMsg = await sendMsg(chatId, `⏳ <b>[1/2] Menyebarkan notifikasi rilis v${toVer} ke cloud...</b>\n<i>« ${formattedMsg} »</i>`)
+        const loadMsgId = loadMsg?.result?.message_id
+        await sendChatAction(chatId, 'typing')
+
+        if (fileInfo) {
+          const broadcastId = `b-${Date.now()}`
+          fileInfo.data.broadcast = {
+            id: broadcastId,
+            active: true,
+            title: 'KasKu Update',
+            message: formattedMsg,
+            updatedAt: new Date().toISOString()
+          }
+          await updateGithubVersion(fileInfo.data, fileInfo.sha, `Vercel Bot: Notif Update v${toVer} (${p1}, ${p2})`)
+          if (loadMsgId) {
+            await editMsg(
+              chatId,
+              loadMsgId,
+              '🚀 <b>[2/2] NOTIFIKASI UPDATE APK BERHASIL DIKIRIM KE HP!</b>\n' +
+                '━━━━━━━━━━━━━━━━━━━━━\n' +
+                '• <b>Target Versi:</b> <code>v' + toVer + '</code> (dari <code>v' + fromVer + '</code>)\n' +
+                '• <b>Peningkatan 1:</b> ' + p1 + '\n' +
+                '• <b>Peningkatan 2:</b> ' + p2 + '\n' +
+                '• <b>Teks Notifikasi:</b>\n' +
+                '  <i>« ' + formattedMsg + ' »</i>\n' +
+                '━━━━━━━━━━━━━━━━━━━━━\n' +
+                '📱 <i>Notifikasi langsung masuk dan berbunyi di bilah status HP seluruh pengguna!</i>'
             )
           }
         }
