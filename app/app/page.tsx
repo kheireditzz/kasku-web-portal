@@ -50,7 +50,7 @@ export interface Transaction {
 const DEFAULT_CATEGORIES: string[] = []
 
 // Versi aplikasi yang terinstall saat ini (Simulasi Versi Lawas untuk Tes Kunci Update)
-const APP_CURRENT_VERSION = '1.1.101'
+const APP_CURRENT_VERSION = '1.1.102'
 
 export default function KaskuApp() {
   const [activeTab, setActiveTab] = useState<'overview' | 'savings' | 'analytics' | 'categories'>('overview')
