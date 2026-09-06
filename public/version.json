@@ -5,11 +5,11 @@
   "releaseNotes": "Pembaruan resmi KasKu v1.1.102. Peningkatan performa & kestabilan data.",
   "updateUrl": "https://kasku.kheireditz.my.id/",
   "broadcast": {
-    "id": "b-1788656865472",
+    "id": "b-1788656909119",
     "active": true,
     "title": "KasKu",
-    "message": "Jangan Lupa Catat Laporan Keuangan Yaa",
-    "updatedAt": "2026-09-06T01:07:45.472Z"
+    "message": "test",
+    "updatedAt": "2026-09-06T01:08:29.119Z"
   },
   "savedNotification": "Jangan Lupa Catat Laporan Keuangan Yaa",
   "dailySchedules": [
