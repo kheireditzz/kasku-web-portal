@@ -149,24 +149,15 @@ function buildDashboard(info: any) {
   })
 
   const text =
-    '╔════════════════════════════╗\n' +
-    '   💎 <b>KASKU CLOUD COMMAND CENTER</b>\n' +
-    '   <i>Realtime Serverless APK & Web Console</i>\n' +
-    '╚════════════════════════════╝\n\n' +
-    '📱 <b>INFORMASI DISTRIBUSI & SISTEM:</b>\n' +
-    `   • 🏷️ <b>Versi Aktif:</b> <code>v${latest}</code> (Min: <code>v${minReq}</code>)\n` +
-    `   • 🛡️ <b>Kebijakan:</b> ${statusBadge}\n` +
-    `   • 🔔 <b>Status Bar HP:</b> 🟢 <b>Tersambung Realtime</b>\n` +
-    `   • 🌐 <b>Portal Web:</b> <a href="${url}">${url}</a>\n\n` +
-    '📝 <b>CATATAN RILIS TERAKHIR:</b>\n' +
-    `   └ <i>« ${notes} »</i>\n\n` +
-    '────────────────────────────\n' +
+    '💎 <b>KASKU COMMAND CENTER</b>\n' +
+    '━━━━━━━━━━━━━━━━━━━━━\n' +
+    `📱 <b>Versi:</b> <code>v${latest}</code> (${statusBadge})\n` +
+    `📝 <i>« ${notes} »</i>\n` +
+    '━━━━━━━━━━━━━━━━━━━━━\n' +
     `${broadcastStatus}\n\n` +
     `${schedSummary}\n` +
-    '📌 <b>TEMPLATE NOTIFIKASI TERSIMPAN:</b>\n' +
-    `   └ <i>« ${savedNotif} »</i>\n` +
-    '────────────────────────────\n' +
-    '👇 <b>PILIH AKSI KONTROL CEPAT DI BAWAH:</b>'
+    `📌 <b>Template:</b> <i>« ${savedNotif} »</i>\n` +
+    '━━━━━━━━━━━━━━━━━━━━━'
 
   // Tombol Toggle 4 Jadwal Harian yang rapi dan elegan
   const schedBtn07 = (schedules.find(s => s.id === 'sched_07')?.enabled ? '🟢' : '⚪') + ' 07:00 Pagi'
@@ -209,8 +200,8 @@ function buildDashboard(info: any) {
       ],
       // Section 6: Maintenance & Quick Testing
       [
-        { text: '⏮️ Reset v1.1.95', callback_data: 'cmd_set_95' },
-        { text: '🧪 Uji v1.1.96', callback_data: 'cmd_set_96' }
+        { text: '⏮️ Reset v1.1.101', callback_data: 'cmd_set_101' },
+        { text: '🧪 Uji v1.1.102', callback_data: 'cmd_set_102' }
       ],
       // Section 7: Utilities
       [
@@ -400,16 +391,16 @@ export async function POST(req: Request) {
         const cur = info?.data?.latestVersion || '1.1.95'
         const prv = changeVersionNumber(cur, -1)
         await executeVersionChange(chatId, prv, false, undefined, msgId)
-      } else if (data === 'cmd_set_95') {
-        await answerCallback(cqId, '⏮️ Memulihkan ke v1.1.95...')
-        await editMsg(chatId, msgId, '⏳ <b>Mempersiapkan reset ke v1.1.95...</b>')
+      } else if (data === 'cmd_set_101' || data === 'cmd_set_95') {
+        await answerCallback(cqId, '⏮️ Reset ke v1.1.101...')
+        await editMsg(chatId, msgId, '⏳ <b>Reset ke v1.1.101...</b>')
         await sendChatAction(chatId, 'typing')
-        await executeVersionChange(chatId, '1.1.95', false, 'Pembaruan KasKu v1.1.95 menghadirkan peningkatan antarmuka modern Apple iOS FinTech, optimasi performa AI Voice, dan pembaruan sistem kas.', msgId)
-      } else if (data === 'cmd_set_96') {
-        await answerCallback(cqId, '🧪 Mengaktifkan uji coba v1.1.96...')
-        await editMsg(chatId, msgId, '⏳ <b>Mempersiapkan uji coba v1.1.96...</b>')
+        await executeVersionChange(chatId, '1.1.101', false, 'Pembaruan resmi KasKu v1.1.101. Stabilitas notifikasi & performa.', msgId)
+      } else if (data === 'cmd_set_102' || data === 'cmd_set_96') {
+        await answerCallback(cqId, '🧪 Uji coba v1.1.102...')
+        await editMsg(chatId, msgId, '⏳ <b>Uji coba v1.1.102 (Wajib Update)...</b>')
         await sendChatAction(chatId, 'typing')
-        await executeVersionChange(chatId, '1.1.96', true, 'Pembaruan sistem wajib KasKu v1.1.96. Versi ini wajib diunduh untuk dapat melanjutkan penggunaan aplikasi.', msgId)
+        await executeVersionChange(chatId, '1.1.102', true, 'Uji coba pembaruan KasKu v1.1.102. Wajib update.', msgId)
       } else if (data === 'cmd_prompt_notif') {
         await answerCallback(cqId, 'Ketik /notif [pesan anda]')
         await sendMsg(
