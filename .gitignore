@@ -6,3 +6,5 @@ node_modules
 tsconfig.tsbuildinfo
 app_dashboard_backup
 .vercel
+service-account.json
+google-services.json
