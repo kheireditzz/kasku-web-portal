@@ -1,7 +1,7 @@
 {
-  "latestVersion": "1.1.103",
-  "minRequiredVersion": "1.1.103",
-  "forceUpdate": true,
+  "latestVersion": "1.1.102",
+  "minRequiredVersion": "1.1.30",
+  "forceUpdate": false,
   "releaseNotes": "Pembaruan resmi KasKu v1.1.102. Peningkatan performa & kestabilan data.",
   "updateUrl": "https://kasku.kheireditz.my.id/",
   "broadcast": {
@@ -52,27 +52,27 @@
   ],
   "releases": [
     {
+      "version": "1.1.102",
+      "releaseDate": "2026-09-07",
+      "fileSize": "500 KB",
+      "downloadUrl": "/apk/KasKu.apk",
+      "isLatest": true,
+      "minAndroid": "Android 7.0 (Nougat)+",
+      "highlights": [
+        "Pembaruan resmi KasKu v1.1.102"
+      ]
+    },
+    {
       "version": "1.1.103",
       "releaseDate": "2026-09-06",
       "fileSize": "372 KB",
       "downloadUrl": "/apk/KasKu.apk",
-      "isLatest": true,
+      "isLatest": false,
       "minAndroid": "Android 7.0 (Nougat)+",
       "highlights": [
         "Pembaruan otomatis build KasKu v1.1.103",
         "Peningkatan kestabilan AI Voice & UI",
         "Optimasi performa & penyimpanan kas"
-      ]
-    },
-    {
-      "version": "1.1.102",
-      "releaseDate": "2026-09-06",
-      "fileSize": "500 KB",
-      "downloadUrl": "/apk/KasKu.apk",
-      "isLatest": false,
-      "minAndroid": "Android 7.0 (Nougat)+",
-      "highlights": [
-        "Pembaruan resmi KasKu v1.1.102"
       ]
     },
     {
