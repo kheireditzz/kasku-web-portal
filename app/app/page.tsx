@@ -13,6 +13,11 @@ import SavingsSection, { SavingGoal } from '@/components/SavingsSection'
 import ConfirmModal, { ConfirmDialogState } from '@/components/ConfirmModal'
 import SupportDevModal from '@/components/SupportDevModal'
 import AnalyticsSection from '@/components/AnalyticsSection'
+import KasirSection, { KasirProduct, KasirCartItem, StoreProfile } from '@/components/KasirSection'
+import AddKasirProductModal from '@/components/AddKasirProductModal'
+import StoreSettingsModal from '@/components/StoreSettingsModal'
+import ScanBarcodeModal from '@/components/ScanBarcodeModal'
+import KasirHistoryModal from '@/components/KasirHistoryModal'
 import {
   WalletIcon,
   ArrowTrendingUpIcon,
@@ -50,10 +55,10 @@ export interface Transaction {
 const DEFAULT_CATEGORIES: string[] = []
 
 // Versi aplikasi yang terinstall saat ini (Simulasi Versi Lawas untuk Tes Kunci Update)
-const APP_CURRENT_VERSION = '1.1.102'
+const APP_CURRENT_VERSION = '1.1.103'
 
 export default function KaskuApp() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'savings' | 'analytics' | 'categories'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'kasir' | 'savings' | 'analytics' | 'categories'>('overview')
   const [isLoaded, setIsLoaded] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTx, setEditingTx] = useState<Transaction | null>(null)
@@ -65,6 +70,22 @@ export default function KaskuApp() {
   const [showSupportDevModal, setShowSupportDevModal] = useState(false)
   const [showPermissionLock, setShowPermissionLock] = useState(false)
 
+  // Deteksi jika dibuka dari APK Mode Kasir
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search)
+      const mode = urlParams.get('mode')
+      if (mode === 'kasir') {
+        setActiveTab('kasir')
+      } else {
+        const savedMode = localStorage.getItem('kasku_launch_mode')
+        if (savedMode === 'kasir') {
+          setActiveTab('kasir')
+        }
+      }
+    } catch(e) {}
+  }, [])
+
   // Transactions State (PERSISTED)
   const [transactions, setTransactions] = useState<Transaction[]>([])
 
@@ -74,6 +95,24 @@ export default function KaskuApp() {
   // Categories State (PERSISTED)
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES)
   const [newCatInput, setNewCatInput] = useState('')
+
+  // KASIR POS STATE (PERSISTED)
+  const [kasirProducts, setKasirProducts] = useState<KasirProduct[]>([])
+  const [kasirCart, setKasirCart] = useState<KasirCartItem[]>([])
+  const [storeProfile, setStoreProfile] = useState<StoreProfile>({
+    storeName: 'KasirKu POS',
+    storeSubtitle: 'Toko & Usaha UMKM Berkah',
+    storeAddress: 'Jl. Raya Perdagangan No. 88',
+    storePhone: '0812-3456-7890',
+    storeLogoUrl: '',
+    receiptNote: 'Terima Kasih Atas Kunjungan Anda!\nBarang yang sudah dibeli tidak dapat ditukar kembali.'
+  })
+  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false)
+  const [editingKasirProduct, setEditingKasirProduct] = useState<KasirProduct | null>(null)
+  const [isScanModalOpen, setIsScanModalOpen] = useState(false)
+  const [isStoreSettingsModalOpen, setIsStoreSettingsModalOpen] = useState(false)
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
 
   // Form State
   const [title, setTitle] = useState('')
@@ -116,6 +155,31 @@ export default function KaskuApp() {
         setCategories([])
         setSelectedCategory('')
         localStorage.setItem('kasku_categories_v2', JSON.stringify([]))
+      }
+
+      // Load Kasir Menu Products
+      const savedMenu = localStorage.getItem('kasku_kasir_menu')
+      if (savedMenu) {
+        setKasirProducts(JSON.parse(savedMenu))
+      } else {
+        const DEFAULT_KASIR_MENU: KasirProduct[] = [
+          { id: '1', name: 'Nasi Goreng Spesial', price: 18000, category: 'Makanan', emoji: '🍳', barcode: '8991001' },
+          { id: '2', name: 'Mie Ayam Bakso', price: 15000, category: 'Makanan', emoji: '🍜', barcode: '8991002' },
+          { id: '3', name: 'Ayam Geprek Sambal', price: 17000, category: 'Makanan', emoji: '🍗', barcode: '8991003' },
+          { id: '4', name: 'Keripik Tempe Renyah', price: 10000, category: 'Camilan', emoji: '🍿', barcode: '8991004' },
+          { id: '5', name: 'Es Teh Manis', price: 5000, category: 'Minuman', emoji: '🧋', barcode: '8991005' },
+          { id: '6', name: 'Kopi Susu Gula Aren', price: 12000, category: 'Minuman', emoji: '☕', barcode: '8991006' },
+          { id: '7', name: 'Air Mineral Dingin', price: 4000, category: 'Minuman', emoji: '💧', barcode: '8991007' },
+          { id: '8', name: 'Jus Alpukat Kocok', price: 14000, category: 'Minuman', emoji: '🥑', barcode: '8991008' }
+        ]
+        setKasirProducts(DEFAULT_KASIR_MENU)
+        localStorage.setItem('kasku_kasir_menu', JSON.stringify(DEFAULT_KASIR_MENU))
+      }
+
+      // Load Store Profile
+      const savedStore = localStorage.getItem('kasku_store_profile')
+      if (savedStore) {
+        setStoreProfile(JSON.parse(savedStore))
       }
 
       // Cek apakah user baru pertama kali membuka web/aplikasi
@@ -394,16 +458,19 @@ export default function KaskuApp() {
     // Jalankan pengecekan update pertama kali saat aplikasi dibuka
     checkAppUpdate()
 
-    // 1. Polling Otomatis Tiap 3 Detik: Cek Update & Cek Status Izin Wajib
+    // 1. Polling Ringan Tiap 20 Detik: Cek Update & Status Izin tanpa lag & hemat CPU
     const updatePollingInterval = setInterval(() => {
-      checkAppUpdate()
-      checkPermissionStatus()
-    }, 3000)
+      if (document.visibilityState === 'visible') {
+        checkAppUpdate()
+        checkPermissionStatus()
+      }
+    }, 20000)
 
     // 2. Event VisibilityChange & Window Focus: Saat user membuka kunci layar atau beralih dari aplikasi lain kembali ke KasKu
     const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible') {
         checkAppUpdate()
+        checkPermissionStatus()
       }
     }
 
@@ -474,6 +541,26 @@ export default function KaskuApp() {
       console.error('Failed saving categories', e)
     }
   }, [categories, isLoaded])
+
+  // Save Kasir Products
+  useEffect(() => {
+    if (!isLoaded) return
+    try {
+      localStorage.setItem('kasku_kasir_menu', JSON.stringify(kasirProducts))
+    } catch (e) {
+      console.error('Failed saving kasir menu', e)
+    }
+  }, [kasirProducts, isLoaded])
+
+  // Save Store Profile
+  useEffect(() => {
+    if (!isLoaded) return
+    try {
+      localStorage.setItem('kasku_store_profile', JSON.stringify(storeProfile))
+    } catch (e) {
+      console.error('Failed saving store profile', e)
+    }
+  }, [storeProfile, isLoaded])
 
   const showToast = (msg: string) => {
     setNotification(msg)
@@ -1630,6 +1717,52 @@ export default function KaskuApp() {
         </div>
         )}
 
+        {/* TAB KASIR POS UMKM */}
+        {activeTab === 'kasir' && (
+          <ErrorBoundary>
+            <KasirSection
+              onAddTransaction={(title, amount, note) => {
+                const newTx: Transaction = {
+                  id: Date.now().toString(),
+                  title,
+                  amount,
+                  type: 'income',
+                  category: 'Kasir POS',
+                  date: new Date().toISOString().split('T')[0],
+                  note
+                }
+                setTransactions(prev => [newTx, ...prev])
+                showToast(`✅ Berhasil mencatat kasir: +Rp ${amount.toLocaleString('id-ID')}`)
+              }}
+              onCancelTransaction={(orderId) => {
+                setTransactions(prev => prev.filter(tx => !tx.title.includes(orderId)))
+              }}
+              onSwitchToKasku={() => {
+                setActiveTab('overview')
+                showToast('ℹ️ Beralih kembali ke KasKu')
+              }}
+              onOpenAddProductModal={() => {
+                setEditingKasirProduct(null)
+                setIsAddProductModalOpen(true)
+              }}
+              onEditProduct={(prod) => {
+                setEditingKasirProduct(prod)
+                setIsAddProductModalOpen(true)
+              }}
+              onOpenScanModal={() => setIsScanModalOpen(true)}
+              onOpenStoreSettingsModal={() => setIsStoreSettingsModalOpen(true)}
+              onReceiptStateChange={(isOpen) => setIsReceiptModalOpen(isOpen)}
+              cart={kasirCart}
+              setCart={setKasirCart}
+              products={kasirProducts}
+              setProducts={setKasirProducts}
+              storeProfile={storeProfile}
+              setStoreProfile={setStoreProfile}
+              showToast={showToast}
+            />
+          </ErrorBoundary>
+        )}
+
         {/* TAB 2: TABUNGAN & CELENGAN TARGET */}
         {activeTab === 'savings' && (
           <ErrorBoundary>
@@ -1742,14 +1875,30 @@ export default function KaskuApp() {
 
       </main>
 
-      {/* Floating Bottom Nav for Mobile / APK */}
-      <BottomNav
-        activeTab={activeTab}
-        setActiveTab={(tab: any) => setActiveTab(tab)}
-        onOpenAddModal={() => setIsModalOpen(true)}
-        onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
-        onOpenSettingsModal={() => setIsSettingsOpen(true)}
-      />
+      {/* Floating Bottom Nav for Mobile / APK (Disembunyikan saat Struk Terbuka agar 100% tidak bocor) */}
+      {!isReceiptModalOpen && (
+        <BottomNav
+          activeTab={activeTab}
+          setActiveTab={(tab: any) => setActiveTab(tab)}
+          onOpenAddModal={() => setIsModalOpen(true)}
+          onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
+          onOpenSettingsModal={() => setIsSettingsOpen(true)}
+          onOpenAddProductModal={() => setIsAddProductModalOpen(true)}
+          onOpenScanModal={() => setIsScanModalOpen(true)}
+          onOpenStoreSettingsModal={() => setIsStoreSettingsModalOpen(true)}
+          onOpenHistoryModal={() => setIsHistoryModalOpen(true)}
+          onOpenCheckout={() => {
+            // Scroll halus ke kartu pesanan kasir
+            const cartCard = document.getElementById('kasir-cart-panel') || document.querySelector('.surface-card')
+            if (cartCard) {
+              cartCard.scrollIntoView({ behavior: 'smooth' })
+            } else {
+              window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+            }
+          }}
+          cartCount={kasirCart.reduce((s, i) => s + i.qty, 0)}
+        />
+      )}
 
       {/* Add & Edit Transaction Modal (Bottom Sheet Slide from bottom) */}
       <ErrorBoundary>
@@ -1787,7 +1936,7 @@ export default function KaskuApp() {
         onClose={() => setConfirmDialog(null)}
       />
 
-      {/* Settings Modal (Backup JSON, Restore JSON, Reset LocalStorage, Export Excel) */}
+      {/* Settings Modal (Backup JSON, Restore JSON, Reset LocalStorage, Export Excel, Beralih Mode) */}
       <ErrorBoundary>
         <SettingsModal
           isOpen={isSettingsOpen}
@@ -1798,6 +1947,15 @@ export default function KaskuApp() {
           onImportAllData={handleImportAllData}
           onClearAllData={handleClearAllData}
           onOpenOnboarding={() => setShowOnboarding(true)}
+          onSwitchToKasir={() => {
+            setActiveTab('kasir')
+            showToast('✅ Berhasil beralih ke Mode KasirKu POS!')
+          }}
+          onSwitchToKasku={() => {
+            setActiveTab('overview')
+            showToast('ℹ️ Beralih ke Buku Kas KasKu')
+          }}
+          activeTab={activeTab}
           showToast={showToast}
         />
       </ErrorBoundary>
@@ -1838,6 +1996,75 @@ export default function KaskuApp() {
         isOpen={showSupportDevModal}
         onClose={() => setShowSupportDevModal(false)}
         autoCloseSeconds={3}
+      />
+
+      {/* Kasir POS: Tambah / Edit Produk Modal */}
+      <AddKasirProductModal
+        isOpen={isAddProductModalOpen}
+        onClose={() => {
+          setIsAddProductModalOpen(false)
+          setEditingKasirProduct(null)
+        }}
+        editingProduct={editingKasirProduct}
+        onSaveProduct={(savedProd) => {
+          setKasirProducts(prev => {
+            const exists = prev.some(p => p.id === savedProd.id)
+            if (exists) {
+              return prev.map(p => p.id === savedProd.id ? savedProd : p)
+            }
+            return [savedProd, ...prev]
+          })
+          showToast(`✅ Produk ${savedProd.name} berhasil disimpan!`)
+        }}
+        onDeleteProduct={(id) => {
+          setKasirProducts(prev => prev.filter(p => p.id !== id))
+          setKasirCart(prev => prev.filter(i => i.product.id !== id))
+          showToast('🗑️ Produk berhasil dihapus dari kasir')
+        }}
+        categories={Array.from(new Set(kasirProducts.map(p => p.category)))}
+      />
+
+      {/* Kasir POS: Scan Barcode Camera Modal dengan Form Jumlah Qty */}
+      <ScanBarcodeModal
+        isOpen={isScanModalOpen}
+        onClose={() => setIsScanModalOpen(false)}
+        products={kasirProducts}
+        onAddToCartWithDetails={(prod, qty, note) => {
+          setKasirCart(prev => {
+            const existing = prev.find(item => item.product.id === prod.id)
+            if (existing) {
+              return prev.map(item => item.product.id === prod.id ? { ...item, qty: item.qty + qty } : item)
+            }
+            return [...prev, { product: prod, qty }]
+          })
+          showToast(`✅ ${qty}x ${prod.name} dimasukkan ke keranjang!`)
+        }}
+        onRegisterAndAddToCart={(newProd, qty, note) => {
+          setKasirProducts(prev => [newProd, ...prev])
+          setKasirCart(prev => [...prev, { product: newProd, qty }])
+          showToast(`✅ Produk baru ${newProd.name} didaftarkan & masuk keranjang!`)
+        }}
+        showToast={showToast}
+      />
+
+      {/* Kasir POS: Atur Profil & Struk Toko Modal */}
+      <StoreSettingsModal
+        isOpen={isStoreSettingsModalOpen}
+        onClose={() => setIsStoreSettingsModalOpen(false)}
+        storeProfile={storeProfile}
+        onSaveProfile={(updated) => setStoreProfile(updated)}
+        showToast={showToast}
+      />
+
+      {/* Kasir POS: Riwayat Transaksi Penjualan Modal */}
+      <KasirHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        transactions={transactions}
+        onDeleteTransaction={(id) => {
+          setTransactions(prev => prev.filter(t => t.id !== id))
+          showToast('🗑️ Transaksi kasir berhasil dihapus')
+        }}
       />
 
       {/* Mandatory Permission Lock Modal (Wajib Izinkan Notifikasi & Latar Belakang) */}

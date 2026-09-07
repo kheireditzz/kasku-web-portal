@@ -294,3 +294,63 @@ export function CalendarIcon({ className = "w-5 h-5" }: { className?: string }) 
     </svg>
   )
 }
+
+
+export function CalculatorIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path fillRule="evenodd" d="M6 3a3 3 0 00-3 3v12a3 3 0 003 3h12a3 3 0 003-3V6a3 3 0 00-3-3H6zm1.5 3a.75.75 0 000 1.5h9a.75.75 0 000-1.5h-9zm0 3.75a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5zm3.75 0a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5zm3.75 0a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5zm-7.5 3.75a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5zm3.75 0a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5zm3.75 0a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5zm-7.5 3.75a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5zm3.75 0a.75.75 0 000 1.5h5.25a.75.75 0 000-1.5H11.25z" clipRule="evenodd" />
+    </svg>
+  )
+}
+
+export function PrinterIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path fillRule="evenodd" d="M7.5 3.75A1.5 1.5 0 006 5.25v1.5h12v-1.5a1.5 1.5 0 00-1.5-1.5h-9zM3.75 8.25A2.25 2.25 0 001.5 10.5v5.25c0 .414.336.75.75.75h2.25V19.5a1.5 1.5 0 001.5 1.5h12a1.5 1.5 0 001.5-1.5v-3h2.25c.414 0 .75-.336.75-.75V10.5a2.25 2.25 0 00-2.25-2.25H3.75zm13.5 9.75H6.75v-4.5h10.5v4.5zm.75-6.75a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+    </svg>
+  )
+}
+
+export function QrCodeIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path fillRule="evenodd" d="M3 4.5A1.5 1.5 0 014.5 3h4.5A1.5 1.5 0 0110.5 4.5v4.5a1.5 1.5 0 01-1.5 1.5h-4.5A1.5 1.5 0 013 9V4.5zm1.5 0v4.5h4.5V4.5h-4.5zM3 15a1.5 1.5 0 011.5-1.5h4.5A1.5 1.5 0 0110.5 15v4.5a1.5 1.5 0 01-1.5 1.5h-4.5A1.5 1.5 0 013 19.5V15zm1.5 0v4.5h4.5V15h-4.5zM15 3a1.5 1.5 0 00-1.5 1.5v4.5A1.5 1.5 0 0015 10.5h4.5A1.5 1.5 0 0021 9V4.5A1.5 1.5 0 0019.5 3H15zm0 1.5h4.5V9H15V4.5zm-1.5 10.5a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v1.5a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75V15zm4.5 0a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v1.5a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75V15zm-4.5 4.5a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v1.5a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75v-1.5zm4.5 0a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v1.5a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75v-1.5z" clipRule="evenodd" />
+    </svg>
+  )
+}
+
+export function ShoppingBagIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path fillRule="evenodd" d="M7.5 6v.75H5.513c-.96 0-1.764.724-1.865 1.679l-1.263 12A1.875 1.875 0 004.25 22.5h15.5a1.875 1.875 0 001.865-2.071l-1.263-12a1.875 1.875 0 00-1.865-1.679H16.5V6a4.5 4.5 0 10-9 0zM12 3a3 3 0 00-3 3v.75h6V6a3 3 0 00-3-3zm-3 8.25a3 3 0 106 0v-.75a.75.75 0 011.5 0v.75a4.5 4.5 0 11-9 0v-.75a.75.75 0 011.5 0v.75z" clipRule="evenodd" />
+    </svg>
+  )
+}
+
+export function DocumentTextIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path fillRule="evenodd" d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0016.5 9h-1.875a1.875 1.875 0 01-1.875-1.875V5.25A3.75 3.75 0 009 1.5H5.625zM7.5 15a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5A.75.75 0 017.5 15zm.75 2.25a.75.75 0 000 1.5H12a.75.75 0 000-1.5H8.25z" clipRule="evenodd" />
+      <path d="M12.971 1.816A5.23 5.23 0 0114.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 013.434 1.279 9.768 9.768 0 00-6.963-6.963z" />
+    </svg>
+  )
+}
+
+export function ProductBoxIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.378 1.602a.75.75 0 00-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03zM21.75 7.93l-9 5.25v9.967l8.622-5.03a.75.75 0 00.378-.65V7.93zM11.25 23.147V13.18l-9-5.25v9.537a.75.75 0 00.378.65l8.622 5.03z" />
+    </svg>
+  )
+}
+
+export function ClockHistoryIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .207.084.405.234.55l3.75 3.75a.75.75 0 101.06-1.06l-3.544-3.544V6z" clipRule="evenodd" />
+    </svg>
+  )
+}
+
+

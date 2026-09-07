@@ -8,7 +8,9 @@ import {
   CheckCircleIcon,
   TrashIcon,
   HeartIcon,
-  MicrophoneIcon
+  MicrophoneIcon,
+  CalculatorIcon,
+  WalletIcon
 } from './Icons'
 import SupportDevModal from './SupportDevModal'
 
@@ -21,6 +23,9 @@ interface SettingsModalProps {
   onImportAllData: (data: { transactions?: any[]; savings?: any[]; categories?: string[] }) => void
   onClearAllData: () => void
   onOpenOnboarding?: () => void
+  onSwitchToKasir?: () => void
+  onSwitchToKasku?: () => void
+  activeTab?: string
   showToast: (msg: string) => void
 }
 
@@ -33,6 +38,9 @@ export default function SettingsModal({
   onImportAllData,
   onClearAllData,
   onOpenOnboarding,
+  onSwitchToKasir,
+  onSwitchToKasku,
+  activeTab = 'overview',
   showToast
 }: SettingsModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -251,6 +259,75 @@ export default function SettingsModal({
               ✕
             </button>
           </div>
+
+          {/* FITUR BERALIH MODE KASIRKU / KASKU - HANYA DI PENGATURAN */}
+          {activeTab === 'kasir' ? (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 text-white shadow-md space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-white/10 text-white flex items-center justify-center shadow-xs">
+                    <WalletIcon className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-black block leading-tight text-white">
+                      Beralih ke Buku Kas KasKu
+                    </span>
+                    <span className="text-[10px] text-slate-300 block">
+                      Kembali ke pencatatan kas harian & tabungan
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onSwitchToKasku) {
+                      onSwitchToKasku();
+                    }
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-black shadow-sm transition"
+                >
+                  Beralih ➔
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-300 leading-relaxed">
+                Tekan tombol <strong>Beralih</strong> untuk kembali normal ke tampilan buku kas dan manajemen keuangan KasKu.
+              </p>
+            </div>
+          ) : (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shadow-xs">
+                    <CalculatorIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-black block leading-tight">
+                      Beralih ke KasirKu POS
+                    </span>
+                    <span className="text-[10px] text-emerald-100 block">
+                      Penjualan cepat, barcode, kembalian & cetak bill
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onSwitchToKasir) {
+                      onSwitchToKasir();
+                    }
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 active:scale-95 text-emerald-800 text-xs font-black shadow-sm transition"
+                >
+                  Beralih ➔
+                </button>
+              </div>
+              <p className="text-[10px] text-white/90 leading-relaxed">
+                Tekan tombol <strong>Beralih</strong> untuk membuka layar kasir KasirKu. Menghitung total transaksi, scan barcode barang, cetak struk thermal, dan otomatis tercatat ke buku kas.
+              </p>
+            </div>
+          )}
 
           {/* Bantuan Support Developer (QR DANA) */}
           <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200/80 space-y-2.5">
