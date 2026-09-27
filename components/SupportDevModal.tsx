@@ -61,7 +61,7 @@ export default function SupportDevModal({ isOpen, onClose, autoCloseSeconds = 3 
 
   return (
     <div 
-      className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fade-in select-none overscroll-none touch-none"
+      className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none overscroll-none touch-none"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -70,20 +70,20 @@ export default function SupportDevModal({ isOpen, onClose, autoCloseSeconds = 3 
       }}
     >
       <div 
-        className="w-full sm:max-w-sm bg-white border-t sm:border border-slate-200/80 rounded-t-[32px] sm:rounded-[28px] p-6 shadow-ios-float space-y-4 max-h-[92vh] overflow-y-auto overscroll-contain touch-pan-y animate-slide-up"
+        className="w-full sm:max-w-sm bg-[#140d2b] border-t sm:border border-white/15 rounded-t-[32px] sm:rounded-[28px] p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto overscroll-contain touch-pan-y animate-slide-up text-white"
         onClick={(e) => e.stopPropagation()}
       >
         {/* iOS Grabber */}
-        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2 sm:hidden opacity-75"></div>
+        <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto -mt-1 mb-2 sm:hidden opacity-75"></div>
 
         {/* Header Modal */}
         <div className="flex items-center justify-between pb-2">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-rose-500/15 text-rose-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center">
               <HeartIcon className="w-5 h-5 fill-current" />
             </div>
             <div>
-              <h3 className="font-extrabold text-base text-slate-900 tracking-tight">
+              <h3 className="font-extrabold text-base text-white tracking-tight">
                 Support Developer
               </h3>
               <span className="text-[11px] text-slate-400 font-medium">Bantuan & Donasi QRIS DANA</span>
@@ -91,7 +91,7 @@ export default function SupportDevModal({ isOpen, onClose, autoCloseSeconds = 3 
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#767680]/10 hover:bg-[#767680]/20 text-slate-500 flex items-center justify-center text-xs font-bold transition active:scale-90"
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center text-xs font-bold transition active:scale-90 border border-white/10"
           >
             ✕
           </button>
@@ -99,21 +99,21 @@ export default function SupportDevModal({ isOpen, onClose, autoCloseSeconds = 3 
 
         {/* Gambar QRIS DANA */}
         <div className="text-center space-y-2">
-          <div className="p-3 rounded-3xl bg-slate-50 border border-slate-200/80 shadow-ios-sm inline-block mx-auto overflow-hidden">
+          <div className="p-3.5 rounded-3xl bg-white/5 border border-white/15 shadow-inner inline-block mx-auto overflow-hidden">
             {QRIS_DANA_IMAGE ? (
               <img
                 src={QRIS_DANA_IMAGE}
                 alt="QRIS DANA Support Dev"
-                className="w-48 h-48 sm:w-52 sm:h-52 object-contain mx-auto rounded-2xl"
+                className="w-48 h-48 sm:w-52 sm:h-52 object-contain mx-auto rounded-2xl bg-white p-1"
               />
             ) : (
-              <div className="w-48 h-48 sm:w-52 sm:h-52 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 text-xs font-bold">
+              <div className="w-48 h-48 sm:w-52 sm:h-52 bg-white/5 rounded-2xl flex items-center justify-center text-slate-400 text-xs font-bold">
                 QRIS DANA
               </div>
             )}
           </div>
           <div className="space-y-0.5">
-            <span className="text-xs font-extrabold text-slate-800 block">
+            <span className="text-xs font-extrabold text-white block">
               Scan via DANA / GoPay / OVO / Bank
             </span>
             <p className="text-[10px] text-slate-400 font-medium">
@@ -123,18 +123,18 @@ export default function SupportDevModal({ isOpen, onClose, autoCloseSeconds = 3 
         </div>
 
         {/* Chat Developer via WhatsApp untuk Rekomendasi Fitur */}
-        <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 space-y-2">
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-emerald-950 flex items-center gap-1.5">
-              <ChatBubbleLeftRightIcon className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs font-extrabold text-emerald-300 flex items-center gap-1.5">
+              <ChatBubbleLeftRightIcon className="w-4 h-4 text-emerald-400" />
               <span>Mau Rekomendasikan Fitur?</span>
             </span>
-            <span className="text-[9px] font-mono font-bold bg-white text-emerald-700 px-1.5 py-0.5 rounded">
+            <span className="text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">
               WhatsApp
             </span>
           </div>
 
-          <p className="text-[11px] text-slate-600 leading-relaxed">
+          <p className="text-[11px] text-slate-300 leading-relaxed">
             Punya ide fitur baru untuk KasKu? Kirimkan langsung ke Developer kami:
           </p>
 
@@ -142,7 +142,7 @@ export default function SupportDevModal({ isOpen, onClose, autoCloseSeconds = 3 
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition"
+            className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition border border-emerald-400/25"
           >
             <ChatBubbleLeftRightIcon className="w-4 h-4" />
             <span>Chat Dev (+62 895-3211-54498)</span>
@@ -152,7 +152,7 @@ export default function SupportDevModal({ isOpen, onClose, autoCloseSeconds = 3 
         {/* Tombol Tutup */}
         <button
           onClick={onClose}
-          className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition active:scale-95 flex items-center justify-center gap-1.5"
+          className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition active:scale-95 flex items-center justify-center gap-1.5 border border-white/10"
         >
           <span>Tutup</span>
           {autoCloseSeconds > 0 && timeLeft > 0 && (

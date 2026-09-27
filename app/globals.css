@@ -4,87 +4,116 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-primary: #10B981;
+  --color-secondary: #059669;
+  --color-emerald: #10B981;
+  --color-emerald-glow: rgba(16, 185, 129, 0.25);
+  --color-amber: #F59E0B;
+  --color-rose: #F43F5E;
+  --color-background: #F8FAFC;
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-bg-hover: rgba(255, 255, 255, 0.95);
+  --glass-border: rgba(226, 232, 240, 0.8);
+  --glass-border-glow: rgba(16, 185, 129, 0.25);
+  --glass-blur: 24px;
+}
+
 @layer base {
   body {
-    background-color: #f2f2f7;
-    color: #1c1c1e;
+    background-color: #F8FAFC;
+    color: #0F172A;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
 }
 
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); }
+::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.5); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.7); }
 
-/* iOS Glass Nav & Dockbar Elements - GPU Accelerated & Battery Friendly */
+/* Liquid Glass Nav & Dockbar Tokens - White Theme iOS Clean */
 .glass-nav {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
   box-shadow: 
-    0 10px 30px -8px rgba(0, 0, 0, 0.08),
-    0 1px 3px rgba(0, 0, 0, 0.04);
+    0 16px 40px -10px rgba(0, 0, 0, 0.08),
+    0 4px 12px -2px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
   transform: translateZ(0);
   will-change: transform;
 }
 
 .ios-glass-bar {
-  background: rgba(242, 242, 247, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: none !important;
-  box-shadow: none;
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8) !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04) !important;
   transform: translateZ(0);
   will-change: transform;
 }
 
 .ios-sheet {
-  background: #ffffff;
-  border-radius: 28px 28px 0 0;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.12);
+  background: #FFFFFF !important;
+  border-radius: 32px 32px 0 0;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 0 -16px 50px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  color: #0F172A !important;
 }
 
 @media (min-width: 640px) {
   .ios-sheet {
-    border-radius: 28px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+    border-radius: 32px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
   }
 }
 
-/* iOS Cards (Grouped Table View Look) */
+/* White Clean Cards with Apple/Stripe-tier Geometry & Subtle Shadows */
 .surface-card {
-  background: rgba(255, 255, 255, 0.95);
-  border: 0.5px solid rgba(0, 0, 0, 0.06);
-  border-radius: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);
-  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+  background: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 26px !important;
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.05),
+    0 2px 6px -1px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  color: #0F172A !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
 }
 
 .surface-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-  border-color: rgba(0, 0, 0, 0.09);
+  transform: translateY(-2px);
+  border-color: #CBD5E1 !important;
+  box-shadow: 
+    0 20px 40px -12px rgba(0, 0, 0, 0.08),
+    0 4px 12px -2px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
 }
 
 .ios-card {
-  background: #ffffff;
-  border-radius: 20px;
-  border: 0.5px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  background: #FFFFFF !important;
+  border-radius: 22px;
+  border: 1px solid #E2E8F0 !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  color: #0F172A !important;
 }
 
-/* iOS Form Inputs - Polished, Crisp, and Substantial */
+/* White Form Inputs */
 .kas-input {
-  background: #f1f5f9;
-  border: 1.5px solid #e2e8f0;
-  color: #0f172a;
-  border-radius: 14px;
+  background: #F1F5F9 !important;
+  border: 1.5px solid #E2E8F0 !important;
+  color: #0F172A !important;
+  border-radius: 16px;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 14px;
   font-weight: 600;
@@ -93,31 +122,31 @@
 }
 
 .kas-input::placeholder {
-  color: #94a3b8;
+  color: #94A3B8 !important;
   font-weight: 500;
 }
 
 .kas-input:focus {
-  background: #ffffff;
-  border-color: #10b981;
-  color: #0f172a;
+  background: #FFFFFF !important;
+  border-color: #10B981 !important;
+  color: #0F172A !important;
   outline: none;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15) !important;
 }
 
-/* iOS Primary & Action Buttons */
+/* Primary Buttons */
 .btn-primary {
-  background: #007aff;
-  color: #ffffff;
-  font-weight: 700;
-  border-radius: 16px;
-  box-shadow: 0 4px 14px rgba(0, 122, 255, 0.28);
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 800;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-primary:hover {
-  background: #0066d6;
-  box-shadow: 0 6px 20px rgba(0, 122, 255, 0.35);
+  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
 }
 
 .btn-primary:active {
@@ -125,11 +154,11 @@
 }
 
 .btn-emerald {
-  background: #10b981;
-  color: #ffffff;
+  background: #10B981;
+  color: #FFFFFF !important;
   font-weight: 700;
   border-radius: 16px;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -143,16 +172,16 @@
 }
 
 .btn-danger {
-  background: #f43f5e;
-  color: #ffffff;
+  background: #F43F5E;
+  color: #FFFFFF !important;
   font-weight: 700;
   border-radius: 16px;
-  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.25);
+  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.22);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-danger:hover {
-  background: #e11d48;
+  background: #E11D48;
 }
 
 .btn-danger:active {
@@ -160,16 +189,16 @@
 }
 
 .btn-amber {
-  background: #f59e0b;
-  color: #ffffff;
+  background: #F59E0B;
+  color: #FFFFFF !important;
   font-weight: 700;
   border-radius: 16px;
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.22);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-amber:hover {
-  background: #d97706;
+  background: #D97706;
 }
 
 .btn-amber:active {
@@ -220,7 +249,7 @@
   animation: fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Security & Protection: Disable text copying, image dragging, context menu, and long-press download across the App */
+/* Security & Protection */
 .app-protected {
   -webkit-user-select: none !important;
   -moz-user-select: none !important;
@@ -235,49 +264,34 @@
   user-drag: none !important;
 }
 
-/* Allow input/textarea to remain functional while disabling general copy/leak */
 .app-protected input,
 .app-protected textarea {
   -webkit-user-select: auto !important;
   user-select: auto !important;
 }
 
-/* Premium Animations for KasKu Web & APK */
-@keyframes float-slow {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
+.pressable {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease;
+  user-select: none;
+}
+.pressable:active {
+  transform: scale(0.96);
 }
 
-.animate-float-slow {
-  animation: float-slow 4s ease-in-out infinite;
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
-@keyframes pulse-glow {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.05);
-  }
+/* Atmospheric Micro Gradients */
+.glow-emerald {
+  box-shadow: 0 8px 24px -4px rgba(16, 185, 129, 0.18);
 }
-
-.animate-pulse-glow {
-  animation: pulse-glow 3s ease-in-out infinite;
+.glow-rose {
+  box-shadow: 0 8px 24px -4px rgba(244, 63, 94, 0.18);
 }
-
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
+.glow-amber {
+  box-shadow: 0 8px 24px -4px rgba(245, 158, 11, 0.18);
 }
-
-.animate-shimmer {
-  animation: shimmer 2s infinite;
+.glow-indigo {
+  box-shadow: 0 8px 24px -4px rgba(99, 102, 241, 0.18);
 }
-

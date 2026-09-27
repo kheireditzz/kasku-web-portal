@@ -290,20 +290,21 @@ export default function KasirSection({
 
   return (
     <div className="space-y-4 pb-24 md:pb-6 select-none">
-      {/* KasirKu POS Dedicated Header Banner */}
-      <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 rounded-3xl p-5 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute -right-8 -bottom-8 w-44 h-44 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+      {/* KasirKu POS Dedicated Header Banner - Obsidian Liquid Glass */}
+      <div className="surface-card rounded-[28px] p-5 sm:p-6 text-white relative overflow-hidden">
+        <div className="absolute -right-8 -bottom-8 w-44 h-44 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -left-8 -top-8 w-36 h-36 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
         
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-xs text-[11px] font-black tracking-wider uppercase">
-              <CalculatorIcon className="w-3.5 h-3.5 text-emerald-300" />
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-black tracking-wider uppercase">
+              <CalculatorIcon className="w-3.5 h-3.5 text-emerald-400" />
               <span>SISTEM KASIR POS LENGKAP</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               {storeProfile.storeName || 'KasirKu'}
             </h2>
-            <p className="text-xs text-emerald-100 max-w-lg">
+            <p className="text-xs text-slate-600 max-w-lg font-medium">
               {storeProfile.storeSubtitle || 'Mode Penjualan Kasir Cepat, Hitung Kembalian & Struk Thermal'}
             </p>
           </div>
@@ -312,10 +313,10 @@ export default function KasirSection({
           <div className="flex items-center flex-wrap gap-2">
             <button
               onClick={onOpenStoreSettingsModal}
-              className="px-3.5 py-2 rounded-2xl bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5 border border-white/20"
+              className="px-3.5 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5 border border-slate-200 backdrop-blur-md"
               title="Atur Logo Struk, Nama Toko, Alamat & Ucapan"
             >
-              <Cog6ToothIcon className="w-4 h-4 text-emerald-200" />
+              <Cog6ToothIcon className="w-4 h-4 text-emerald-400" />
               <span>Atur Struk Toko</span>
             </button>
           </div>
@@ -335,13 +336,13 @@ export default function KasirSection({
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Cari produk atau barcode..."
-                className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:border-emerald-500 focus:outline-none shadow-xs"
+                className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs font-medium text-white placeholder:text-slate-500 focus:border-emerald-500 focus:bg-slate-50 focus:outline-none transition"
               />
-              <span className="absolute left-3 top-3 text-slate-400 text-xs">🔍</span>
+              <span className="absolute left-3 top-3 text-slate-500 text-xs">🔍</span>
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  className="absolute right-3 top-2.5 text-slate-500 hover:text-white text-xs font-bold"
                 >
                   ✕
                 </button>
@@ -350,7 +351,7 @@ export default function KasirSection({
 
             <button
               onClick={onOpenAddProductModal}
-              className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-2xl shadow-sm transition flex items-center gap-1.5 shrink-0"
+              className="px-3.5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 active:scale-95 text-white text-xs font-bold rounded-2xl shadow-lg shadow-emerald-500/20 transition flex items-center gap-1.5 shrink-0 border border-emerald-400/20"
               title="Tambah Produk Baru"
             >
               <PlusIcon className="w-4 h-4 stroke-[2.5]" />
@@ -359,10 +360,10 @@ export default function KasirSection({
 
             <button
               onClick={onOpenScanModal}
-              className="px-3 py-2.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-bold rounded-2xl shadow-sm transition flex items-center gap-1.5 shrink-0"
+              className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-white text-xs font-bold rounded-2xl shadow-sm transition flex items-center gap-1.5 shrink-0 border border-slate-200"
               title="Scan Barcode Kamera"
             >
-              <QrCodeIcon className="w-4 h-4 text-white" />
+              <QrCodeIcon className="w-4 h-4 text-emerald-400" />
               <span className="hidden sm:inline">Scan</span>
             </button>
           </div>
@@ -375,8 +376,8 @@ export default function KasirSection({
                 onClick={() => setActiveCat(cat)}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${
                   activeCat === cat
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:border-emerald-500'
+                    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25 border border-emerald-400/30'
+                    : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-white'
                 }`}
               >
                 {cat}
@@ -386,13 +387,13 @@ export default function KasirSection({
 
           {/* Product Cards Grid */}
           {filteredProducts.length === 0 ? (
-            <div className="bg-white rounded-3xl p-10 text-center border border-slate-200 space-y-2">
+            <div className="surface-card rounded-3xl p-10 text-center border border-slate-200 space-y-2">
               <span className="text-4xl block">🔍</span>
-              <h4 className="font-bold text-slate-800 text-sm">Produk Tidak Ditemukan</h4>
-              <p className="text-xs text-slate-400">Tidak ada produk yang cocok dengan pencarian Anda</p>
+              <h4 className="font-bold text-slate-900 text-sm">Produk Tidak Ditemukan</h4>
+              <p className="text-xs text-slate-500">Tidak ada produk yang cocok dengan pencarian Anda</p>
               <button
                 onClick={onOpenAddProductModal}
-                className="mt-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95"
+                className="mt-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition"
               >
                 + Tambah Produk Sekarang
               </button>
@@ -402,7 +403,7 @@ export default function KasirSection({
               {filteredProducts.map(p => (
                 <div
                   key={p.id}
-                  className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-emerald-500 text-left transition-all flex flex-col justify-between group relative"
+                  className="surface-card p-3.5 rounded-2xl border border-slate-200 hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10 text-left transition-all flex flex-col justify-between group relative"
                 >
                   {/* Tombol Edit/Hapus Produk di pojok atas kartu */}
                   <button
@@ -411,7 +412,7 @@ export default function KasirSection({
                       e.stopPropagation()
                       if (onEditProduct) onEditProduct(p)
                     }}
-                    className="absolute top-2.5 right-2.5 w-6 h-6 rounded-lg bg-slate-100 hover:bg-emerald-50 text-slate-400 hover:text-emerald-700 flex items-center justify-center transition active:scale-90"
+                    className="absolute top-2.5 right-2.5 w-6 h-6 rounded-lg bg-slate-100 hover:bg-white/20 text-slate-500 hover:text-emerald-400 flex items-center justify-center transition active:scale-90 border border-slate-200"
                     title="Edit atau Hapus Produk"
                   >
                     <PencilSquareIcon className="w-3.5 h-3.5" />
@@ -424,25 +425,25 @@ export default function KasirSection({
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-2xl block group-hover:scale-110 transition-transform">{p.emoji || '📦'}</span>
                       {p.barcode && (
-                        <span className="text-[9px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded truncate max-w-[70px]">
+                        <span className="text-[9px] font-mono text-slate-500 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded truncate max-w-[70px]">
                           {p.barcode}
                         </span>
                       )}
                     </div>
-                    <h4 className="font-bold text-xs sm:text-sm text-slate-800 line-clamp-1 group-hover:text-emerald-700 transition-colors pr-6">
+                    <h4 className="font-bold text-xs sm:text-sm text-white line-clamp-1 group-hover:text-emerald-400 transition-colors pr-6">
                       {p.name}
                     </h4>
-                    <span className="text-[10px] text-slate-400 font-semibold">{p.category}</span>
+                    <span className="text-[10px] text-slate-500 font-semibold">{p.category}</span>
                   </div>
 
                   <div
                     onClick={() => addToCart(p)}
-                    className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between cursor-pointer"
+                    className="mt-2 pt-2 border-t border-slate-200 flex items-center justify-between cursor-pointer"
                   >
-                    <span className="text-xs sm:text-sm font-black text-emerald-700">
+                    <span className="text-xs sm:text-sm font-black text-emerald-400">
                       Rp {p.price.toLocaleString('id-ID')}
                     </span>
-                    <span className="w-6 h-6 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black text-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                    <span className="w-6 h-6 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black text-sm group-hover:bg-emerald-500 group-hover:text-white transition-colors">
                       +
                     </span>
                   </div>
@@ -453,19 +454,19 @@ export default function KasirSection({
         </div>
 
         {/* Right: Cart & Calculation */}
-        <div id="kasir-cart-panel" className="lg:col-span-5 bg-white p-4 rounded-3xl border border-slate-200/90 shadow-card flex flex-col justify-between min-h-[460px]">
+        <div id="kasir-cart-panel" className="lg:col-span-5 surface-card p-4 rounded-3xl border border-slate-200 shadow-card flex flex-col justify-between min-h-[460px]">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-xs">
+                <div className="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black text-xs">
                   {cart.reduce((s, i) => s + i.qty, 0)}
                 </div>
-                <h3 className="font-black text-slate-800 text-sm sm:text-base">Pesanan Penjualan</h3>
+                <h3 className="font-black text-slate-900 text-sm sm:text-base">Pesanan Penjualan</h3>
               </div>
               {cart.length > 0 && (
                 <button
                   onClick={clearCart}
-                  className="text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1 active:scale-95"
+                  className="text-xs text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 active:scale-95"
                 >
                   <TrashIcon className="w-3.5 h-3.5" />
                   <span>Kosongkan</span>
@@ -479,32 +480,32 @@ export default function KasirSection({
                 <div className="py-12 text-center space-y-1.5">
                   <span className="text-3xl block">🛒</span>
                   <p className="text-xs font-bold text-slate-600">Keranjang Masih Kosong</p>
-                  <p className="text-[11px] text-slate-400">Pilih menu di samping atau scan barcode produk</p>
+                  <p className="text-[11px] text-slate-500">Pilih menu di samping atau scan barcode produk</p>
                 </div>
               ) : (
                 cart.map(item => (
                   <div
                     key={item.product.id}
-                    className="p-2.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2"
+                    className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2"
                   >
                     <div className="min-w-0 flex-1">
-                      <h5 className="font-bold text-xs text-slate-800 truncate">{item.product.name}</h5>
-                      <span className="text-[11px] text-emerald-700 font-black">
+                      <h5 className="font-bold text-xs text-white truncate">{item.product.name}</h5>
+                      <span className="text-[11px] text-emerald-400 font-black">
                         Rp {(item.product.price * item.qty).toLocaleString('id-ID')}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0 bg-white px-2 py-1 rounded-xl border border-slate-200">
+                    <div className="flex items-center gap-1.5 shrink-0 bg-slate-100 px-2 py-1 rounded-xl border border-slate-200">
                       <button
                         onClick={() => updateQty(item.product.id, -1)}
-                        className="w-5 h-5 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-90 font-bold text-xs flex items-center justify-center text-slate-700"
+                        className="w-5 h-5 rounded-lg bg-slate-100 hover:bg-white/20 active:scale-90 font-bold text-xs flex items-center justify-center text-slate-700"
                       >
                         -
                       </button>
-                      <span className="w-5 text-center font-black text-xs text-slate-800">{item.qty}</span>
+                      <span className="w-5 text-center font-black text-xs text-white">{item.qty}</span>
                       <button
                         onClick={() => updateQty(item.product.id, 1)}
-                        className="w-5 h-5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-90 font-bold text-xs flex items-center justify-center text-white"
+                        className="w-5 h-5 rounded-lg bg-emerald-500 hover:bg-emerald-400 active:scale-90 font-bold text-xs flex items-center justify-center text-white"
                       >
                         +
                       </button>
@@ -516,15 +517,15 @@ export default function KasirSection({
           </div>
 
           {/* Bottom Calculations & Pay Form */}
-          <div className="pt-3 border-t border-slate-100 space-y-3 mt-4">
+          <div className="pt-3 border-t border-slate-200 space-y-3 mt-4">
             <div className="space-y-1">
               <div className="flex justify-between text-xs text-slate-500 font-semibold">
                 <span>Total Item:</span>
-                <span>{cart.reduce((s, i) => s + i.qty, 0)} Pcs</span>
+                <span className="text-slate-700">{cart.reduce((s, i) => s + i.qty, 0)} Pcs</span>
               </div>
               <div className="flex justify-between text-sm sm:text-base font-black text-slate-900">
                 <span>Total Tagihan:</span>
-                <span className="text-emerald-700 font-display">
+                <span className="text-emerald-400 font-display">
                   Rp {totalAmount.toLocaleString('id-ID')}
                 </span>
               </div>
@@ -536,7 +537,7 @@ export default function KasirSection({
                 <label className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
                   <span>Nominal Tunai Diterima:</span>
                   {numericCash > 0 && (
-                    <span className="text-[10px] text-emerald-700 font-extrabold">
+                    <span className="text-[10px] text-emerald-400 font-extrabold">
                       Kembalian: Rp {changeAmount.toLocaleString('id-ID')}
                     </span>
                   )}
@@ -544,7 +545,7 @@ export default function KasirSection({
                 <div className="flex gap-1.5">
                   <button
                     onClick={() => setCashGivenStr(totalAmount.toLocaleString('id-ID'))}
-                    className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-[11px] rounded-xl transition-colors"
+                    className="flex-1 py-1.5 bg-slate-100 hover:bg-white/20 active:scale-95 text-slate-700 font-bold text-[11px] rounded-xl transition-colors border border-slate-200"
                   >
                     Uang Pas
                   </button>
@@ -553,7 +554,7 @@ export default function KasirSection({
                       <button
                         key={val}
                         onClick={() => setCashGivenStr(val.toLocaleString('id-ID'))}
-                        className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-[11px] rounded-xl transition-colors"
+                        className="flex-1 py-1.5 bg-slate-100 hover:bg-white/20 active:scale-95 text-slate-700 font-bold text-[11px] rounded-xl transition-colors border border-slate-200"
                       >
                         {val / 1000}rb
                       </button>
@@ -562,7 +563,7 @@ export default function KasirSection({
                 </div>
 
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-xs font-bold text-slate-400">Rp</span>
+                  <span className="absolute left-3 top-2.5 text-xs font-bold text-slate-500">Rp</span>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -573,7 +574,7 @@ export default function KasirSection({
                       setCashGivenStr(val ? Number(val).toLocaleString('id-ID') : '')
                     }}
                     placeholder="Masukkan jumlah uang..."
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-black focus:border-emerald-500 focus:bg-white focus:outline-none"
+                    className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-black text-slate-900 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -582,7 +583,7 @@ export default function KasirSection({
             <button
               onClick={handleCheckout}
               disabled={cart.length === 0}
-              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-emerald-600/25 active:scale-98 transition-all flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-emerald-500/25 active:scale-98 transition-all flex items-center justify-center gap-2 border border-emerald-400/30"
             >
               <CheckCircleIcon className="w-5 h-5" />
               <span>Bayar & Simpan Transaksi</span>
@@ -596,13 +597,13 @@ export default function KasirSection({
         <div className="fixed inset-0 z-[999999] flex items-end sm:items-center justify-center p-0 sm:p-4 select-none overflow-hidden touch-none pointer-events-auto">
           {/* Backdrop gelap pekat */}
           <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-xs z-0"
+            className="fixed inset-0 bg-black/85 backdrop-blur-md z-0"
             onClick={() => setShowReceipt(false)}
           />
 
-          {/* Modal Container: 100% Menempel di dasar layar (BOTTOM: 0, FLUSH TO SCREEN BOTTOM) */}
+          {/* Modal Container */}
           <div 
-            className="relative z-10 w-full sm:max-w-md bg-white border-t sm:border border-slate-200 rounded-t-[28px] sm:rounded-[28px] p-4 sm:p-5 shadow-2xl space-y-3 max-h-[92vh] overflow-y-auto overscroll-contain animate-slide-up mb-0"
+            className="relative z-10 w-full sm:max-w-md bg-white border-t sm:border border-slate-200 rounded-t-[28px] sm:rounded-[28px] p-4 sm:p-5 shadow-2xl space-y-3 max-h-[92vh] overflow-y-auto overscroll-contain animate-slide-up mb-0 text-white"
             style={{ 
               paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))',
               position: 'relative',
@@ -612,7 +613,7 @@ export default function KasirSection({
           >
             {/* Tombol Tutup X Cepat di Sudut Kanan Atas */}
             <div className="flex items-center justify-between pb-1">
-              <div className="flex items-center gap-1.5 text-slate-700 font-bold text-xs">
+              <div className="flex items-center gap-1.5 text-white font-bold text-xs">
                 <span>🧾</span>
                 <span>Struk Pembayaran Selesai</span>
               </div>
@@ -620,21 +621,21 @@ export default function KasirSection({
                 type="button"
                 onClick={() => setShowReceipt(false)}
                 aria-label="Tutup Struk"
-                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-90 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs font-black transition cursor-pointer"
+                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-white/20 active:scale-90 text-slate-600 hover:text-white flex items-center justify-center text-xs font-black transition cursor-pointer border border-slate-200"
               >
                 ✕
               </button>
             </div>
 
             {/* Receipt Box - Kertas Thermal Struk Bill Murni Elegan */}
-            <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 space-y-2.5 shadow-inner select-none font-sans">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-2.5 shadow-inner select-none font-sans text-slate-700">
               {/* Header Toko Struk */}
-              <div className="text-center border-b border-dashed border-slate-300 pb-2 space-y-0.5">
+              <div className="text-center border-b border-dashed border-slate-200 pb-2 space-y-0.5">
                 {storeProfile.storeLogoUrl ? (
                   <img
                     src={storeProfile.storeLogoUrl}
                     alt="Logo Toko"
-                    className="w-11 h-11 object-contain mx-auto rounded-xl mb-1 shadow-xs border border-slate-100"
+                    className="w-11 h-11 object-contain mx-auto rounded-xl mb-1 shadow-xs border border-slate-200"
                   />
                 ) : (
                   <span className="text-2xl block mb-0.5">🏪</span>
@@ -646,12 +647,12 @@ export default function KasirSection({
                   <p className="text-[10px] text-slate-500 font-medium leading-tight">{storeProfile.storeSubtitle}</p>
                 )}
                 {storeProfile.storeAddress && (
-                  <p className="text-[9px] text-slate-400 leading-tight">{storeProfile.storeAddress}</p>
+                  <p className="text-[9px] text-slate-500 leading-tight">{storeProfile.storeAddress}</p>
                 )}
                 {storeProfile.storePhone && (
-                  <p className="text-[9px] text-slate-400 leading-tight">Telp: {storeProfile.storePhone}</p>
+                  <p className="text-[9px] text-slate-500 leading-tight">Telp: {storeProfile.storePhone}</p>
                 )}
-                <div className="pt-1.5 text-[10px] text-slate-500 flex justify-between border-t border-dotted border-slate-300 mt-1.5 font-mono">
+                <div className="pt-1.5 text-[10px] text-slate-500 flex justify-between border-t border-dotted border-slate-200 mt-1.5 font-mono">
                   <span>No: #{lastOrder.id}</span>
                   <span>{lastOrder.date}</span>
                 </div>
@@ -660,14 +661,14 @@ export default function KasirSection({
               {/* Receipt Items List */}
               <div className="space-y-1.5 text-xs py-0.5">
                 {lastOrder.items.map((it, idx) => (
-                  <div key={idx} className="flex justify-between items-start text-slate-700">
+                  <div key={idx} className="flex justify-between items-start text-slate-600">
                     <div className="pr-2">
-                      <span className="font-bold text-slate-800 block text-xs">{it.product.name}</span>
-                      <span className="block text-[10px] text-slate-400 font-mono">
+                      <span className="font-bold text-slate-900 block text-xs">{it.product.name}</span>
+                      <span className="block text-[10px] text-slate-500 font-mono">
                         {it.qty} x Rp {it.product.price.toLocaleString('id-ID')}
                       </span>
                     </div>
-                    <span className="font-extrabold text-slate-900 shrink-0 text-xs">
+                    <span className="font-extrabold text-white shrink-0 text-xs">
                       Rp {(it.product.price * it.qty).toLocaleString('id-ID')}
                     </span>
                   </div>
@@ -675,16 +676,16 @@ export default function KasirSection({
               </div>
 
               {/* Receipt Totals */}
-              <div className="border-t border-dashed border-slate-300 pt-2 space-y-1 text-xs">
+              <div className="border-t border-dashed border-slate-200 pt-2 space-y-1 text-xs">
                 <div className="flex justify-between font-black text-slate-900 text-xs sm:text-sm">
                   <span>TOTAL TRANSAKSI</span>
-                  <span className="text-emerald-700 font-display text-sm sm:text-base">Rp {lastOrder.total.toLocaleString('id-ID')}</span>
+                  <span className="text-emerald-400 font-display text-sm sm:text-base">Rp {lastOrder.total.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="flex justify-between text-slate-500 font-medium text-[11px]">
                   <span>Tunai Diterima</span>
                   <span className="font-bold text-slate-700">Rp {lastOrder.cash.toLocaleString('id-ID')}</span>
                 </div>
-                <div className="flex justify-between font-bold text-blue-600 text-[11px]">
+                <div className="flex justify-between font-bold text-cyan-400 text-[11px]">
                   <span>Uang Kembalian</span>
                   <span className="text-xs sm:text-sm font-black">Rp {lastOrder.change.toLocaleString('id-ID')}</span>
                 </div>
@@ -692,7 +693,7 @@ export default function KasirSection({
 
               {/* Ucapan Struk */}
               {storeProfile.receiptNote && (
-                <div className="text-center border-t border-dotted border-slate-300 pt-2">
+                <div className="text-center border-t border-dotted border-slate-200 pt-2">
                   <p className="text-[10px] text-slate-500 whitespace-pre-line font-medium leading-relaxed">
                     {storeProfile.receiptNote}
                   </p>
@@ -705,7 +706,7 @@ export default function KasirSection({
               <button
                 type="button"
                 onClick={printReceipt}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-emerald-600/25 transition flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 active:scale-98 text-white font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-emerald-500/25 transition flex items-center justify-center gap-2 cursor-pointer border border-emerald-400/30"
               >
                 <PrinterIcon className="w-4 h-4 text-white" />
                 <span>Cetak Struk Bill (Thermal / PDF)</span>
@@ -714,7 +715,7 @@ export default function KasirSection({
               <button
                 type="button"
                 onClick={() => setShowReceipt(false)}
-                className="w-full py-2.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 active:scale-98 text-slate-700 font-bold text-xs rounded-2xl transition flex items-center justify-center cursor-pointer border border-slate-200/60"
+                className="w-full py-2.5 bg-slate-100 hover:bg-white/20 active:scale-98 text-slate-700 font-bold text-xs rounded-2xl transition flex items-center justify-center cursor-pointer border border-slate-200"
               >
                 ✕ Tutup / Selesai
               </button>

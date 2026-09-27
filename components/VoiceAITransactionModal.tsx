@@ -495,43 +495,26 @@ export default function VoiceAITransactionModal({
 
       <div 
         ref={scrollableSheetRef}
-        className={`relative z-10 w-full sm:max-w-md bg-white border-t sm:border border-slate-200/80 rounded-t-[32px] sm:rounded-[28px] p-5 sm:p-6 shadow-ios-float space-y-4 max-h-[90vh] overflow-y-auto ${
-          dragY === 0 && !isDragging ? 'animate-slide-up' : ''
-        }`}
+        className="relative z-10 w-full sm:max-w-md bg-white border-t sm:border border-slate-200 rounded-t-[32px] sm:rounded-[28px] p-5 sm:p-6 shadow-[0_24px_70px_rgba(0,0,0,0.85)] space-y-4 max-h-[90vh] overflow-y-auto animate-slide-up"
         style={{
-          transform: dragY > 0 ? `translateY(${dragY}px)` : 'translateY(0px)',
-          transition: isDragging ? 'none' : 'transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
-          willChange: 'transform',
-          touchAction: 'pan-y',
           overscrollBehavior: 'contain'
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* iOS Grabber Handle Bar (Area Geser Turun) */}
-        <div 
-          className="w-full pt-1 pb-4 -mt-2 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none"
-          onTouchStart={onDragStart}
-          onTouchMove={onDragMove}
-          onTouchEnd={onDragEnd}
-          onTouchCancel={onDragEnd}
-        >
-          <div className="w-12 h-1.5 bg-slate-300 hover:bg-slate-400 rounded-full transition-colors opacity-80 pointer-events-none"></div>
-        </div>
-
         {/* Header iOS Style */}
         <div className="flex items-center justify-between pb-1">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-teal-500/20 text-emerald-600 flex items-center justify-center shadow-ios-sm">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-teal-500/20 text-emerald-600 border border-emerald-500/30 flex items-center justify-center shadow-xs">
               <SparklesIcon className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-base font-extrabold text-slate-900 tracking-tight">Voice AI KasKu</h3>
-              <p className="text-[11px] text-slate-400 font-medium">Ucapkan transaksi untuk dicatat instan</p>
+              <p className="text-[11px] text-slate-500 font-medium">Ucapkan transaksi untuk dicatat instan</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#767680]/10 hover:bg-[#767680]/20 text-slate-500 flex items-center justify-center font-bold text-xs transition active:scale-90"
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs transition active:scale-90"
           >
             ✕
           </button>
@@ -546,31 +529,31 @@ export default function VoiceAITransactionModal({
                 onClick={toggleListening}
                 className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center transition-all ${
                   isListening
-                    ? 'bg-rose-600 text-white ring-4 ring-rose-200 animate-pulse scale-105'
-                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm active:scale-95'
+                    ? 'bg-rose-600 text-slate-900 shadow-[0_0_30px_rgba(244,63,94,0.6)] animate-pulse scale-105'
+                    : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-[0_0_25px_rgba(16,185,129,0.5)] active:scale-95'
                 }`}
               >
                 <MicrophoneIcon className="w-7 h-7" />
               </button>
               <div>
-                <span className={`text-xs font-bold block ${isListening ? 'text-rose-600' : 'text-slate-700'}`}>
+                <span className={`text-xs font-bold block ${isListening ? 'text-rose-400' : 'text-slate-700'}`}>
                   {isListening ? 'Mendengarkan...' : 'Ketuk untuk Bicara'}
                 </span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">
+                <span className="text-[10px] text-slate-500 block mt-0.5">
                   Cth: "Makan siang 25 ribu" atau "Gaji 2 juta"
                 </span>
               </div>
             </>
           ) : (
             <>
-              <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center bg-slate-100 text-slate-400">
+              <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center bg-slate-100 text-slate-500">
                 <MicrophoneIcon className="w-7 h-7" />
               </div>
               <div>
                 <span className="text-xs font-bold block text-slate-700">
                   Ketik Transaksi Manual
                 </span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">
+                <span className="text-[10px] text-slate-500 block mt-0.5">
                   Mikrofon tidak didukung, ketik seperti bicara
                 </span>
               </div>
@@ -605,7 +588,7 @@ export default function VoiceAITransactionModal({
                     parseNaturalLanguage(manualInput.trim())
                   }
                 }}
-                className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition active:scale-95"
+                className="px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-xs font-black transition active:scale-95 shadow-sm"
               >
                 Proses
               </button>
@@ -615,8 +598,8 @@ export default function VoiceAITransactionModal({
 
         {/* Bubble Suara */}
         {transcript && (
-          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-            <p className="italic text-slate-700 font-medium text-center">"{transcript}"</p>
+          <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs">
+            <p className="italic text-emerald-700 font-medium text-center">"{transcript}"</p>
           </div>
         )}
 
@@ -624,17 +607,17 @@ export default function VoiceAITransactionModal({
         {(() => {
           console.log('[VoiceAI] Render - hasParsed:', hasParsed)
           return hasParsed ? (
-          <form onSubmit={handleSubmit} className="space-y-3 pt-2 border-t border-slate-100 text-xs animate-fade-in">
+          <form onSubmit={handleSubmit} className="space-y-3 pt-2 border-t border-slate-200 text-xs animate-fade-in">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 Hasil AI
               </span>
-              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-100">
+              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-100 border border-slate-200">
                 <button
                   type="button"
                   onClick={() => setDetectedType('expense')}
                   className={`px-2 py-0.5 rounded-md font-bold text-[10px] transition ${
-                    detectedType === 'expense' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500'
+                    detectedType === 'expense' ? 'bg-rose-500 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
                   }`}
                 >
                   Keluar
@@ -643,7 +626,7 @@ export default function VoiceAITransactionModal({
                   type="button"
                   onClick={() => setDetectedType('income')}
                   className={`px-2 py-0.5 rounded-md font-bold text-[10px] transition ${
-                    detectedType === 'income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'
+                    detectedType === 'income' ? 'bg-emerald-500 text-slate-950 font-black shadow-sm' : 'text-slate-500 hover:text-slate-900'
                   }`}
                 >
                   Masuk
@@ -674,7 +657,7 @@ export default function VoiceAITransactionModal({
                   const raw = e.target.value.replace(/\D/g, '')
                   setDetectedAmount(raw ? Number(raw) : '')
                 }}
-                className="w-full px-3 py-2 rounded-xl kas-input text-xs font-mono font-bold"
+                className="w-full px-3 py-2 rounded-xl kas-input text-xs font-mono font-bold text-emerald-600"
               />
 
               <select
@@ -683,17 +666,17 @@ export default function VoiceAITransactionModal({
                 className="w-full px-2.5 py-2 rounded-xl kas-input text-xs"
               >
                 {detectedCategory && !(categories.length > 0 ? categories : ['Makanan & Minuman', 'Transportasi', 'Gaji & Penghasilan', 'Tagihan & Kebutuhan', 'Belanja', 'Hiburan', 'Kesehatan', 'Lain-lain']).includes(detectedCategory) && (
-                  <option value={detectedCategory}>✨ {detectedCategory} (Otomatis)</option>
+                  <option value={detectedCategory} className="bg-white text-slate-900">✨ {detectedCategory} (Otomatis)</option>
                 )}
                 {(categories.length > 0 ? categories : ['Makanan & Minuman', 'Transportasi', 'Gaji & Penghasilan', 'Tagihan & Kebutuhan', 'Belanja', 'Hiburan', 'Kesehatan', 'Lain-lain']).map((c, i) => (
-                  <option key={i} value={c}>{c}</option>
+                  <option key={i} value={c} className="bg-white text-slate-900">{c}</option>
                 ))}
               </select>
             </div>
 
             <button
               type="submit"
-              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition active:scale-95 flex items-center justify-center mt-1"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black text-xs shadow-[0_0_20px_rgba(16,185,129,0.35)] transition active:scale-95 flex items-center justify-center mt-1"
             >
               <span>Simpan Kas</span>
             </button>

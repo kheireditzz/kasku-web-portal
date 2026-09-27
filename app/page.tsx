@@ -18,7 +18,8 @@ import {
   TagIcon,
   MicrophoneIcon,
   HeartIcon,
-  KasKuBrandLogo
+  KasKuBrandLogo,
+  CalculatorIcon
 } from '@/components/Icons'
 import { APP_LOGO_BASE64 } from '@/components/appLogoBase64'
 import SupportDevModal from '@/components/SupportDevModal'
@@ -88,21 +89,22 @@ export default function KaskuLandingDownloadPage() {
   const latestRelease = data?.releases?.find(r => r.isLatest) || data?.releases?.[0]
 
   return (
-    <div className="min-h-screen bg-[#F2F2F7] text-[#1C1C1E] flex flex-col font-sans antialiased selection:bg-emerald-100 selection:text-emerald-900 relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#080c15] text-slate-100 flex flex-col font-sans antialiased selection:bg-emerald-500/30 selection:text-emerald-300 relative overflow-x-hidden">
       
       {/* Dynamic Background Ambient Blobs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[750px] h-[450px] bg-gradient-to-b from-emerald-400/20 via-teal-300/15 to-transparent rounded-full blur-[100px] animate-pulse-glow" />
-        <div className="absolute top-[45%] -left-36 w-[450px] h-[450px] bg-emerald-500/10 rounded-full blur-[90px]" />
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[750px] h-[450px] bg-gradient-to-b from-emerald-500/15 via-teal-500/10 to-transparent rounded-full blur-[120px] animate-pulse-glow" />
+        <div className="absolute top-[45%] -left-36 w-[450px] h-[450px] bg-indigo-500/10 rounded-full blur-[110px]" />
+        <div className="absolute bottom-10 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[130px]" />
       </div>
 
       {/* 1. ULTRA-CLEAN MODERN NAVBAR */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100/90 transition-all">
+      <header className="sticky top-0 z-50 bg-[#080c15]/80 backdrop-blur-xl border-b border-white/10 transition-all">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
           
           {/* Clean Brand Logo */}
           <div className="flex items-center gap-2.5 select-none">
-            <div className="w-8 h-8 rounded-xl overflow-hidden shadow-xs bg-emerald-600 text-white flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl overflow-hidden shadow-lg shadow-emerald-500/20 bg-slate-900 border border-white/15 flex items-center justify-center">
               <img
                 src={APP_LOGO_BASE64}
                 alt="KasKu Logo"
@@ -110,35 +112,49 @@ export default function KaskuLandingDownloadPage() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-lg tracking-tight text-slate-900">
-                KasKu<span className="text-emerald-500">.</span>
+              <span className="font-extrabold text-lg tracking-tight text-white">
+                KasKu<span className="text-emerald-400">.</span>
               </span>
-              <span className="hidden sm:inline-block text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2 border-l border-slate-200">
+              <span className="hidden sm:inline-block text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2 border-l border-white/10">
                 APK Portal
               </span>
             </div>
           </div>
 
           {/* Clean Nav Actions */}
-          <div className="flex items-center gap-3">
-            
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href)
+                  url.searchParams.set('view', 'app')
+                  window.location.href = url.toString()
+                }
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black transition active:scale-95 flex items-center gap-1.5 shadow-[0_0_16px_rgba(16,185,129,0.35)]"
+            >
+              <span>📱 Buka Web App</span>
+            </button>
 
             <button
               onClick={() => setShowSupportModal(true)}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 text-xs font-bold transition active:scale-95 flex items-center gap-1.5 border border-slate-200/80"
+              className="px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-slate-300 hover:text-white text-xs font-bold transition active:scale-95 flex items-center gap-1.5 border border-white/10"
               title="Bantuan & Donasi Support Developer"
             >
-              <HeartIcon className="w-3.5 h-3.5 text-rose-500 fill-current" />
-              <span className="hidden sm:inline">Support Dev</span>
+              <HeartIcon className="w-3.5 h-3.5 text-rose-400 fill-current" />
+              <span className="hidden sm:inline">Support</span>
             </button>
 
             {latestRelease && (
               <a
                 href={latestRelease.downloadUrl}
                 download
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition"
+                className="px-3.5 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/15 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition active:scale-95"
+                title="Download APK"
               >
-                <ArrowDownTrayIcon className="w-5 h-5" />
+                <ArrowDownTrayIcon className="w-4 h-4 text-emerald-400" />
+                <span className="hidden sm:inline">Download</span>
               </a>
             )}
           </div>
@@ -148,7 +164,7 @@ export default function KaskuLandingDownloadPage() {
       {/* 2. HERO SECTION WITH ELEGANT LAYOUT & IPHONE 16 PRO MOCKUP */}
       <section className="relative overflow-hidden pt-10 pb-16 sm:pt-16 sm:pb-24">
         {/* Subtle background glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-emerald-100/40 via-teal-50/30 to-transparent blur-3xl pointer-events-none -z-10"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-emerald-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none -z-10"></div>
 
         <div className="max-w-6xl mx-auto px-5 sm:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
@@ -156,63 +172,67 @@ export default function KaskuLandingDownloadPage() {
             {/* Left Column: Clean Typography & CTA */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               
-              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-emerald-500/25 text-emerald-800 text-xs font-black shadow-ios-sm">
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/[0.06] backdrop-blur-md border border-emerald-500/30 text-emerald-400 text-xs font-black shadow-[0_0_16px_rgba(16,185,129,0.2)]">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
                 </span>
-                <span>Rilis Resmi APK Android</span>
-                <span className="text-emerald-300">•</span>
-                <span className="text-[11px] font-mono font-bold text-emerald-600">v{latestRelease ? latestRelease.version : '1.1.95'}</span>
+                <span>KasKu Finansial &amp; POS</span>
+                <span className="text-emerald-500/40">•</span>
+                <span className="text-[11px] font-mono font-bold text-emerald-400">v{latestRelease ? latestRelease.version : '1.1.95'}</span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.1] font-display">
-                Catat Keuangan &amp; Kas Usaha Jadi Lebih Ringan dengan <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 bg-clip-text text-transparent">KasKu</span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.1] font-display">
+                Kelola Kas Harian &amp; Toko Cukup dari <span className="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">KasKu</span>
               </h1>
 
-              <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl mx-auto lg:mx-0">
-                Aplikasi keuangan dengan pencatatan mutasi kas harian, asisten suara AI pintar, celengan impian bertarget, dan sistem update Over-The-Air (OTA) langsung ke perangkat Anda.
+              <p className="text-base sm:text-lg text-slate-300 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                Pencatatan mutasi kas instan, asisten suara AI, celengan impian digital, dan kasir POS toko modern yang bekerja 100% offline di perangkat Anda.
               </p>
 
-              {/* Download Buttons Bar */}
+              {/* Action Buttons Bar */}
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      const url = new URL(window.location.href)
+                      url.searchParams.set('view', 'app')
+                      window.location.href = url.toString()
+                    }
+                  }}
+                  className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-slate-950 font-black text-sm shadow-[0_0_24px_rgba(16,185,129,0.4)] flex items-center justify-center gap-2.5 transition-all duration-200 group text-center"
+                >
+                  <span>📱 Buka Aplikasi Web</span>
+                  <span>&rarr;</span>
+                </button>
+
                 {latestRelease && (
                   <a
                     href={latestRelease.downloadUrl}
                     download
-                    className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-sm shadow-ios-float flex items-center justify-center gap-2.5 transition-all duration-200 group text-center"
+                    className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/15 active:scale-95 text-white font-bold text-sm shadow-sm flex items-center justify-center gap-2 transition-all duration-200 group text-center"
                   >
-                    <ArrowDownTrayIcon className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
-                    <span>Download APK v{latestRelease.version}</span>
-                    <span className="bg-emerald-800/40 px-2 py-0.5 rounded-lg text-xs font-mono">
-                      {latestRelease.fileSize}
-                    </span>
+                    <ArrowDownTrayIcon className="w-5 h-5 text-emerald-400 group-hover:translate-y-0.5 transition-transform" />
+                    <span>Download APK ({latestRelease.version})</span>
                   </a>
                 )}
-
-                <a
-                  href="#features"
-                  className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-white/90 hover:bg-white active:scale-95 text-slate-800 font-extrabold text-sm border border-slate-200/90 shadow-ios-sm flex items-center justify-center gap-2 transition-all duration-200 text-center"
-                >
-                  <SparklesIcon className="w-4 h-4 text-emerald-600" />
-                  <span>Jelajahi Fitur</span>
-                </a>
               </div>
 
               {/* Trust Indicators */}
-              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs font-semibold text-slate-500">
+              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs font-semibold text-slate-400">
                 <div className="flex items-center gap-1.5">
-                  <ShieldCheckIcon className="w-4 h-4 text-emerald-600" />
+                  <ShieldCheckIcon className="w-4 h-4 text-emerald-400" />
                   <span>100% Aman &amp; Tanpa Iklan</span>
                 </div>
-                <span className="text-slate-300">•</span>
+                <span className="text-slate-600">•</span>
                 <div className="flex items-center gap-1.5">
-                  <DevicePhoneMobileIcon className="w-4 h-4 text-slate-500" />
+                  <DevicePhoneMobileIcon className="w-4 h-4 text-slate-400" />
                   <span>Android 7.0+</span>
                 </div>
-                <span className="text-slate-300">•</span>
+                <span className="text-slate-600">•</span>
                 <div className="flex items-center gap-1.5">
-                  <ArrowPathIcon className="w-4 h-4 text-emerald-600" />
+                  <ArrowPathIcon className="w-4 h-4 text-emerald-400" />
                   <span>OTA Cloud Update</span>
                 </div>
               </div>
@@ -223,10 +243,10 @@ export default function KaskuLandingDownloadPage() {
             <div className="lg:col-span-5 flex flex-col items-center justify-center">
               
               {/* Interactive Screen Switcher for Mockup */}
-              <div className="mb-4 flex items-center p-1 rounded-xl bg-slate-200/70 text-[11px] font-bold text-slate-600">
+              <div className="mb-4 flex items-center p-1 rounded-xl bg-white/[0.06] border border-white/10 text-[11px] font-bold text-slate-400">
                 <button
                   onClick={() => setActiveScreen('home')}
-                  className={`px-3 py-1 rounded-lg transition ${activeScreen === 'home' ? 'bg-white text-emerald-700 shadow-xs' : 'hover:text-slate-900'}`}
+                  className={`px-3 py-1 rounded-lg transition ${activeScreen === 'home' ? 'bg-emerald-500 text-slate-950 font-black shadow-xs' : 'hover:text-white'}`}
                 >
                   Dashboard
                 </button>
@@ -453,80 +473,165 @@ export default function KaskuLandingDownloadPage() {
         </div>
       </section>
 
-      {/* 4. FITUR-FITUR UTAMA APK (CLEAN GRID) */}
+      {/* 4. FITUR UTAMA DALAM BENTO GRID MODERN */}
       <section id="features" className="max-w-6xl mx-auto px-5 sm:px-8 py-16 w-full space-y-10 relative z-10">
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <span className="text-xs font-bold uppercase tracking-widest text-emerald-600">
-            Fitur Unggulan
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Fitur Lengkap KasKu di Android
+        <div className="text-center max-w-2xl mx-auto space-y-2.5">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 text-[11px] font-extrabold uppercase tracking-widest">
+            <SparklesIcon className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Ekosistem Lengkap KasKu</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight font-display">
+            Satu Aplikasi, Solusi Keuangan Menyeluruh
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Bekerja 100% tanpa batas, cepat, dan data tersimpan aman di perangkat pengguna.
+          <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto">
+            Didesain khusus untuk efisiensi tinggi, zero-delay, dan privasi penuh di tangan Anda.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <div className="p-6 rounded-[28px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios hover:-translate-y-1 transition-all duration-300 space-y-3 group">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <MicrophoneIcon className="w-5 h-5" />
+        {/* Bento Grid Container */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+          
+          {/* Bento 1: Voice AI (Span 2 col on md & lg) */}
+          <div className="md:col-span-2 p-6 sm:p-7 rounded-[32px] bg-gradient-to-br from-white via-white/95 to-emerald-50/40 border border-emerald-500/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_16px_40px_rgba(16,185,129,0.12)] transition-all duration-300 flex flex-col justify-between space-y-6 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+            
+            <div className="space-y-3 relative z-10">
+              <div className="flex items-center justify-between">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center ring-1 ring-emerald-500/20">
+                  <MicrophoneIcon className="w-6 h-6" />
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 text-[10px] font-black uppercase tracking-wider border border-emerald-500/20">
+                  AI Voice Recognition
+                </span>
+              </div>
+              <h3 className="font-black text-xl text-slate-900 tracking-tight font-display">
+                Catat Transaksi Cuma Modal Suara
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-md">
+                Tekan tombol mic dan katakan: <em className="text-slate-800 font-semibold not-italic bg-emerald-500/10 px-1.5 py-0.5 rounded">"Beli bensin 25 ribu"</em>. Algoritma KasKu otomatis memilah jenis mutasi, nominal, serta kategori tanpa perlu mengetik.
+              </p>
             </div>
-            <h3 className="font-extrabold text-sm text-slate-900">Pencatatan Suara AI</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Catat kas masuk atau keluar langsung dengan berbicara tanpa perlu mengetik manual.
-            </p>
+
+            {/* Live Visual Wave Simulation */}
+            <div className="p-3.5 rounded-2xl bg-white/90 border border-emerald-500/15 shadow-xs relative z-10 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-0.5 h-6">
+                  <span className="w-1 bg-emerald-500 rounded-full h-3 animate-pulse" />
+                  <span className="w-1 bg-emerald-500 rounded-full h-5 animate-pulse" />
+                  <span className="w-1 bg-emerald-500 rounded-full h-2 animate-pulse" />
+                  <span className="w-1 bg-emerald-500 rounded-full h-6 animate-pulse" />
+                  <span className="w-1 bg-emerald-500 rounded-full h-4 animate-pulse" />
+                </div>
+                <span className="text-[11px] font-mono font-bold text-slate-700">
+                  "Makan siang ayam geprek 20 ribu"
+                </span>
+              </div>
+              <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200 shrink-0">
+                -Rp 20.000
+              </span>
+            </div>
           </div>
 
-          <div className="p-6 rounded-[28px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios hover:-translate-y-1 transition-all duration-300 space-y-3 group">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <CutePiggyIcon className="w-5 h-5" />
+          {/* Bento 2: POS Kasir Ku (Span 1 col, 1 row) */}
+          <div className="p-6 rounded-[32px] bg-gradient-to-br from-white via-white/95 to-indigo-50/40 border border-indigo-500/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_16px_40px_rgba(99,102,241,0.12)] transition-all duration-300 flex flex-col justify-between space-y-4 group">
+            <div className="space-y-2.5">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-500/15 text-indigo-600 flex items-center justify-center ring-1 ring-indigo-500/20">
+                <CalculatorIcon className="w-5 h-5" />
+              </div>
+              <h3 className="font-black text-lg text-slate-900 tracking-tight font-display">
+                Kasir POS &amp; Barcode
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Mode kasir lengkap untuk warung, toko, &amp; UMKM: keranjang belanja instan, barcode scanner kamera, dan cetak struk.
+              </p>
             </div>
-            <h3 className="font-extrabold text-sm text-slate-900">Target Tabungan Celengan</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Buat target impian dengan persentase kemajuan dan visualisasi celengan digital.
-            </p>
+            <div className="p-3 rounded-2xl bg-indigo-50/60 border border-indigo-200/60 text-[11px] font-bold text-indigo-900 flex items-center justify-between">
+              <span>Checkout Kasir</span>
+              <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black">POS</span>
+            </div>
           </div>
 
-          <div className="p-6 rounded-[28px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios hover:-translate-y-1 transition-all duration-300 space-y-3 group">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <ChartPieIcon className="w-5 h-5" />
+          {/* Bento 3: Celengan Impian (Span 1 col, 1 row) */}
+          <div className="p-6 rounded-[32px] bg-gradient-to-br from-white via-white/95 to-amber-50/40 border border-amber-500/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_16px_40px_rgba(245,158,11,0.12)] transition-all duration-300 flex flex-col justify-between space-y-4 group">
+            <div className="space-y-2.5">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center ring-1 ring-amber-500/20">
+                <CutePiggyIcon className="w-5 h-5" />
+              </div>
+              <h3 className="font-black text-lg text-slate-900 tracking-tight font-display">
+                Celengan Impian
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Nabung bertarget dengan visualisasi kemajuan yang realistis dan setoran kas otomatis.
+              </p>
             </div>
-            <h3 className="font-extrabold text-sm text-slate-900">Visual Analisis Grafik</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Diagram perbandingan pemasukan vs pengeluaran serta kategori pengeluaran terbesar.
-            </p>
+            <div className="space-y-1.5 p-3 rounded-2xl bg-amber-50/60 border border-amber-200/60">
+              <div className="flex justify-between text-[11px] font-extrabold text-amber-950">
+                <span>Laptop Baru</span>
+                <span className="text-amber-600 font-mono">75%</span>
+              </div>
+              <div className="w-full bg-amber-200/70 h-1.5 rounded-full overflow-hidden">
+                <div className="bg-amber-500 h-full rounded-full w-3/4" />
+              </div>
+            </div>
           </div>
 
-          <div className="p-6 rounded-[28px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios hover:-translate-y-1 transition-all duration-300 space-y-3 group">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-              <TagIcon className="w-5 h-5" />
+          {/* Bento 4: Laporan Excel Berwarna (Span 1 col) */}
+          <div className="p-6 rounded-[32px] bg-white border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.08)] transition-all duration-300 flex flex-col justify-between space-y-4 group">
+            <div className="space-y-2.5">
+              <div className="w-11 h-11 rounded-2xl bg-teal-500/15 text-teal-600 flex items-center justify-center ring-1 ring-teal-500/20">
+                <ArrowDownTrayIcon className="w-5 h-5" />
+              </div>
+              <h3 className="font-black text-base text-slate-900 tracking-tight font-display">
+                Laporan Excel Rapi
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Ekspor mutasi bulanan ke file format Excel (.xls) berformat warna resmi, siap audit atau simpan.
+              </p>
             </div>
-            <h3 className="font-extrabold text-sm text-slate-900">Kategori Kas Bebas</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Tambahkan kategori usaha atau pribadi tanpa batasan untuk laporan yang rapi.
-            </p>
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-teal-700 bg-teal-50 p-2 rounded-xl border border-teal-200/60">
+              <span>✓ Format .xls &amp; CSV Otomatis</span>
+            </div>
           </div>
 
-          <div className="p-6 rounded-[28px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios hover:-translate-y-1 transition-all duration-300 space-y-3 group">
-            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
-              <ArrowDownTrayIcon className="w-5 h-5" />
+          {/* Bento 5: Analisis Grafik Finansial (Span 1 col) */}
+          <div className="p-6 rounded-[32px] bg-white border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.08)] transition-all duration-300 flex flex-col justify-between space-y-4 group">
+            <div className="space-y-2.5">
+              <div className="w-11 h-11 rounded-2xl bg-blue-500/15 text-blue-600 flex items-center justify-center ring-1 ring-blue-500/20">
+                <ChartPieIcon className="w-5 h-5" />
+              </div>
+              <h3 className="font-black text-base text-slate-900 tracking-tight font-display">
+                Analisis &amp; Grafik
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Pahami arus kas Anda lewat visualisasi diagram pengeluaran harian dan kategori terboros.
+              </p>
             </div>
-            <h3 className="font-extrabold text-sm text-slate-900">Ekspor File CSV</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Rekap laporan kas harian/bulanan dapat diunduh ke format Excel &amp; Spreadsheet.
-            </p>
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-blue-700 bg-blue-50 p-2 rounded-xl border border-blue-200/60">
+              <span>✓ Rasio Finansial Realtime</span>
+            </div>
           </div>
 
-          <div className="p-6 rounded-[28px] bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-ios-sm hover:shadow-ios hover:-translate-y-1 transition-all duration-300 space-y-3 group">
-            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-              <ArrowPathIcon className="w-5 h-5" />
+          {/* Bento 6: 100% Offline First & Privasi Mutlak (Span 2 col on md/lg) */}
+          <div className="md:col-span-2 p-6 sm:p-7 rounded-[32px] bg-slate-900 text-white shadow-[0_12px_36px_rgba(15,23,42,0.15)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 relative overflow-hidden group">
+            <div className="space-y-2 relative z-10 max-w-sm">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider border border-emerald-500/30">
+                <ShieldCheckIcon className="w-3.5 h-3.5" />
+                <span>Privasi Tingkat Tinggi</span>
+              </div>
+              <h3 className="font-black text-lg sm:text-xl tracking-tight text-white font-display">
+                100% Offline First, Tanpa Intip
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                KasKu tidak membutuhkan login atau server eksternal untuk menyimpan keuangan Anda. Data disimpan di penyimpanan lokal browser &amp; HP Anda.
+              </p>
             </div>
-            <h3 className="font-extrabold text-sm text-slate-900">Pembaruan Otomatis (OTA)</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Aplikasi di HP otomatis memberi tahu saat versi baru dirilis di portal ini.
-            </p>
+            <div className="shrink-0 p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700 text-xs font-mono text-emerald-400 space-y-1">
+              <div>✓ No Cloud Database</div>
+              <div>✓ Zero Tracking</div>
+              <div>✓ Instant Execution</div>
+            </div>
           </div>
+
         </div>
       </section>
 

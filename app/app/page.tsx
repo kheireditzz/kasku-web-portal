@@ -13,11 +13,6 @@ import SavingsSection, { SavingGoal } from '@/components/SavingsSection'
 import ConfirmModal, { ConfirmDialogState } from '@/components/ConfirmModal'
 import SupportDevModal from '@/components/SupportDevModal'
 import AnalyticsSection from '@/components/AnalyticsSection'
-import KasirSection, { KasirProduct, KasirCartItem, StoreProfile } from '@/components/KasirSection'
-import AddKasirProductModal from '@/components/AddKasirProductModal'
-import StoreSettingsModal from '@/components/StoreSettingsModal'
-import ScanBarcodeModal from '@/components/ScanBarcodeModal'
-import KasirHistoryModal from '@/components/KasirHistoryModal'
 import {
   WalletIcon,
   ArrowTrendingUpIcon,
@@ -37,7 +32,12 @@ import {
   TrophyIcon,
   RocketIcon,
   TableCellsIcon,
-  PencilSquareIcon
+  PencilSquareIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  SparklesIcon,
+  MicrophoneIcon,
+  CalculatorIcon
 } from '@/components/Icons'
 import { APP_LOGO_BASE64 } from '@/components/appLogoBase64'
 import { formatThousands, parseThousands } from '@/components/currencyUtils'
@@ -69,21 +69,60 @@ export default function KaskuApp() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showSupportDevModal, setShowSupportDevModal] = useState(false)
   const [showPermissionLock, setShowPermissionLock] = useState(false)
+  const [hideNetBalance, setHideNetBalance] = useState(false)
+  const [hideSavings, setHideSavings] = useState(false)
+  const [hideIncome, setHideIncome] = useState(false)
+  const [hideExpense, setHideExpense] = useState(false)
 
-  // Deteksi jika dibuka dari APK Mode Kasir
+  // Load status sembunyikan saldo individual
   useEffect(() => {
     try {
-      const urlParams = new URLSearchParams(window.location.search)
-      const mode = urlParams.get('mode')
-      if (mode === 'kasir') {
-        setActiveTab('kasir')
-      } else {
-        const savedMode = localStorage.getItem('kasku_launch_mode')
-        if (savedMode === 'kasir') {
-          setActiveTab('kasir')
-        }
-      }
-    } catch(e) {}
+      const sNet = localStorage.getItem('kasku_hide_net_balance')
+      if (sNet !== null) setHideNetBalance(sNet === 'true')
+      const sSav = localStorage.getItem('kasku_hide_savings')
+      if (sSav !== null) setHideSavings(sSav === 'true')
+      const sInc = localStorage.getItem('kasku_hide_income')
+      if (sInc !== null) setHideIncome(sInc === 'true')
+      const sExp = localStorage.getItem('kasku_hide_expense')
+      if (sExp !== null) setHideExpense(sExp === 'true')
+    } catch (e) {}
+  }, [])
+
+  const toggleHideNetBalance = () => {
+    setHideNetBalance(prev => {
+      const next = !prev
+      try { localStorage.setItem('kasku_hide_net_balance', String(next)) } catch (e) {}
+      return next
+    })
+  }
+
+  const toggleHideSavings = () => {
+    setHideSavings(prev => {
+      const next = !prev
+      try { localStorage.setItem('kasku_hide_savings', String(next)) } catch (e) {}
+      return next
+    })
+  }
+
+  const toggleHideIncome = () => {
+    setHideIncome(prev => {
+      const next = !prev
+      try { localStorage.setItem('kasku_hide_income', String(next)) } catch (e) {}
+      return next
+    })
+  }
+
+  const toggleHideExpense = () => {
+    setHideExpense(prev => {
+      const next = !prev
+      try { localStorage.setItem('kasku_hide_expense', String(next)) } catch (e) {}
+      return next
+    })
+  }
+
+  // Inisialisasi Buku Kas
+  useEffect(() => {
+    setActiveTab('overview')
   }, [])
 
   // Transactions State (PERSISTED)
@@ -95,24 +134,6 @@ export default function KaskuApp() {
   // Categories State (PERSISTED)
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES)
   const [newCatInput, setNewCatInput] = useState('')
-
-  // KASIR POS STATE (PERSISTED)
-  const [kasirProducts, setKasirProducts] = useState<KasirProduct[]>([])
-  const [kasirCart, setKasirCart] = useState<KasirCartItem[]>([])
-  const [storeProfile, setStoreProfile] = useState<StoreProfile>({
-    storeName: 'KasirKu POS',
-    storeSubtitle: 'Toko & Usaha UMKM Berkah',
-    storeAddress: 'Jl. Raya Perdagangan No. 88',
-    storePhone: '0812-3456-7890',
-    storeLogoUrl: '',
-    receiptNote: 'Terima Kasih Atas Kunjungan Anda!\nBarang yang sudah dibeli tidak dapat ditukar kembali.'
-  })
-  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false)
-  const [editingKasirProduct, setEditingKasirProduct] = useState<KasirProduct | null>(null)
-  const [isScanModalOpen, setIsScanModalOpen] = useState(false)
-  const [isStoreSettingsModalOpen, setIsStoreSettingsModalOpen] = useState(false)
-  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
-  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
 
   // Form State
   const [title, setTitle] = useState('')
@@ -155,31 +176,6 @@ export default function KaskuApp() {
         setCategories([])
         setSelectedCategory('')
         localStorage.setItem('kasku_categories_v2', JSON.stringify([]))
-      }
-
-      // Load Kasir Menu Products
-      const savedMenu = localStorage.getItem('kasku_kasir_menu')
-      if (savedMenu) {
-        setKasirProducts(JSON.parse(savedMenu))
-      } else {
-        const DEFAULT_KASIR_MENU: KasirProduct[] = [
-          { id: '1', name: 'Nasi Goreng Spesial', price: 18000, category: 'Makanan', emoji: '🍳', barcode: '8991001' },
-          { id: '2', name: 'Mie Ayam Bakso', price: 15000, category: 'Makanan', emoji: '🍜', barcode: '8991002' },
-          { id: '3', name: 'Ayam Geprek Sambal', price: 17000, category: 'Makanan', emoji: '🍗', barcode: '8991003' },
-          { id: '4', name: 'Keripik Tempe Renyah', price: 10000, category: 'Camilan', emoji: '🍿', barcode: '8991004' },
-          { id: '5', name: 'Es Teh Manis', price: 5000, category: 'Minuman', emoji: '🧋', barcode: '8991005' },
-          { id: '6', name: 'Kopi Susu Gula Aren', price: 12000, category: 'Minuman', emoji: '☕', barcode: '8991006' },
-          { id: '7', name: 'Air Mineral Dingin', price: 4000, category: 'Minuman', emoji: '💧', barcode: '8991007' },
-          { id: '8', name: 'Jus Alpukat Kocok', price: 14000, category: 'Minuman', emoji: '🥑', barcode: '8991008' }
-        ]
-        setKasirProducts(DEFAULT_KASIR_MENU)
-        localStorage.setItem('kasku_kasir_menu', JSON.stringify(DEFAULT_KASIR_MENU))
-      }
-
-      // Load Store Profile
-      const savedStore = localStorage.getItem('kasku_store_profile')
-      if (savedStore) {
-        setStoreProfile(JSON.parse(savedStore))
       }
 
       // Cek apakah user baru pertama kali membuka web/aplikasi
@@ -542,26 +538,6 @@ export default function KaskuApp() {
     }
   }, [categories, isLoaded])
 
-  // Save Kasir Products
-  useEffect(() => {
-    if (!isLoaded) return
-    try {
-      localStorage.setItem('kasku_kasir_menu', JSON.stringify(kasirProducts))
-    } catch (e) {
-      console.error('Failed saving kasir menu', e)
-    }
-  }, [kasirProducts, isLoaded])
-
-  // Save Store Profile
-  useEffect(() => {
-    if (!isLoaded) return
-    try {
-      localStorage.setItem('kasku_store_profile', JSON.stringify(storeProfile))
-    } catch (e) {
-      console.error('Failed saving store profile', e)
-    }
-  }, [storeProfile, isLoaded])
-
   const showToast = (msg: string) => {
     setNotification(msg)
     setTimeout(() => {
@@ -578,7 +554,7 @@ export default function KaskuApp() {
     }).format(safeVal)
   }
 
-  // Format ringkas dan cerdas untuk angka besar (Miliar, Juta, Triliun) agar tidak jebol desain layar HP
+  // Format ringkas dan cerdas untuk angka: Rb (ribu), Jt (juta), M (miliar), T (triliun)
   const formatRupiahCompact = (val: number) => {
     const safeVal = (typeof val === 'number' && !isNaN(val)) ? val : 0
     const absVal = Math.abs(safeVal)
@@ -587,23 +563,30 @@ export default function KaskuApp() {
     if (absVal >= 1_000_000_000_000) {
       const formatted = (absVal / 1_000_000_000_000).toLocaleString('id-ID', {
         minimumFractionDigits: 0,
-        maximumFractionDigits: 2
+        maximumFractionDigits: 1
       })
       return `${sign}Rp ${formatted} T`
     }
     if (absVal >= 1_000_000_000) {
       const formatted = (absVal / 1_000_000_000).toLocaleString('id-ID', {
         minimumFractionDigits: 0,
-        maximumFractionDigits: 2
+        maximumFractionDigits: 1
       })
       return `${sign}Rp ${formatted} M`
     }
-    if (absVal >= 100_000_000) {
+    if (absVal >= 1_000_000) {
       const formatted = (absVal / 1_000_000).toLocaleString('id-ID', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 1
       })
       return `${sign}Rp ${formatted} Jt`
+    }
+    if (absVal >= 1_000) {
+      const formatted = (absVal / 1_000).toLocaleString('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 1
+      })
+      return `${sign}Rp ${formatted} Rb`
     }
     return formatRupiah(safeVal)
   }
@@ -1121,7 +1104,10 @@ export default function KaskuApp() {
     }, {})
 
   return (
-    <div className="min-h-screen flex flex-col font-sans text-slate-900 pb-28 md:pb-10 app-protected select-none">
+    <div className="min-h-screen flex flex-col font-sans text-slate-800 bg-[#F8FAFC] pb-28 md:pb-10 app-protected select-none relative overflow-x-clip">
+      {/* Background Ambient Glow Meshes - Soft Pastel */}
+      <div className="fixed top-0 left-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[128px] pointer-events-none" />
+      <div className="fixed bottom-1/3 right-10 w-96 h-96 bg-indigo-500/5 rounded-full blur-[140px] pointer-events-none" />
       
       {/* Top Navigation */}
       <Navbar
@@ -1135,32 +1121,42 @@ export default function KaskuApp() {
         savingsCount={savings.length}
       />
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6" style={{ transform: 'translateZ(0)' }}>
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6 relative z-10" style={{ transform: 'translateZ(0)' }}>
         
         {/* TAB 1: OVERVIEW (HALAMAN UTAMA) */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
-            {/* TOP SUMMARY STATS - Ultra-Premium Modern Fintech Cards */}
+            {/* TOP SUMMARY STATS - Modern Clean White Cards */}
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4.5">
               
-              {/* Card 1: Saldo Kas Bersih (Emerald / Mint Luxury) */}
-              <div className="relative group overflow-hidden rounded-[24px] bg-gradient-to-b from-white to-emerald-50/30 p-4 sm:p-5 border border-emerald-500/25 shadow-[0_4px_24px_-4px_rgba(16,185,129,0.12)] hover:shadow-[0_12px_32px_-6px_rgba(16,185,129,0.22)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[160px] sm:min-h-[170px]">
-                {/* Ambient Soft Mesh Gradient & Glass Shimmer */}
-                <div className="absolute -top-12 -right-12 w-32 h-32 bg-emerald-400/15 rounded-full blur-2xl pointer-events-none group-hover:scale-110 transition-transform duration-500" />
-
-                {/* Card Header: Title & Icon */}
-                <div className="flex items-center justify-between gap-1.5 relative z-10">
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-2 w-2">
+              {/* Card 1: Saldo Kas Bersih (Emerald Clean White) */}
+              <div className="relative group overflow-hidden rounded-[26px] bg-white p-4 sm:p-5 border border-slate-200/90 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(16,185,129,0.12)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[165px] sm:min-h-[175px]">
+                {/* Card Header: Title, Live Dot & Eye Privacy Toggle */}
+                <div className="flex items-center justify-between gap-1 relative z-10">
+                  <div className="min-w-0 flex-1 flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2 shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 ring-2 ring-emerald-100"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
-                    <span className="text-[11px] font-extrabold tracking-wider uppercase text-emerald-950/80">
+                    <span className="text-[10px] sm:text-[11px] font-extrabold tracking-wider uppercase text-emerald-600 truncate">
                       Saldo Kas
                     </span>
                   </div>
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center ring-1 ring-emerald-500/25 shadow-xs shrink-0 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
-                    <WalletIcon className="w-4 h-4" />
+                  <div className="shrink-0 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleHideNetBalance()
+                      }}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:scale-90 transition-all"
+                      title={hideNetBalance ? "Tampilkan Saldo" : "Sembunyikan Saldo"}
+                    >
+                      {hideNetBalance ? <EyeSlashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" /> : <EyeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />}
+                    </button>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200 shadow-xs shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+                      <WalletIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </div>
                   </div>
                 </div>
 
@@ -1168,7 +1164,7 @@ export default function KaskuApp() {
                 <div className="my-auto py-2 relative z-10">
                   <div 
                     title={formatRupiah(netBalance)}
-                    className={`font-black tracking-tight font-display truncate leading-none ${
+                    className={`font-black tracking-tight font-display tabular-nums truncate leading-none ${
                       Math.abs(netBalance) >= 1_000_000_000 
                         ? 'text-base sm:text-xl lg:text-2xl' 
                         : Math.abs(netBalance) >= 100_000_000 
@@ -1176,48 +1172,54 @@ export default function KaskuApp() {
                         : 'text-xl sm:text-2xl lg:text-[26px]'
                     } ${netBalance >= 0 ? 'text-slate-900' : 'text-rose-600'}`}
                   >
-                    {formatRupiah(netBalance)}
+                    {hideNetBalance ? '••••••••' : formatRupiah(netBalance)}
                   </div>
                   <div className="h-4.5 flex items-center mt-1">
-                    {Math.abs(netBalance) >= 1_000_000 ? (
-                      <span className="text-[10px] sm:text-[11px] font-bold text-emerald-700/70 block truncate font-display">
+                    {!hideNetBalance && Math.abs(netBalance) >= 1_000 ? (
+                      <span className="text-[10px] sm:text-[11px] font-bold text-emerald-600 block truncate font-display tabular-nums">
                         ≈ {formatRupiahCompact(netBalance)}
                       </span>
-                    ) : (
-                      <span className="text-[10px] sm:text-[11px] font-medium text-slate-400 block truncate">
-                        Sisa uang tunai
-                      </span>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
                 {/* Card Footer: Status Pill Badge */}
                 <div className="pt-1.5 relative z-10 flex items-center">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 text-[10px] sm:text-[11px] font-extrabold border border-emerald-500/20 truncate shadow-2xs">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-extrabold border border-emerald-200 truncate shadow-2xs">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    Kas Siap Pakai
+                    Kas
                   </span>
                 </div>
               </div>
 
-              {/* Card 2: Celengan Impian (Warm Amber & Gold) */}
+              {/* Card 2: Celengan Impian (Warm Amber Clean White) */}
               <div 
                 onClick={() => setActiveTab('savings')}
-                className="relative group overflow-hidden rounded-[24px] bg-gradient-to-b from-white to-amber-50/30 p-4 sm:p-5 border border-amber-500/25 shadow-[0_4px_24px_-4px_rgba(245,158,11,0.12)] hover:shadow-[0_12px_32px_-6px_rgba(245,158,11,0.22)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[160px] sm:min-h-[170px] active:scale-[0.98]"
+                className="relative group overflow-hidden rounded-[26px] bg-white p-4 sm:p-5 border border-slate-200/90 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(245,158,11,0.12)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[165px] sm:min-h-[175px] active:scale-[0.98]"
               >
-                {/* Ambient Soft Mesh Gradient & Glass Shimmer */}
-                <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-400/15 rounded-full blur-2xl pointer-events-none group-hover:scale-110 transition-transform duration-500" />
-
                 {/* Card Header */}
-                <div className="flex items-center justify-between gap-1.5 relative z-10">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-100"></span>
-                    <span className="text-[11px] font-extrabold tracking-wider uppercase text-amber-950/80">
+                <div className="flex items-center justify-between gap-1 relative z-10">
+                  <div className="min-w-0 flex-1 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                    <span className="text-[10px] sm:text-[11px] font-extrabold tracking-wider uppercase text-amber-600 truncate">
                       Celengan
                     </span>
                   </div>
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center ring-1 ring-amber-500/25 shadow-xs shrink-0 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
-                    <CutePiggyIcon className="w-4 h-4" />
+                  <div className="shrink-0 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleHideSavings()
+                      }}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:scale-90 transition-all"
+                      title={hideSavings ? "Tampilkan Celengan" : "Sembunyikan Celengan"}
+                    >
+                      {hideSavings ? <EyeSlashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" /> : <EyeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />}
+                    </button>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200 shadow-xs shrink-0 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
+                      <CutePiggyIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </div>
                   </div>
                 </div>
 
@@ -1225,7 +1227,7 @@ export default function KaskuApp() {
                 <div className="my-auto py-2 relative z-10">
                   <div 
                     title={formatRupiah(totalSavings)}
-                    className={`font-black tracking-tight font-display text-amber-600 truncate leading-none ${
+                    className={`font-black tracking-tight font-display tabular-nums text-slate-900 truncate leading-none ${
                       totalSavings >= 1_000_000_000 
                         ? 'text-base sm:text-xl lg:text-2xl' 
                         : totalSavings >= 100_000_000 
@@ -1233,24 +1235,20 @@ export default function KaskuApp() {
                         : 'text-xl sm:text-2xl lg:text-[26px]'
                     }`}
                   >
-                    {formatRupiah(totalSavings)}
+                    {hideSavings ? '••••••••' : formatRupiah(totalSavings)}
                   </div>
                   <div className="h-4.5 flex items-center mt-1">
-                    {totalSavings >= 1_000_000 ? (
-                      <span className="text-[10px] sm:text-[11px] font-bold text-amber-700/70 block truncate font-display">
+                    {!hideSavings && totalSavings >= 1_000 ? (
+                      <span className="text-[10px] sm:text-[11px] font-bold text-amber-600 block truncate font-display tabular-nums">
                         ≈ {formatRupiahCompact(totalSavings)}
                       </span>
-                    ) : (
-                      <span className="text-[10px] sm:text-[11px] font-medium text-slate-400 block truncate">
-                        Target tabungan
-                      </span>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
-                {/* Card Footer: Target Count & Action Arrow */}
+                {/* Card Footer */}
                 <div className="pt-1.5 relative z-10 flex items-center justify-between gap-1">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-900 text-[10px] sm:text-[11px] font-extrabold border border-amber-500/20 truncate shadow-2xs">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] sm:text-[11px] font-extrabold border border-amber-200 truncate shadow-2xs">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                     {savings.length} Target
                   </span>
@@ -1260,21 +1258,31 @@ export default function KaskuApp() {
                 </div>
               </div>
 
-              {/* Card 3: Total Pemasukan (Teal / Cyan Crystal) */}
-              <div className="relative group overflow-hidden rounded-[24px] bg-gradient-to-b from-white to-teal-50/30 p-4 sm:p-5 border border-teal-500/25 shadow-[0_4px_24px_-4px_rgba(20,184,166,0.12)] hover:shadow-[0_12px_32px_-6px_rgba(20,184,166,0.22)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[160px] sm:min-h-[170px]">
-                {/* Ambient Soft Mesh Gradient & Glass Shimmer */}
-                <div className="absolute -top-12 -right-12 w-32 h-32 bg-teal-400/15 rounded-full blur-2xl pointer-events-none group-hover:scale-110 transition-transform duration-500" />
-
+              {/* Card 3: Total Pemasukan (Teal / Cyan Clean White) */}
+              <div className="relative group overflow-hidden rounded-[26px] bg-white p-4 sm:p-5 border border-slate-200/90 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(20,184,166,0.12)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[165px] sm:min-h-[175px]">
                 {/* Card Header */}
-                <div className="flex items-center justify-between gap-1.5 relative z-10">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-teal-500 ring-2 ring-teal-100"></span>
-                    <span className="text-[11px] font-extrabold tracking-wider uppercase text-teal-950/80">
+                <div className="flex items-center justify-between gap-1 relative z-10">
+                  <div className="min-w-0 flex-1 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0"></span>
+                    <span className="text-[10px] sm:text-[11px] font-extrabold tracking-wider uppercase text-teal-600 truncate">
                       Pemasukan
                     </span>
                   </div>
-                  <div className="w-8 h-8 rounded-xl bg-teal-500/10 text-teal-600 flex items-center justify-center ring-1 ring-teal-500/25 shadow-xs shrink-0 group-hover:bg-teal-500 group-hover:text-white transition-all duration-300">
-                    <ArrowTrendingUpIcon className="w-4 h-4" />
+                  <div className="shrink-0 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleHideIncome()
+                      }}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:scale-90 transition-all"
+                      title={hideIncome ? "Tampilkan Pemasukan" : "Sembunyikan Pemasukan"}
+                    >
+                      {hideIncome ? <EyeSlashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" /> : <EyeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />}
+                    </button>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center border border-teal-200 shadow-xs shrink-0 group-hover:bg-teal-600 group-hover:text-white transition-all duration-300">
+                      <ArrowTrendingUpIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </div>
                   </div>
                 </div>
 
@@ -1282,7 +1290,7 @@ export default function KaskuApp() {
                 <div className="my-auto py-2 relative z-10">
                   <div 
                     title={formatRupiah(totalIncome)}
-                    className={`font-black tracking-tight font-display text-teal-600 truncate leading-none ${
+                    className={`font-black tracking-tight font-display tabular-nums text-teal-600 truncate leading-none ${
                       totalIncome >= 1_000_000_000 
                         ? 'text-base sm:text-xl lg:text-2xl' 
                         : totalIncome >= 100_000_000 
@@ -1290,45 +1298,51 @@ export default function KaskuApp() {
                         : 'text-xl sm:text-2xl lg:text-[26px]'
                     }`}
                   >
-                    +{formatRupiah(totalIncome)}
+                    {hideIncome ? '••••••••' : `+${formatRupiah(totalIncome)}`}
                   </div>
                   <div className="h-4.5 flex items-center mt-1">
-                    {totalIncome >= 1_000_000 ? (
-                      <span className="text-[10px] sm:text-[11px] font-bold text-teal-700/70 block truncate font-display">
+                    {!hideIncome && totalIncome >= 1_000 ? (
+                      <span className="text-[10px] sm:text-[11px] font-bold text-teal-600 block truncate font-display tabular-nums">
                         ≈ +{formatRupiahCompact(totalIncome)}
                       </span>
-                    ) : (
-                      <span className="text-[10px] sm:text-[11px] font-medium text-slate-400 block truncate">
-                        Arus masuk kas
-                      </span>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
                 {/* Card Footer */}
                 <div className="pt-1.5 relative z-10 flex items-center">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-500/10 text-teal-900 text-[10px] sm:text-[11px] font-extrabold border border-teal-500/20 truncate shadow-2xs">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] sm:text-[11px] font-extrabold border border-teal-200 truncate shadow-2xs">
                     <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
                     {transactions.filter(t => t.type === 'income').length} Transaksi
                   </span>
                 </div>
               </div>
 
-              {/* Card 4: Total Pengeluaran (Rose / Ruby Clean) */}
-              <div className="relative group overflow-hidden rounded-[24px] bg-gradient-to-b from-white to-rose-50/30 p-4 sm:p-5 border border-rose-500/25 shadow-[0_4px_24px_-4px_rgba(244,63,94,0.12)] hover:shadow-[0_12px_32px_-6px_rgba(244,63,94,0.22)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[160px] sm:min-h-[170px]">
-                {/* Ambient Soft Mesh Gradient & Glass Shimmer */}
-                <div className="absolute -top-12 -right-12 w-32 h-32 bg-rose-400/15 rounded-full blur-2xl pointer-events-none group-hover:scale-110 transition-transform duration-500" />
-
+              {/* Card 4: Total Pengeluaran (Rose Clean White) */}
+              <div className="relative group overflow-hidden rounded-[26px] bg-white p-4 sm:p-5 border border-slate-200/90 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_-4px_rgba(244,63,94,0.12)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[165px] sm:min-h-[175px]">
                 {/* Card Header */}
-                <div className="flex items-center justify-between gap-1.5 relative z-10">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-100"></span>
-                    <span className="text-[11px] font-extrabold tracking-wider uppercase text-rose-950/80">
+                <div className="flex items-center justify-between gap-1 relative z-10">
+                  <div className="min-w-0 flex-1 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                    <span className="text-[10px] sm:text-[11px] font-extrabold tracking-wider uppercase text-rose-600 truncate">
                       Pengeluaran
                     </span>
                   </div>
-                  <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center ring-1 ring-rose-500/25 shadow-xs shrink-0 group-hover:bg-rose-500 group-hover:text-white transition-all duration-300">
-                    <ArrowTrendingDownIcon className="w-4 h-4" />
+                  <div className="shrink-0 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleHideExpense()
+                      }}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:scale-90 transition-all"
+                      title={hideExpense ? "Tampilkan Pengeluaran" : "Sembunyikan Pengeluaran"}
+                    >
+                      {hideExpense ? <EyeSlashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" /> : <EyeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />}
+                    </button>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-200 shadow-xs shrink-0 group-hover:bg-rose-600 group-hover:text-white transition-all duration-300">
+                      <ArrowTrendingDownIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </div>
                   </div>
                 </div>
 
@@ -1336,7 +1350,7 @@ export default function KaskuApp() {
                 <div className="my-auto py-2 relative z-10">
                   <div 
                     title={formatRupiah(totalExpense)}
-                    className={`font-black tracking-tight font-display text-rose-600 truncate leading-none ${
+                    className={`font-black tracking-tight font-display tabular-nums text-rose-600 truncate leading-none ${
                       totalExpense >= 1_000_000_000 
                         ? 'text-base sm:text-xl lg:text-2xl' 
                         : totalExpense >= 100_000_000 
@@ -1344,24 +1358,20 @@ export default function KaskuApp() {
                         : 'text-xl sm:text-2xl lg:text-[26px]'
                     }`}
                   >
-                    -{formatRupiah(totalExpense)}
+                    {hideExpense ? '••••••••' : `-${formatRupiah(totalExpense)}`}
                   </div>
                   <div className="h-4.5 flex items-center mt-1">
-                    {totalExpense >= 1_000_000 ? (
-                      <span className="text-[10px] sm:text-[11px] font-bold text-rose-700/70 block truncate font-display">
+                    {!hideExpense && totalExpense >= 1_000 ? (
+                      <span className="text-[10px] sm:text-[11px] font-bold text-rose-600 block truncate font-display tabular-nums">
                         ≈ -{formatRupiahCompact(totalExpense)}
                       </span>
-                    ) : (
-                      <span className="text-[10px] sm:text-[11px] font-medium text-slate-400 block truncate">
-                        Arus keluar kas
-                      </span>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
                 {/* Card Footer */}
                 <div className="pt-1.5 relative z-10 flex items-center">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-900 text-[10px] sm:text-[11px] font-extrabold border border-rose-500/20 truncate shadow-2xs">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10px] sm:text-[11px] font-extrabold border border-rose-200 truncate shadow-2xs">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                     {transactions.filter(t => t.type === 'expense').length} Transaksi
                   </span>
@@ -1378,12 +1388,12 @@ export default function KaskuApp() {
                   
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-2xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
                         <BanknotesIcon className="w-5 h-5" />
                       </div>
                       <div>
                         <h2 className="text-sm font-extrabold text-slate-900 tracking-tight">Pencatatan Kas</h2>
-                        <p className="text-[11px] text-slate-400 font-medium">Tersimpan lokal di perangkat</p>
+                        <p className="text-[11px] text-slate-500 font-medium">Tersimpan lokal di perangkat</p>
                       </div>
                     </div>
                     <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -1392,17 +1402,17 @@ export default function KaskuApp() {
                   </div>
 
                   <form onSubmit={handleAddTransaction} className="space-y-4 text-xs">
-                    <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl bg-[#767680]/12">
+                    <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl bg-slate-100 border border-slate-200">
                       <button
                         type="button"
                         onClick={() => setType('income')}
                         className={`py-2 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-2 ${
                           type === 'income'
-                            ? 'bg-white text-emerald-600 shadow-ios-sm scale-[1.01]'
-                            : 'text-slate-500 hover:text-slate-800'
+                            ? 'bg-emerald-600 text-white shadow-sm scale-[1.01]'
+                            : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        <PlusCircleIcon className="w-4 h-4 text-emerald-600" />
+                        <PlusCircleIcon className="w-4 h-4" />
                         <span>Kas Masuk</span>
                       </button>
 
@@ -1411,11 +1421,11 @@ export default function KaskuApp() {
                         onClick={() => setType('expense')}
                         className={`py-2 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-2 ${
                           type === 'expense'
-                            ? 'bg-white text-rose-600 shadow-ios-sm scale-[1.01]'
-                            : 'text-slate-500 hover:text-slate-800'
+                            ? 'bg-rose-600 text-white shadow-sm scale-[1.01]'
+                            : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        <MinusCircleIcon className="w-4 h-4 text-rose-600" />
+                        <MinusCircleIcon className="w-4 h-4" />
                         <span>Pengeluaran</span>
                       </button>
                     </div>
@@ -1447,11 +1457,11 @@ export default function KaskuApp() {
                             const raw = e.target.value.replace(/\D/g, '')
                             setAmount(raw)
                           }}
-                          className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl kas-input text-xs font-mono font-extrabold text-slate-900"
+                          className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl kas-input text-xs font-mono font-extrabold text-emerald-600"
                         />
                       </div>
                       {amount && Number(amount) > 0 && (
-                        <p className="text-[10px] text-slate-400 font-mono pl-1">
+                        <p className="text-[10px] text-slate-500 font-mono pl-1">
                           Terbaca: Rp {formatThousands(amount)}
                         </p>
                       )}
@@ -1466,7 +1476,7 @@ export default function KaskuApp() {
                           className="w-full px-3 py-2.5 rounded-2xl kas-input text-xs font-medium cursor-pointer"
                         >
                           {categories.map((c, i) => (
-                            <option key={i} value={c}>{c}</option>
+                            <option key={i} value={c} className="bg-white text-slate-800">{c}</option>
                           ))}
                         </select>
                       </div>
@@ -1495,10 +1505,10 @@ export default function KaskuApp() {
 
                     <button
                       type="submit"
-                      className={`w-full py-3.5 rounded-2xl font-extrabold text-xs tracking-wide transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-ios ${
+                      className={`w-full py-3.5 rounded-2xl font-black text-xs tracking-wide transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm ${
                         type === 'income' 
-                          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white' 
-                          : 'bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white'
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white' 
+                          : 'bg-rose-600 hover:bg-rose-500 text-white'
                       }`}
                     >
                       <PlusCircleIcon className="w-4 h-4" />
@@ -1508,7 +1518,7 @@ export default function KaskuApp() {
                 </div>
               </div>
 
-              {/* DAFTAR MUTASI TRANSAKSI - iOS Inset Grouped List Look */}
+              {/* DAFTAR MUTASI TRANSAKSI - Clean White Table Look */}
               <div className="lg:col-span-7 space-y-4 w-full">
                 <div className="surface-card rounded-[28px] p-5 sm:p-6 space-y-5">
                   
@@ -1516,7 +1526,7 @@ export default function KaskuApp() {
                     <div className="flex items-center justify-between w-full sm:w-auto">
                       <div>
                         <h2 className="text-base font-extrabold text-slate-900 tracking-tight">Riwayat Mutasi Kas</h2>
-                        <p className="text-[11px] text-slate-400 font-medium">
+                        <p className="text-[11px] text-slate-500 font-medium">
                           Menampilkan {filteredTransactions.length} dari {transactions.length} mutasi
                         </p>
                       </div>
@@ -1525,7 +1535,7 @@ export default function KaskuApp() {
                       <button
                         type="button"
                         onClick={() => setIsModalOpen(true)}
-                        className="sm:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[11px] font-extrabold shadow-sm active:scale-95 transition-all touch-manipulation cursor-pointer"
+                        className="sm:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-600 text-white text-[11px] font-black shadow-xs active:scale-95 transition-all touch-manipulation cursor-pointer"
                       >
                         <PlusIcon className="w-3.5 h-3.5 stroke-[2.8]" />
                         <span>Catat Kas</span>
@@ -1534,11 +1544,11 @@ export default function KaskuApp() {
 
                     <div className="flex items-center gap-2 self-start sm:self-auto">
                       {/* iOS Segmented Filter */}
-                      <div className="flex items-center gap-1 p-1 rounded-2xl bg-[#767680]/12 text-[11px] font-bold">
+                      <div className="flex items-center gap-1 p-1 rounded-2xl bg-slate-100 border border-slate-200 text-[11px] font-bold">
                         <button
                           onClick={() => setFilterType('all')}
                           className={`px-3 py-1 rounded-xl transition-all duration-200 ${
-                            filterType === 'all' ? 'bg-white text-slate-900 shadow-ios-sm scale-[1.02]' : 'text-slate-500 hover:text-slate-800'
+                            filterType === 'all' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-500 hover:text-slate-900'
                           }`}
                         >
                           Semua
@@ -1546,7 +1556,7 @@ export default function KaskuApp() {
                         <button
                           onClick={() => setFilterType('income')}
                           className={`px-3 py-1 rounded-xl transition-all duration-200 ${
-                            filterType === 'income' ? 'bg-white text-emerald-600 shadow-ios-sm scale-[1.02]' : 'text-slate-500 hover:text-slate-800'
+                            filterType === 'income' ? 'bg-emerald-600 text-white font-black shadow-xs' : 'text-slate-500 hover:text-slate-900'
                           }`}
                         >
                           Masuk
@@ -1554,7 +1564,7 @@ export default function KaskuApp() {
                         <button
                           onClick={() => setFilterType('expense')}
                           className={`px-3 py-1 rounded-xl transition-all duration-200 ${
-                            filterType === 'expense' ? 'bg-white text-rose-600 shadow-ios-sm scale-[1.02]' : 'text-slate-500 hover:text-slate-800'
+                            filterType === 'expense' ? 'bg-rose-600 text-white font-black shadow-xs' : 'text-slate-500 hover:text-slate-900'
                           }`}
                         >
                           Keluar
@@ -1566,7 +1576,7 @@ export default function KaskuApp() {
                         <button
                           onClick={handleExportExcel}
                           title="Ekspor Laporan Excel Berwarna (.xls)"
-                          className="p-2 sm:px-3 sm:py-1.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-ios-sm"
+                          className="p-2 sm:px-3 sm:py-1.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-xs"
                         >
                           <TableCellsIcon className="w-4 h-4 text-emerald-600" />
                           <span className="hidden sm:inline">Excel</span>
@@ -1593,7 +1603,7 @@ export default function KaskuApp() {
                       onChange={(e) => setFilterCat(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-2xl kas-input text-xs font-medium cursor-pointer"
                     >
-                      <option value="all">Semua Kategori</option>
+                      <option value="all" className="bg-white text-slate-800">Semua Kategori</option>
                       {categories.map((c, i) => (
                         <option key={i} value={c} className="bg-white text-slate-800">{c}</option>
                       ))}
@@ -1601,11 +1611,11 @@ export default function KaskuApp() {
                   </div>
                 </div>
 
-                {/* List Mutasi iOS Inset Grouped Table Row */}
+                {/* List Mutasi Clean White Rows */}
                 <div className="divide-y divide-slate-100 max-h-[550px] overflow-y-auto pr-1">
                   {filteredTransactions.length === 0 ? (
                     <div className="py-14 text-center space-y-3">
-                      <div className="w-14 h-14 rounded-3xl bg-slate-100/80 mx-auto flex items-center justify-center text-slate-400">
+                      <div className="w-14 h-14 rounded-3xl bg-slate-50 border border-slate-200 mx-auto flex items-center justify-center text-slate-400">
                         <WalletIcon className="w-7 h-7" />
                       </div>
                       <p className="text-xs text-slate-500 font-medium max-w-sm mx-auto">
@@ -1619,7 +1629,7 @@ export default function KaskuApp() {
                             e.stopPropagation()
                             setIsModalOpen(true)
                           }}
-                          className="mt-2 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-ios transition active:scale-95"
+                          className="mt-2 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-emerald-600 text-white text-xs font-black shadow-sm transition active:scale-95"
                         >
                           <PlusIcon className="w-4 h-4 stroke-[2.5]" />
                           <span>Catat Transaksi Pertama</span>
@@ -1628,14 +1638,16 @@ export default function KaskuApp() {
                     </div>
                   ) : (
                     filteredTransactions.map((tx) => (
-                      <div key={tx.id} className="py-3 px-2 flex items-center justify-between gap-3 group transition-colors hover:bg-[#f2f2f7]/80 rounded-2xl">
-                        
+                      <div 
+                        key={tx.id} 
+                        className="py-3.5 px-3 flex items-center justify-between gap-3 group transition-all duration-150 hover:bg-slate-50 active:scale-[0.99] rounded-2xl border border-transparent hover:border-slate-200"
+                      >
                         <div className="flex items-center gap-3 min-w-0">
                           <div
-                            className={`w-11 h-11 rounded-[16px] flex items-center justify-center shrink-0 border ${
+                            className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-xs transition-transform duration-200 group-hover:scale-105 ${
                               tx.type === 'income'
-                                ? 'bg-emerald-500/15 border-emerald-500/20 text-emerald-600'
-                                : 'bg-rose-500/15 border-rose-500/20 text-rose-600'
+                                ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                                : 'bg-rose-50 text-rose-600 border border-rose-200'
                             }`}
                           >
                             {tx.type === 'income' ? (
@@ -1645,20 +1657,20 @@ export default function KaskuApp() {
                             )}
                           </div>
 
-                          <div className="truncate space-y-0.5">
-                            <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                          <div className="truncate space-y-1">
+                            <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 truncate">
                               {tx.title}
                             </h3>
-                            <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
-                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-sans font-semibold">
+                            <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold border border-slate-200">
                                 {tx.category}
                               </span>
                               <span>&bull;</span>
-                              <span>{tx.date}</span>
+                              <span className="font-mono">{tx.date}</span>
                               {tx.note && (
                                 <>
                                   <span>&bull;</span>
-                                  <span className="text-slate-400 truncate max-w-[140px] font-sans italic">{tx.note}</span>
+                                  <span className="text-slate-400 truncate max-w-[130px] sm:max-w-[200px] italic">{tx.note}</span>
                                 </>
                               )}
                             </div>
@@ -1669,18 +1681,16 @@ export default function KaskuApp() {
                           <div className="flex flex-col items-end">
                             <span
                               title={formatRupiah(tx.amount)}
-                              className={`font-mono font-black tracking-tight leading-none ${
-                                tx.amount >= 1_000_000_000
-                                  ? 'text-[11px] sm:text-xs'
-                                  : 'text-xs sm:text-sm'
-                              } ${
-                                tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'
+                              className={`inline-flex items-center px-2.5 py-1 rounded-xl text-xs sm:text-sm font-black tabular-nums tracking-tight font-display shadow-2xs ${
+                                tx.type === 'income' 
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                  : 'bg-rose-50 text-rose-700 border border-rose-200'
                               }`}
                             >
                               {tx.type === 'income' ? '+' : '-'}{formatRupiah(tx.amount)}
                             </span>
                             {tx.amount >= 10_000_000 && (
-                              <span className="text-[9px] font-mono text-slate-400 mt-0.5">
+                              <span className="text-[9px] font-mono text-slate-400 mt-0.5 pr-1">
                                 ≈ {tx.type === 'income' ? '+' : '-'}{formatRupiahCompact(tx.amount)}
                               </span>
                             )}
@@ -1689,7 +1699,7 @@ export default function KaskuApp() {
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={() => handleOpenEditTransaction(tx)}
-                              className="w-7 h-7 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition active:scale-90 shrink-0"
+                              className="w-7 h-7 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-800 transition active:scale-90 shrink-0"
                               title="Edit Transaksi"
                             >
                               <PencilSquareIcon className="w-3.5 h-3.5" />
@@ -1697,7 +1707,7 @@ export default function KaskuApp() {
 
                             <button
                               onClick={() => handleDeleteTransaction(tx.id, tx.title)}
-                              className="w-7 h-7 rounded-full hover:bg-rose-50 flex items-center justify-center text-slate-300 hover:text-rose-600 transition active:scale-90 shrink-0"
+                              className="w-7 h-7 rounded-full hover:bg-rose-50 flex items-center justify-center text-slate-400 hover:text-rose-600 transition active:scale-90 shrink-0"
                               title="Hapus Transaksi"
                             >
                               <TrashIcon className="w-4 h-4" />
@@ -1715,52 +1725,6 @@ export default function KaskuApp() {
 
           </div>
         </div>
-        )}
-
-        {/* TAB KASIR POS UMKM */}
-        {activeTab === 'kasir' && (
-          <ErrorBoundary>
-            <KasirSection
-              onAddTransaction={(title, amount, note) => {
-                const newTx: Transaction = {
-                  id: Date.now().toString(),
-                  title,
-                  amount,
-                  type: 'income',
-                  category: 'Kasir POS',
-                  date: new Date().toISOString().split('T')[0],
-                  note
-                }
-                setTransactions(prev => [newTx, ...prev])
-                showToast(`✅ Berhasil mencatat kasir: +Rp ${amount.toLocaleString('id-ID')}`)
-              }}
-              onCancelTransaction={(orderId) => {
-                setTransactions(prev => prev.filter(tx => !tx.title.includes(orderId)))
-              }}
-              onSwitchToKasku={() => {
-                setActiveTab('overview')
-                showToast('ℹ️ Beralih kembali ke KasKu')
-              }}
-              onOpenAddProductModal={() => {
-                setEditingKasirProduct(null)
-                setIsAddProductModalOpen(true)
-              }}
-              onEditProduct={(prod) => {
-                setEditingKasirProduct(prod)
-                setIsAddProductModalOpen(true)
-              }}
-              onOpenScanModal={() => setIsScanModalOpen(true)}
-              onOpenStoreSettingsModal={() => setIsStoreSettingsModalOpen(true)}
-              onReceiptStateChange={(isOpen) => setIsReceiptModalOpen(isOpen)}
-              cart={kasirCart}
-              setCart={setKasirCart}
-              products={kasirProducts}
-              setProducts={setKasirProducts}
-              storeProfile={storeProfile}
-              setStoreProfile={setStoreProfile}
-              showToast={showToast}
-            />
-          </ErrorBoundary>
         )}
 
         {/* TAB 2: TABUNGAN & CELENGAN TARGET */}
@@ -1796,18 +1760,18 @@ export default function KaskuApp() {
             {/* Header Card */}
             <div className="surface-card rounded-[28px] p-5 sm:p-7 space-y-5">
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-purple-500/15 text-purple-600 flex items-center justify-center shadow-ios-sm shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center justify-center shadow-ios-sm shrink-0">
                   <TagIcon className="w-6 h-6" />
                 </div>
                 <div>
                   <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Kategori Transaksi</h2>
-                  <p className="text-xs text-slate-400 font-medium">
+                  <p className="text-xs text-slate-500 font-medium">
                     Atur kategori pengeluaran dan pemasukan keuangan Anda
                   </p>
                 </div>
               </div>
 
-              {/* Add Input iOS Bar */}
+              {/* Add Input Bar */}
               <form onSubmit={handleAddCategory} className="flex flex-col sm:flex-row gap-2.5">
                 <div className="relative flex-1">
                   <input
@@ -1816,12 +1780,12 @@ export default function KaskuApp() {
                     placeholder="Nama kategori baru (cth: Langganan AI, Skincare)..."
                     value={newCatInput}
                     onChange={(e) => setNewCatInput(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-[#F2F2F7] border border-black/5 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-purple-500 outline-none transition"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="px-6 py-3 rounded-2xl bg-purple-600 hover:bg-purple-700 active:scale-[0.98] text-white font-bold text-xs shadow-ios-sm transition flex items-center justify-center gap-2 shrink-0"
+                  className="px-6 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-2 shrink-0"
                 >
                   <PlusIcon className="w-4 h-4" />
                   <span>Tambah Kategori</span>
@@ -1829,31 +1793,31 @@ export default function KaskuApp() {
               </form>
             </div>
 
-            {/* List Group iOS Style */}
+            {/* List Group */}
             <div className="surface-card rounded-[28px] p-5 sm:p-6 space-y-4">
               <div className="flex items-center justify-between px-1">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                   Daftar Kategori Aktif ({categories.length})
                 </label>
-                <span className="text-[11px] font-semibold text-purple-600 bg-purple-500/10 px-2.5 py-0.5 rounded-full border border-purple-500/20">
+                <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
                   Siap Digunakan
                 </span>
               </div>
 
-              <div className="divide-y divide-slate-100/80 rounded-2xl bg-[#F2F2F7]/70 border border-black/5 overflow-hidden">
+              <div className="divide-y divide-slate-100 rounded-2xl bg-white border border-slate-200 overflow-hidden">
                 {categories.length === 0 ? (
                   <div className="p-8 text-center space-y-1.5">
                     <p className="text-xs font-bold text-slate-400">Belum ada kategori</p>
-                    <p className="text-[11px] text-slate-400">Ketik nama kategori di atas untuk menambahkan kategori kustom Anda</p>
+                    <p className="text-[11px] text-slate-500">Ketik nama kategori di atas untuk menambahkan kategori kustom Anda</p>
                   </div>
                 ) : (
                   categories.map((cat, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between p-3.5 sm:px-4 bg-white/70 hover:bg-white transition-all gap-3"
+                    className="flex items-center justify-between p-3.5 sm:px-4 hover:bg-slate-50 transition-all gap-3"
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0 shadow-sm"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0"></div>
                       <span className="text-xs font-bold text-slate-800 break-words line-clamp-2 leading-relaxed">
                         {cat}
                       </span>
@@ -1861,7 +1825,7 @@ export default function KaskuApp() {
 
                     <button
                       onClick={() => handleDeleteCategory(cat)}
-                      className="w-8 h-8 rounded-xl bg-slate-100/80 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition flex items-center justify-center shrink-0 active:scale-95"
+                      className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition flex items-center justify-center shrink-0 active:scale-95 border border-slate-200"
                       title="Hapus Kategori"
                     >
                       <TrashIcon className="w-4 h-4" />
@@ -1876,29 +1840,13 @@ export default function KaskuApp() {
       </main>
 
       {/* Floating Bottom Nav for Mobile / APK (Disembunyikan saat Struk Terbuka agar 100% tidak bocor) */}
-      {!isReceiptModalOpen && (
-        <BottomNav
-          activeTab={activeTab}
-          setActiveTab={(tab: any) => setActiveTab(tab)}
-          onOpenAddModal={() => setIsModalOpen(true)}
-          onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
-          onOpenSettingsModal={() => setIsSettingsOpen(true)}
-          onOpenAddProductModal={() => setIsAddProductModalOpen(true)}
-          onOpenScanModal={() => setIsScanModalOpen(true)}
-          onOpenStoreSettingsModal={() => setIsStoreSettingsModalOpen(true)}
-          onOpenHistoryModal={() => setIsHistoryModalOpen(true)}
-          onOpenCheckout={() => {
-            // Scroll halus ke kartu pesanan kasir
-            const cartCard = document.getElementById('kasir-cart-panel') || document.querySelector('.surface-card')
-            if (cartCard) {
-              cartCard.scrollIntoView({ behavior: 'smooth' })
-            } else {
-              window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
-            }
-          }}
-          cartCount={kasirCart.reduce((s, i) => s + i.qty, 0)}
-        />
-      )}
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={(tab: any) => setActiveTab(tab)}
+        onOpenAddModal={() => setIsModalOpen(true)}
+        onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
+        onOpenSettingsModal={() => setIsSettingsOpen(true)}
+      />
 
       {/* Add & Edit Transaction Modal (Bottom Sheet Slide from bottom) */}
       <ErrorBoundary>
@@ -1936,7 +1884,7 @@ export default function KaskuApp() {
         onClose={() => setConfirmDialog(null)}
       />
 
-      {/* Settings Modal (Backup JSON, Restore JSON, Reset LocalStorage, Export Excel, Beralih Mode) */}
+      {/* Settings Modal (Backup JSON, Restore JSON, Reset LocalStorage, Export Excel) */}
       <ErrorBoundary>
         <SettingsModal
           isOpen={isSettingsOpen}
@@ -1947,14 +1895,6 @@ export default function KaskuApp() {
           onImportAllData={handleImportAllData}
           onClearAllData={handleClearAllData}
           onOpenOnboarding={() => setShowOnboarding(true)}
-          onSwitchToKasir={() => {
-            setActiveTab('kasir')
-            showToast('✅ Berhasil beralih ke Mode KasirKu POS!')
-          }}
-          onSwitchToKasku={() => {
-            setActiveTab('overview')
-            showToast('ℹ️ Beralih ke Buku Kas KasKu')
-          }}
           activeTab={activeTab}
           showToast={showToast}
         />
@@ -1996,75 +1936,6 @@ export default function KaskuApp() {
         isOpen={showSupportDevModal}
         onClose={() => setShowSupportDevModal(false)}
         autoCloseSeconds={3}
-      />
-
-      {/* Kasir POS: Tambah / Edit Produk Modal */}
-      <AddKasirProductModal
-        isOpen={isAddProductModalOpen}
-        onClose={() => {
-          setIsAddProductModalOpen(false)
-          setEditingKasirProduct(null)
-        }}
-        editingProduct={editingKasirProduct}
-        onSaveProduct={(savedProd) => {
-          setKasirProducts(prev => {
-            const exists = prev.some(p => p.id === savedProd.id)
-            if (exists) {
-              return prev.map(p => p.id === savedProd.id ? savedProd : p)
-            }
-            return [savedProd, ...prev]
-          })
-          showToast(`✅ Produk ${savedProd.name} berhasil disimpan!`)
-        }}
-        onDeleteProduct={(id) => {
-          setKasirProducts(prev => prev.filter(p => p.id !== id))
-          setKasirCart(prev => prev.filter(i => i.product.id !== id))
-          showToast('🗑️ Produk berhasil dihapus dari kasir')
-        }}
-        categories={Array.from(new Set(kasirProducts.map(p => p.category)))}
-      />
-
-      {/* Kasir POS: Scan Barcode Camera Modal dengan Form Jumlah Qty */}
-      <ScanBarcodeModal
-        isOpen={isScanModalOpen}
-        onClose={() => setIsScanModalOpen(false)}
-        products={kasirProducts}
-        onAddToCartWithDetails={(prod, qty, note) => {
-          setKasirCart(prev => {
-            const existing = prev.find(item => item.product.id === prod.id)
-            if (existing) {
-              return prev.map(item => item.product.id === prod.id ? { ...item, qty: item.qty + qty } : item)
-            }
-            return [...prev, { product: prod, qty }]
-          })
-          showToast(`✅ ${qty}x ${prod.name} dimasukkan ke keranjang!`)
-        }}
-        onRegisterAndAddToCart={(newProd, qty, note) => {
-          setKasirProducts(prev => [newProd, ...prev])
-          setKasirCart(prev => [...prev, { product: newProd, qty }])
-          showToast(`✅ Produk baru ${newProd.name} didaftarkan & masuk keranjang!`)
-        }}
-        showToast={showToast}
-      />
-
-      {/* Kasir POS: Atur Profil & Struk Toko Modal */}
-      <StoreSettingsModal
-        isOpen={isStoreSettingsModalOpen}
-        onClose={() => setIsStoreSettingsModalOpen(false)}
-        storeProfile={storeProfile}
-        onSaveProfile={(updated) => setStoreProfile(updated)}
-        showToast={showToast}
-      />
-
-      {/* Kasir POS: Riwayat Transaksi Penjualan Modal */}
-      <KasirHistoryModal
-        isOpen={isHistoryModalOpen}
-        onClose={() => setIsHistoryModalOpen(false)}
-        transactions={transactions}
-        onDeleteTransaction={(id) => {
-          setTransactions(prev => prev.filter(t => t.id !== id))
-          showToast('🗑️ Transaksi kasir berhasil dihapus')
-        }}
       />
 
       {/* Mandatory Permission Lock Modal (Wajib Izinkan Notifikasi & Latar Belakang) */}

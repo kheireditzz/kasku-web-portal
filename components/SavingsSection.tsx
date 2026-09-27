@@ -74,18 +74,6 @@ export default function SavingsSection({
   const [editColor, setEditColor] = useState('amber')
   const [mounted, setMounted] = useState(false)
 
-  // Drag-to-dismiss state for Edit Modal
-  const [editDragY, setEditDragY] = useState(0)
-  const [editIsDragging, setEditIsDragging] = useState(false)
-  const editStartYRef = React.useRef(0)
-  const editIsDraggingRef = React.useRef(false)
-
-  // Drag-to-dismiss state for Deposit Modal
-  const [depositDragY, setDepositDragY] = useState(0)
-  const [depositIsDragging, setDepositIsDragging] = useState(false)
-  const depositStartYRef = React.useRef(0)
-  const depositIsDraggingRef = React.useRef(false)
-
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -293,67 +281,18 @@ export default function SavingsSection({
     showToast(isWithdrawMode ? '💸 Tabungan ditarik & masuk ke Kas Umum!' : '💰 Hore! Saldo tabungan berhasil bertambah!')
   }
 
-  // Drag-to-dismiss handlers for Edit Modal
-  const onEditDragStart = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    editStartYRef.current = e.touches[0].clientY
-    editIsDraggingRef.current = true
-    setEditIsDragging(true)
-  }
-  const onEditDragMove = (e: React.TouchEvent) => {
-    if (!editIsDraggingRef.current) return
-    e.stopPropagation()
-    const delta = e.touches[0].clientY - editStartYRef.current
-    setEditDragY(delta > 0 ? delta : 0)
-  }
-  const onEditDragEnd = (e: React.TouchEvent) => {
-    if (!editIsDraggingRef.current) return
-    e.stopPropagation()
-    editIsDraggingRef.current = false
-    setEditIsDragging(false)
-    if (editDragY > 80) {
-      setEditDragY(500)
-      setTimeout(() => { setEditModalGoal(null); setEditDragY(0) }, 200)
-    } else {
-      setEditDragY(0)
-    }
-  }
-
-  // Drag-to-dismiss handlers for Deposit Modal
-  const onDepositDragStart = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    depositStartYRef.current = e.touches[0].clientY
-    depositIsDraggingRef.current = true
-    setDepositIsDragging(true)
-  }
-  const onDepositDragMove = (e: React.TouchEvent) => {
-    if (!depositIsDraggingRef.current) return
-    e.stopPropagation()
-    const delta = e.touches[0].clientY - depositStartYRef.current
-    setDepositDragY(delta > 0 ? delta : 0)
-  }
-  const onDepositDragEnd = (e: React.TouchEvent) => {
-    if (!depositIsDraggingRef.current) return
-    e.stopPropagation()
-    depositIsDraggingRef.current = false
-    setDepositIsDragging(false)
-    if (depositDragY > 80) {
-      setDepositDragY(500)
-      setTimeout(() => { setDepositModalGoal(null); setDepositDragY(0) }, 200)
-    } else {
-      setDepositDragY(0)
-    }
-  }
-
   return (
     <div className="space-y-6 animate-slide-up">
       
-      {/* Top Banner Tabungan & Header Ringkasan Impian - iOS Style Grouped Card */}
-      <div className="surface-card rounded-[28px] p-6 sm:p-7">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      {/* Top Banner Tabungan & Header Ringkasan Impian - Obsidian Liquid Glass */}
+      <div className="surface-card rounded-[28px] p-6 sm:p-7 relative overflow-hidden">
+        <div className="absolute -right-8 -bottom-8 w-44 h-44 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -left-8 -top-8 w-36 h-36 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2.5">
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center shadow-ios-sm">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/25 flex items-center justify-center shadow-ios-sm">
                 <CutePiggyIcon className="w-6 h-6" />
               </div>
               <div>
@@ -362,45 +301,45 @@ export default function SavingsSection({
                     Celengan &amp; Target Impian
                   </h2>
                 </div>
-                <p className="text-xs text-slate-400 font-medium mt-0.5">
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
                   Wujudkan impian, dana darurat, wishlist belanja, dan tabungan masa depan
                 </p>
               </div>
             </div>
 
-            {/* Micro badges iOS Style */}
+            {/* Micro badges */}
             <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 font-bold border border-amber-500/20">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 font-bold border border-amber-500/30">
                 <TrophyIcon className="w-3.5 h-3.5" />
                 <span>{savings.filter(s => s.currentAmount >= s.targetAmount).length} Target Tercapai</span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 font-bold border border-blue-500/20">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 font-bold border border-cyan-500/30">
                 <RocketIcon className="w-3.5 h-3.5" />
                 <span>{savings.filter(s => s.currentAmount < s.targetAmount).length} Sedang Berjalan</span>
               </div>
             </div>
           </div>
 
-          {/* Stat Cards Mini iOS Widgets */}
+          {/* Stat Cards Mini Widgets */}
           <div className="grid grid-cols-2 sm:flex sm:items-center gap-3 self-start lg:self-auto w-full lg:w-auto">
-            <div className="p-4 rounded-2xl bg-[#f2f2f7] border border-black/5 flex-1 min-w-[140px]">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Terkumpul</span>
-              <span className="text-lg sm:text-xl font-black font-mono text-amber-500 block mt-1">
+            <div className="p-4 rounded-2xl bg-slate-100/80 border border-slate-200 flex-1 min-w-[140px] backdrop-blur-md">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block tracking-wider">Terkumpul</span>
+              <span className="text-lg sm:text-xl font-black font-mono text-amber-400 block mt-1">
                 {formatRupiah(totalSaved)}
               </span>
-              <span className="text-[10px] text-slate-400 font-mono block font-medium">
+              <span className="text-[10px] text-slate-500 font-mono block font-medium">
                 Target: {formatRupiah(totalTarget)}
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#f2f2f7] border border-black/5 flex-1 min-w-[130px]">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Pencapaian</span>
-              <span className="text-lg sm:text-xl font-black font-mono text-emerald-600 block mt-1">
+            <div className="p-4 rounded-2xl bg-slate-100/80 border border-slate-200 flex-1 min-w-[130px] backdrop-blur-md">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block tracking-wider">Pencapaian</span>
+              <span className="text-lg sm:text-xl font-black font-mono text-emerald-400 block mt-1">
                 {totalPercentage}%
               </span>
-              <div className="w-full h-2 rounded-full bg-slate-200 mt-2 overflow-hidden">
+              <div className="w-full h-2 rounded-full bg-slate-100 mt-2 overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 shadow-sm shadow-emerald-500/50"
                   style={{ width: `${totalPercentage}%` }}
                 />
               </div>
@@ -415,9 +354,9 @@ export default function SavingsSection({
         {/* Form Buat Target Tabungan */}
         <div className="lg:col-span-5 space-y-6">
           <div className="surface-card rounded-2xl p-6 relative">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-5">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
                   <PlusIcon className="w-5 h-5" />
                 </div>
                 <div>
@@ -425,7 +364,7 @@ export default function SavingsSection({
                   <p className="text-[11px] text-slate-500">Tentukan nama impian & nominal target</p>
                 </div>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 font-bold border border-amber-200">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 font-bold border border-amber-500/30">
                 Otomatis
               </span>
             </div>
@@ -433,21 +372,21 @@ export default function SavingsSection({
             <form onSubmit={handleAddGoal} className="space-y-4 text-xs">
               
               <div className="space-y-1.5">
-                <label className="text-slate-700 font-semibold block">Nama Impian / Wishlist *</label>
+                <label className="text-slate-600 font-semibold block">Nama Impian / Wishlist *</label>
                 <input
                   type="text"
                   required
                   placeholder="Contoh: Beli iPhone, Dana Darurat, Liburan Bali"
                   value={goalTitle}
                   onChange={(e) => setGoalTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl kas-input text-xs"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-white placeholder:text-slate-500 focus:border-amber-500 focus:outline-none text-xs"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-700 font-semibold block">Target Dana (Rp) *</label>
+                <label className="text-slate-600 font-semibold block">Target Dana (Rp) *</label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-slate-400 font-mono font-bold text-xs">Rp</span>
+                  <span className="absolute left-3.5 top-2.5 text-slate-500 font-mono font-bold text-xs">Rp</span>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -459,14 +398,14 @@ export default function SavingsSection({
                       const raw = e.target.value.replace(/\D/g, '')
                       setTargetAmount(raw)
                     }}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl kas-input text-xs font-mono font-semibold"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-white placeholder:text-slate-500 focus:border-amber-500 focus:outline-none text-xs font-mono font-semibold"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-slate-700 font-semibold block">Saldo Awal</label>
+                  <label className="text-slate-600 font-semibold block">Saldo Awal</label>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -477,17 +416,17 @@ export default function SavingsSection({
                       const raw = e.target.value.replace(/\D/g, '')
                       setInitialAmount(raw)
                     }}
-                    className="w-full px-3 py-2 rounded-xl kas-input text-xs font-mono"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-white placeholder:text-slate-500 focus:border-amber-500 focus:outline-none text-xs font-mono"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-slate-700 font-semibold block">Target Tanggal</label>
+                  <label className="text-slate-600 font-semibold block">Target Tanggal</label>
                   <input
                     type="date"
                     value={targetDate}
                     onChange={(e) => setTargetDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl kas-input text-xs font-mono"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-white placeholder:text-slate-500 focus:border-amber-500 focus:outline-none text-xs font-mono"
                   />
                 </div>
               </div>
@@ -503,7 +442,7 @@ export default function SavingsSection({
                       onClick={() => setSelectedColor(c.name)}
                       className={`h-8 rounded-xl bg-gradient-to-tr ${c.bg} transition-all flex items-center justify-center ${
                         selectedColor === c.name 
-                          ? 'ring-2 ring-slate-800 scale-105 shadow-sm' 
+                          ? 'ring-2 ring-white scale-105 shadow-md' 
                           : 'opacity-70 hover:opacity-100'
                       }`}
                       title={c.label}
@@ -518,7 +457,7 @@ export default function SavingsSection({
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl font-bold text-xs tracking-wide bg-amber-600 hover:bg-amber-700 text-white shadow-sm transition active:scale-[0.98] flex items-center justify-center gap-2 mt-2"
+                className="w-full py-3 rounded-xl font-bold text-xs tracking-wide bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white shadow-lg shadow-amber-500/25 transition active:scale-[0.98] flex items-center justify-center gap-2 mt-2 border border-amber-400/30"
               >
                 <SparklesIcon className="w-4 h-4" />
                 <span>Simpan Target Tabungan</span>
@@ -531,22 +470,22 @@ export default function SavingsSection({
         {/* Daftar Kartu Tabungan */}
         <div className="lg:col-span-7 space-y-4">
           <div className="surface-card rounded-2xl p-6 space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Daftar Celengan & Impian</h3>
+                <h3 className="text-sm font-bold text-white">Daftar Celengan & Impian</h3>
                 <p className="text-[11px] text-slate-500">{savings.length} target tabungan tercatat</p>
               </div>
-              <span className="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
+              <span className="text-[10px] font-mono text-emerald-300 font-bold bg-emerald-500/15 px-2.5 py-0.5 rounded-md border border-emerald-500/30">
                 Aktif & Siap Disetor
               </span>
             </div>
 
             {savings.length === 0 ? (
               <div className="py-14 text-center space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 mx-auto flex items-center justify-center text-amber-600">
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/25 mx-auto flex items-center justify-center text-amber-400">
                   <CutePiggyIcon className="w-8 h-8" />
                 </div>
-                <h4 className="text-sm font-bold text-slate-800">Belum Ada Celengan</h4>
+                <h4 className="text-sm font-bold text-white">Belum Ada Celengan</h4>
                 <p className="text-xs text-slate-500 font-medium max-w-sm mx-auto">
                   Mulai simpan mimpi pertama Anda sekarang! Buat target seperti liburan, beli gadget, atau tabungan darurat.
                 </p>
@@ -561,10 +500,10 @@ export default function SavingsSection({
                   return (
                     <div
                       key={s.id}
-                      className={`p-4 rounded-2xl bg-white border transition-all space-y-3 relative ${
+                      className={`p-4 rounded-2xl bg-slate-100/80 border transition-all space-y-3 relative backdrop-blur-md ${
                         isFinished 
-                          ? 'border-emerald-300 shadow-sm' 
-                          : 'border-slate-200 hover:border-slate-300 shadow-sm'
+                          ? 'border-emerald-500/40 shadow-lg shadow-emerald-500/10' 
+                          : 'border-slate-200 hover:border-slate-200'
                       }`}
                     >
                       {/* Top Header */}
@@ -582,7 +521,7 @@ export default function SavingsSection({
                               {s.title}
                             </h4>
                             {s.targetDate && (
-                              <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1 mt-0.5">
+                              <span className="text-[10px] text-slate-500 font-mono flex items-center gap-1 mt-0.5">
                                 <span>Target: {s.targetDate}</span>
                               </span>
                             )}
@@ -591,7 +530,7 @@ export default function SavingsSection({
 
                         <button
                           onClick={() => handleDeleteGoal(s)}
-                          className="w-7 h-7 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center transition"
+                          className="w-7 h-7 rounded-lg hover:bg-rose-500/20 text-slate-500 hover:text-rose-300 flex items-center justify-center transition"
                           title="Hapus Target"
                         >
                           <TrashIcon className="w-3.5 h-3.5" />
@@ -613,7 +552,7 @@ export default function SavingsSection({
                           </span>
                           <span 
                             title={`Target: ${formatRupiah(s.targetAmount)}`}
-                            className="text-[11px] font-semibold font-mono text-slate-400 truncate shrink-0"
+                            className="text-[11px] font-semibold font-mono text-slate-500 truncate shrink-0"
                           >
                             / {s.targetAmount >= 100_000_000 ? formatCompact(s.targetAmount) : formatRupiah(s.targetAmount)}
                           </span>
@@ -628,10 +567,10 @@ export default function SavingsSection({
                         </div>
 
                         <div className="flex justify-between items-center text-[11px] pt-0.5 gap-1">
-                          <span className={`font-bold font-mono truncate ${isFinished ? 'text-emerald-600' : 'text-slate-600'}`}>
+                          <span className={`font-bold font-mono truncate ${isFinished ? 'text-emerald-400' : 'text-slate-600'}`}>
                             {isFinished ? '🎉 Selesai!' : `${percent}% terkumpul`}
                           </span>
-                          <span className="font-mono text-slate-400 text-[10px] truncate shrink-0">
+                          <span className="font-mono text-slate-500 text-[10px] truncate shrink-0">
                             {isFinished 
                               ? 'Target tercapai' 
                               : `Sisa ${formatCompact(Math.max(0, s.targetAmount - s.currentAmount))}`}
@@ -644,7 +583,7 @@ export default function SavingsSection({
                         <button
                           type="button"
                           onClick={() => handleOpenEdit(s)}
-                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition active:scale-95 flex items-center justify-center"
+                          className="p-2 rounded-xl bg-slate-100 hover:bg-white/15 text-slate-600 hover:text-white border border-slate-200 transition active:scale-95 flex items-center justify-center"
                           title="Edit Target Tabungan"
                         >
                           <PencilSquareIcon className="w-3.5 h-3.5" />
@@ -658,9 +597,9 @@ export default function SavingsSection({
                             setDepositNote('')
                             setIsWithdrawMode(false)
                           }}
-                          className="flex-1 py-2 px-2.5 rounded-xl font-bold text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 transition active:scale-95 flex items-center justify-center gap-1"
+                          className="flex-1 py-2 px-2.5 rounded-xl font-bold text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 transition active:scale-95 flex items-center justify-center gap-1"
                         >
-                          <PlusIcon className="w-3.5 h-3.5 text-amber-600" />
+                          <PlusIcon className="w-3.5 h-3.5 text-amber-400" />
                           <span>Isi</span>
                         </button>
 
@@ -675,11 +614,11 @@ export default function SavingsSection({
                           }}
                           className={`flex-1 py-2 px-2.5 rounded-xl font-bold text-xs transition active:scale-95 flex items-center justify-center gap-1 ${
                             s.currentAmount > 0
-                              ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80'
-                              : 'bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed'
+                              ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30'
+                              : 'bg-slate-100/80 text-slate-500 border border-white/5 cursor-not-allowed'
                           }`}
                         >
-                          <ArrowTrendingDownIcon className="w-3.5 h-3.5 text-rose-500" />
+                          <ArrowTrendingDownIcon className="w-3.5 h-3.5 text-rose-400" />
                           <span>Tarik</span>
                         </button>
                       </div>
@@ -698,33 +637,20 @@ export default function SavingsSection({
       {/* Modal Edit Tabungan - Bersih, Clean & Keluar dari Bawah (Portal ke Body) */}
       {editModalGoal && mounted && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md animate-fade-in touch-none select-none"
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in touch-none select-none"
           onClick={() => setEditModalGoal(null)}
         >
           <div 
-            className={`w-full sm:max-w-lg bg-white border-t sm:border border-slate-200/80 rounded-t-[32px] sm:rounded-[28px] p-6 shadow-ios-float space-y-4 max-h-[92vh] overflow-y-auto ${
-              editIsDragging ? '' : 'transition-transform duration-200 ease-out'
-            } ${editDragY === 0 && !editIsDragging ? 'animate-slide-bottom sm:animate-slide-up' : ''}`}
+            className="w-full sm:max-w-lg bg-white border-t sm:border border-slate-200 rounded-t-[32px] sm:rounded-[28px] p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto text-white animate-slide-bottom sm:animate-slide-up"
             style={{
-              transform: editDragY > 0 ? `translateY(${editDragY}px)` : 'translateY(0px)',
               overscrollBehavior: 'contain'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* iOS Drag Indicator Handle on Mobile - Swipe Down to Close */}
-            <div 
-              className="w-full pt-1 pb-3 -mt-2 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
-              onTouchStart={onEditDragStart}
-              onTouchMove={onEditDragMove}
-              onTouchEnd={onEditDragEnd}
-              onTouchCancel={onEditDragEnd}
-            >
-              <div className="w-12 h-1.5 bg-slate-300 hover:bg-slate-400 rounded-full transition-colors opacity-80 pointer-events-none"></div>
-            </div>
-            {/* Header Modal - Konsisten dengan Target Celengan Baru */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            {/* Header Modal */}
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
                   <PencilSquareIcon className="w-5 h-5" />
                 </div>
                 <div>
@@ -733,13 +659,13 @@ export default function SavingsSection({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 font-bold border border-amber-200">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 font-bold border border-amber-500/30">
                   Perbarui
                 </span>
                 <button
                   type="button"
                   onClick={() => setEditModalGoal(null)}
-                  className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center font-bold text-xs transition"
+                  className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-white flex items-center justify-center font-bold text-xs transition"
                 >
                   ✕
                 </button>
@@ -749,23 +675,23 @@ export default function SavingsSection({
             <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
               {/* Nama Tabungan */}
               <div className="space-y-1.5">
-                <label className="text-slate-700 font-semibold block">Nama Impian / Wishlist *</label>
+                <label className="text-slate-600 font-semibold block">Nama Impian / Wishlist *</label>
                 <input
                   type="text"
                   required
                   placeholder="Contoh: Beli iPhone, Dana Darurat, Liburan Bali"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl kas-input text-xs font-medium"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-white placeholder:text-slate-500 focus:border-amber-500 focus:outline-none text-xs font-medium"
                 />
               </div>
 
               {/* Target & Saldo */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-slate-700 font-semibold block">Target Dana (Rp) *</label>
+                  <label className="text-slate-600 font-semibold block">Target Dana (Rp) *</label>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-2.5 text-slate-400 font-mono font-bold text-xs">Rp</span>
+                    <span className="absolute left-3.5 top-2.5 text-slate-500 font-mono font-bold text-xs">Rp</span>
                     <input
                       type="text"
                       inputMode="numeric"
@@ -776,15 +702,15 @@ export default function SavingsSection({
                         const raw = e.target.value.replace(/\D/g, '')
                         setEditTargetAmount(raw)
                       }}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl kas-input text-xs font-mono font-semibold"
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-white focus:border-amber-500 focus:outline-none text-xs font-mono font-semibold"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-slate-700 font-semibold block">Saldo Saat Ini (Rp) *</label>
+                  <label className="text-slate-600 font-semibold block">Saldo Saat Ini (Rp) *</label>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-2.5 text-amber-500 font-mono font-bold text-xs">Rp</span>
+                    <span className="absolute left-3.5 top-2.5 text-amber-400 font-mono font-bold text-xs">Rp</span>
                     <input
                       type="text"
                       inputMode="numeric"
@@ -795,7 +721,7 @@ export default function SavingsSection({
                         const raw = e.target.value.replace(/\D/g, '')
                         setEditCurrentAmount(raw)
                       }}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl kas-input text-xs font-mono font-semibold text-amber-700"
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-amber-300 focus:border-amber-500 focus:outline-none text-xs font-mono font-semibold"
                     />
                   </div>
                 </div>
@@ -803,12 +729,12 @@ export default function SavingsSection({
 
               {/* Target Tanggal */}
               <div className="space-y-1.5">
-                <label className="text-slate-700 font-semibold block">Target Tanggal</label>
+                <label className="text-slate-600 font-semibold block">Target Tanggal</label>
                 <input
                   type="date"
                   value={editTargetDate}
                   onChange={(e) => setEditTargetDate(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl kas-input text-xs font-mono"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-white focus:border-amber-500 focus:outline-none text-xs font-mono"
                 />
               </div>
 
@@ -823,7 +749,7 @@ export default function SavingsSection({
                       onClick={() => setEditColor(c.name)}
                       className={`h-8 rounded-xl bg-gradient-to-tr ${c.bg} transition-all flex items-center justify-center ${
                         editColor === c.name 
-                          ? 'ring-2 ring-slate-800 scale-105 shadow-sm' 
+                          ? 'ring-2 ring-white scale-105 shadow-md' 
                           : 'opacity-70 hover:opacity-100'
                       }`}
                       title={c.label}
@@ -841,13 +767,13 @@ export default function SavingsSection({
                 <button
                   type="button"
                   onClick={() => setEditModalGoal(null)}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition active:scale-95 text-xs"
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-white/15 text-slate-700 font-semibold transition active:scale-95 text-xs border border-slate-200"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="flex-[2] py-2.5 rounded-xl font-bold text-xs tracking-wide bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white shadow-sm transition flex items-center justify-center gap-1.5"
+                  className="flex-[2] py-2.5 rounded-xl font-bold text-xs tracking-wide bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 active:scale-[0.98] text-white shadow-lg shadow-amber-500/25 transition flex items-center justify-center gap-1.5 border border-amber-400/30"
                 >
                   <SparklesIcon className="w-4 h-4" />
                   <span>Simpan Perubahan</span>
@@ -862,34 +788,21 @@ export default function SavingsSection({
       {/* Modal Isi (Setor) & Tarik Tabungan - Bersih, Clean & Keluar dari Bawah (Portal ke Body) */}
       {depositModalGoal && mounted && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md animate-fade-in touch-none select-none"
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in touch-none select-none"
           onClick={() => setDepositModalGoal(null)}
         >
           <div 
-            className={`w-full sm:max-w-lg bg-white border-t sm:border border-slate-200/80 rounded-t-[32px] sm:rounded-[28px] p-6 shadow-ios-float space-y-4 max-h-[92vh] overflow-y-auto ${
-              depositIsDragging ? '' : 'transition-transform duration-200 ease-out'
-            } ${depositDragY === 0 && !depositIsDragging ? 'animate-slide-bottom sm:animate-slide-up' : ''}`}
+            className="w-full sm:max-w-lg bg-white border-t sm:border border-slate-200 rounded-t-[32px] sm:rounded-[28px] p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto text-white animate-slide-bottom sm:animate-slide-up"
             style={{
-              transform: depositDragY > 0 ? `translateY(${depositDragY}px)` : 'translateY(0px)',
               overscrollBehavior: 'contain'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* iOS Drag Indicator Handle on Mobile - Swipe Down to Close */}
-            <div 
-              className="w-full pt-1 pb-3 -mt-2 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
-              onTouchStart={onDepositDragStart}
-              onTouchMove={onDepositDragMove}
-              onTouchEnd={onDepositDragEnd}
-              onTouchCancel={onDepositDragEnd}
-            >
-              <div className="w-12 h-1.5 bg-slate-300 hover:bg-slate-400 rounded-full transition-colors opacity-80 pointer-events-none"></div>
-            </div>
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div className="flex items-center gap-2.5">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                  isWithdrawMode ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
+                  isWithdrawMode ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                 }`}>
                   {isWithdrawMode ? (
                     <ArrowTrendingDownIcon className="w-5 h-5" />
@@ -900,22 +813,22 @@ export default function SavingsSection({
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 tracking-wide">{depositModalGoal.title}</h3>
                   <p className="text-[11px] text-slate-500 font-mono">
-                    Saldo: <span className="text-amber-600 font-bold">{formatRupiah(depositModalGoal.currentAmount)}</span>
+                    Saldo: <span className="text-amber-400 font-bold">{formatRupiah(depositModalGoal.currentAmount)}</span>
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md font-bold border ${
                   isWithdrawMode 
-                    ? 'bg-rose-50 text-rose-700 border-rose-200' 
-                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' 
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                 }`}>
                   {isWithdrawMode ? 'Tarik' : 'Isi'}
                 </span>
                 <button
                   type="button"
                   onClick={() => setDepositModalGoal(null)}
-                  className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center font-bold text-xs transition"
+                  className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-white flex items-center justify-center font-bold text-xs transition"
                 >
                   ✕
                 </button>
@@ -923,17 +836,17 @@ export default function SavingsSection({
             </div>
 
             {/* Switch Tab: Isi Tabungan (+) vs Tarik (-) */}
-            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-100">
+            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-100/80 border border-slate-200">
               <button
                 type="button"
                 onClick={() => setIsWithdrawMode(false)}
                 className={`py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                   !isWithdrawMode 
-                    ? 'bg-white text-amber-700 shadow-sm' 
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30' 
+                    : 'text-slate-500 hover:text-white'
                 }`}
               >
-                <ArrowTrendingUpIcon className="w-4 h-4 text-amber-600" />
+                <ArrowTrendingUpIcon className="w-4 h-4" />
                 <span>Isi Tabungan</span>
               </button>
 
@@ -942,22 +855,22 @@ export default function SavingsSection({
                 onClick={() => setIsWithdrawMode(true)}
                 className={`py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                   isWithdrawMode 
-                    ? 'bg-white text-rose-700 shadow-sm' 
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30' 
+                    : 'text-slate-500 hover:text-white'
                 }`}
               >
-                <ArrowTrendingDownIcon className="w-4 h-4 text-rose-600" />
+                <ArrowTrendingDownIcon className="w-4 h-4" />
                 <span>Tarik Dana</span>
               </button>
             </div>
 
             <form onSubmit={handleDeposit} className="space-y-4 text-xs">
               <div className="space-y-1.5">
-                <label className="text-slate-700 font-semibold block">
+                <label className="text-slate-600 font-semibold block">
                   {isWithdrawMode ? 'Nominal Tarik Tunai (Rp) *' : 'Nominal Setor Tabungan (Rp) *'}
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-slate-400 font-mono font-bold text-xs">Rp</span>
+                  <span className="absolute left-3.5 top-2.5 text-slate-500 font-mono font-bold text-xs">Rp</span>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -969,7 +882,7 @@ export default function SavingsSection({
                       const raw = e.target.value.replace(/\D/g, '')
                       setDepositAmount(raw)
                     }}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl kas-input text-xs font-mono font-semibold"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-white placeholder:text-slate-500 focus:border-amber-500 focus:outline-none text-xs font-mono font-semibold"
                     autoFocus
                   />
                 </div>
@@ -986,7 +899,7 @@ export default function SavingsSection({
                       key={amt}
                       type="button"
                       onClick={() => setDepositAmount(amt.toString())}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-[11px] font-mono text-slate-700 transition active:scale-95"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100/80 hover:bg-white/15 border border-slate-200 text-[11px] font-mono text-slate-600 hover:text-white transition active:scale-95"
                     >
                       +{amt >= 1000000 ? `${amt / 1000000} Jt` : `${amt / 1000}k`}
                     </button>
@@ -996,13 +909,13 @@ export default function SavingsSection({
 
               {/* Catatan Tambahan (Opsional) */}
               <div className="space-y-1.5">
-                <label className="text-slate-700 font-semibold block">Catatan (Opsional)</label>
+                <label className="text-slate-600 font-semibold block">Catatan (Opsional)</label>
                 <input
                   type="text"
                   placeholder={isWithdrawMode ? "Keperluan penarikan..." : "Sumber tabungan..."}
                   value={depositNote}
                   onChange={(e) => setDepositNote(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl kas-input text-xs font-medium"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-white placeholder:text-slate-500 focus:border-amber-500 focus:outline-none text-xs font-medium"
                 />
               </div>
 
@@ -1010,16 +923,16 @@ export default function SavingsSection({
                 <button
                   type="button"
                   onClick={() => setDepositModalGoal(null)}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition active:scale-95 text-xs"
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-white/15 text-slate-700 font-semibold transition active:scale-95 text-xs border border-slate-200"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className={`flex-[2] py-2.5 rounded-xl font-bold text-xs text-white shadow-sm transition active:scale-[0.98] flex items-center justify-center gap-1.5 ${
+                  className={`flex-[2] py-2.5 rounded-xl font-bold text-xs text-white shadow-lg transition active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                     isWithdrawMode 
-                      ? 'bg-rose-600 hover:bg-rose-700' 
-                      : 'bg-amber-600 hover:bg-amber-700'
+                      ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/25 border border-rose-500/30' 
+                      : 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/25 border border-amber-500/30'
                   }`}
                 >
                   {isWithdrawMode ? (
